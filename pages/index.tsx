@@ -1,10 +1,9 @@
 import type { NextPage } from "next";
-import Image from "next/image";
 
 const Home: NextPage = () => {
   return (
     <div>
-      <h1>asd</h1>
+      <h1>asdasdasd</h1>
     </div>
   );
 };
