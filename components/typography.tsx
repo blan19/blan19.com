@@ -1,7 +1,7 @@
-import React, { PropsWithChildren } from 'react';
-import styled, { css } from 'styled-components';
+import React, { PropsWithChildren } from "react";
+import styled, { css } from "styled-components";
 
-import contants from '~/constants/theme';
+import { lightTheme as constants } from "../constants/theme";
 
 const FONT_WEIGHT = {
   extraBold: 800,
@@ -11,9 +11,9 @@ const FONT_WEIGHT = {
   regular: 400,
 } as const;
 
-type FontSize = keyof typeof contants.fontSize;
+type FontSize = keyof typeof constants.fontSize;
 
-type FontColor = keyof typeof contants.colors;
+type FontColor = keyof typeof constants.colors;
 
 type FontWeight = keyof typeof FONT_WEIGHT;
 
@@ -28,9 +28,9 @@ interface TypographyProps extends PropsWithChildren {
 
 const Typography = ({
   className,
-  as = 'p',
-  color = 'black',
-  lineHeight = '1.563rem',
+  as = "p",
+  color = "black",
+  lineHeight = "1.563rem",
   ...props
 }: TypographyProps): React.ReactElement => {
   return (
@@ -45,13 +45,13 @@ const BaseTypography = styled.p<TypographyProps>`
   ${(props) => css`
     font-size: ${props.size !== undefined
       ? `${
-          typeof props.size === 'string'
-            ? contants.fontSize[props.size]
+          typeof props.size === "string"
+            ? constants.fontSize[props.size]
             : props.size
         }`
-      : ''};
+      : ""};
     font-weight: ${props.weight && FONT_WEIGHT[props.weight]};
-    color: ${contants.colors[props.color || 'black']};
+    color: ${constants.colors[props.color || "black"]};
     white-space: pre-wrap;
     line-height: ${props.lineHeight};
   `}

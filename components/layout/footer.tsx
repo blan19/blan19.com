@@ -1,6 +1,9 @@
 import styled from "styled-components";
-import React, { FunctionComponent } from "react";
+import { FunctionComponent } from "react";
 import NavLink from "../navLink";
+import HomeIcon from "../../assets/svg/home.svg";
+import FilesIcon from "../../assets/svg/files.svg";
+import DailyIcon from "../../assets/svg/daily.svg";
 
 const Footer: FunctionComponent = () => {
   return (
@@ -8,16 +11,19 @@ const Footer: FunctionComponent = () => {
       <Wrapper>
         <NavLink href="/">
           <NavLinkOutline>
+            <HomeIcon />
             <span>Home</span>
           </NavLinkOutline>
         </NavLink>
         <NavLink href="/posts">
           <NavLinkOutline>
+            <FilesIcon />
             <span>Posts</span>
           </NavLinkOutline>
         </NavLink>
         <NavLink href="/daily">
           <NavLinkOutline>
+            <DailyIcon />
             <span>Daily</span>
           </NavLinkOutline>
         </NavLink>
