@@ -7,6 +7,7 @@ import src from "../../public/images/memoji-min.png";
 import ShareIcon from "../../assets/svg/share.svg";
 import MoonIcon from "../../assets/svg/moon.svg";
 import SunIcon from "../../assets/svg/sun.svg";
+import Progress from "../progress";
 
 const Header: FunctionComponent = ({}) => {
   const router = useRouter();
@@ -52,7 +53,7 @@ const Header: FunctionComponent = ({}) => {
             </ul>
           </div>
         </HeaderWrapper>
-        {/* <ScrollProgress /> */}
+        <Progress />
       </HeaderContainer>
     </>
   );
