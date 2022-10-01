@@ -15,7 +15,7 @@
     "react-dom": "18.2.0",
     "react-switch": "^7.0.0",
     "styled-components": "^5.3.6",
-    "styled-normalize": "^8.0.7"
+    "styled-reset": "^4.4.2"
   },
   "devDependencies": {
     "@svgr/webpack": "^6.3.1",
