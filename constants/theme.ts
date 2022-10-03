@@ -3,16 +3,11 @@ import { DefaultTheme } from "styled-components";
 const lightTheme: DefaultTheme = {
   colors: {
     primary: "#F47458",
-    gray_1: "#F5F5F5",
-    gray_2: "#EDEDED",
-    gray_3: "#EOEOEO",
-    gray_4: "#C2C2C2",
-    gray_5: "#9E9E9E",
-    gray_6: "#757575",
-    gray_7: "#616161",
-    gray_8: "#424242",
+    sub: "#fff",
+    gray_1: "#adb5bd",
     black: "#000",
     white: "#fff",
+    font: "#000",
   },
   fontSize: {
     // title
@@ -56,16 +51,11 @@ const lightTheme: DefaultTheme = {
 const darkTheme: DefaultTheme = {
   colors: {
     primary: "#F47458",
-    gray_1: "#F5F5F5",
-    gray_2: "#EDEDED",
-    gray_3: "#EOEOEO",
-    gray_4: "#C2C2C2",
-    gray_5: "#9E9E9E",
-    gray_6: "#757575",
-    gray_7: "#616161",
-    gray_8: "#424242",
+    sub: "#292A2D",
+    gray_1: "#868e96",
     black: "#000",
     white: "#fff",
+    font: "#fff",
   },
   fontSize: {
     // title
