@@ -9,9 +9,11 @@ import MoonIcon from "../../assets/svg/moon.svg";
 import SunIcon from "../../assets/svg/sun.svg";
 import Progress from "../progress";
 import Typography from "../typography";
+import { useDarkMode } from "usehooks-ts";
 
 const Header: FunctionComponent = ({}) => {
   const router = useRouter();
+  const { isDarkMode, toggle } = useDarkMode();
   return (
     <>
       <HeaderContainer>
@@ -29,8 +31,8 @@ const Header: FunctionComponent = ({}) => {
             <Item>
               <label>
                 <Switch
-                  checked={false}
-                  onChange={() => console.log("toggle")}
+                  checked={isDarkMode}
+                  onChange={toggle}
                   width={50}
                   height={25}
                   handleDiameter={18}
@@ -101,4 +103,7 @@ const ItemsOutline = styled.ul`
   gap: 0.5rem;
 `;
 
-const Item = styled.li``;
+const Item = styled.li`
+  display: flex;
+  align-items: center;
+`;
