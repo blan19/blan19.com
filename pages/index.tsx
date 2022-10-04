@@ -1,16 +1,13 @@
 import type { NextPage } from "next";
-import { useDarkMode } from "usehooks-ts";
+import Banner from "../components/banner";
+import Information from "../components/home/information";
 
 const Home: NextPage = () => {
-  const { toggle } = useDarkMode();
   return (
-    <div>
-      <br />
-      <br />
-      <br />
-      <br />
-      <button onClick={toggle}>dark</button>
-    </div>
+    <>
+      <Banner />
+      <Information />
+    </>
   );
 };
 
