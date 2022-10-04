@@ -9,6 +9,7 @@ declare module "styled-components" {
       black: string;
       white: string;
       font: string;
+      bg: string;
     };
     fontSize: {
       title_mobile: string;

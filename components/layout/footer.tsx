@@ -48,14 +48,15 @@ const Wrapper = styled.nav`
   display: flex;
   align-items: center;
   justify-content: space-around;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
   color: ${({ theme }) => theme.colors.gray_1};
-  fill: ${({ theme }) => theme.colors.gray_1};
+  font-size: ${({ theme }) => theme.fontSize.body2r_mobile};
+  font-weight: 400;
   .active {
     fill: ${({ theme }) => theme.colors.font};
     color: ${({ theme }) => theme.colors.font};
-    font-weight: bold;
+    font-weight: 500;
   }
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 `;
 
 const NavLinkOutline = styled.div`
@@ -64,6 +65,7 @@ const NavLinkOutline = styled.div`
   align-items: center;
   padding: 0.5rem 0;
   gap: 0.5rem;
+  fill: ${({ theme }) => theme.colors.gray_1};
   cursor: pointer;
   &:hover {
     fill: ${({ theme }) => theme.colors.font};

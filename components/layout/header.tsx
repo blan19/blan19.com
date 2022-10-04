@@ -20,7 +20,12 @@ const Header: FunctionComponent = ({}) => {
         <HeaderWrapper>
           <LogoOutline onClick={() => router.push("/")}>
             <Image src={src} alt="profile" />
-            <Typography as="span" size="subtitle3_mobile" weight="semiBold">
+            <Typography
+              as="span"
+              size="subtitle3_mobile"
+              weight="semiBold"
+              color="white"
+            >
               blan19
             </Typography>
           </LogoOutline>

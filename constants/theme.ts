@@ -8,6 +8,7 @@ const lightTheme: DefaultTheme = {
     black: "#000",
     white: "#fff",
     font: "#000",
+    bg: "#fff",
   },
   fontSize: {
     // title
@@ -56,6 +57,7 @@ const darkTheme: DefaultTheme = {
     black: "#000",
     white: "#fff",
     font: "#fff",
+    bg: "#000",
   },
   fontSize: {
     // title
