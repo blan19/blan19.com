@@ -4,6 +4,16 @@ import path from "path";
 import { remark } from "remark";
 import html from "remark-html";
 
+const getSortedImageAndMdx = (files: string[]) => {
+  let image: string = "";
+  let mdx: string = "";
+  files.forEach((file) => {
+    if (file.includes("md")) mdx = file;
+    else image = file;
+  });
+  return [mdx, image];
+};
+
 export const getContentsPaths = (dirPath: string) => {
   const files = fs.readdirSync(dirPath);
 
@@ -15,6 +25,8 @@ export const getContentsPaths = (dirPath: string) => {
     };
   });
 };
+
+export const getContentsFolderFiles = (dirPath: string) => {};
 
 export const getContent = async (dirPath: string, id: string) => {
   const filePath = path.join(dirPath, `${id}.md`);
@@ -37,11 +49,15 @@ export const getContentsMeta = (dirPath: string) => {
   const files = fs.readdirSync(dirPath);
 
   return files.map((file) => {
-    const filePath = path.join(dirPath, file);
+    const fileFolder = fs.readdirSync(dirPath + `/${file}`);
+    const [mdx, _] = getSortedImageAndMdx(fileFolder);
+
+    const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
+
     const content = fs.readFileSync(filePath, "utf-8");
     const matteredContent = matter(content);
     return {
-      id: file.replace(/\.md$/, ""),
+      id: mdx.replace(/\.md$/, ""),
       ...matteredContent.data,
     };
   });
