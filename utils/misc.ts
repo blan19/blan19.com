@@ -1,5 +1,16 @@
+import { Meta } from "./markdown";
+
 type ErrorWithMessage = {
   message: string;
+};
+
+export const getCategry = (data: Meta[]) => {
+  const category = new Set<string>();
+  for (const d of data) {
+    const { stack } = d;
+    stack.forEach((s: string) => category.add(s));
+  }
+  return Array.from(category);
 };
 
 const isErrorWithMessage = (error: unknown): error is ErrorWithMessage => {
