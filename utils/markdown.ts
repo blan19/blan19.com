@@ -4,6 +4,12 @@ import path from "path";
 import { remark } from "remark";
 import html from "remark-html";
 
+interface Mdx {
+  [key: string]: any;
+}
+
+export type Meta = { id: string } & Mdx;
+
 const getSortedImageAndMdx = (files: string[]) => {
   let image: string = "";
   let mdx: string = "";
@@ -53,12 +59,13 @@ export const getContentsMeta = (dirPath: string) => {
     const [mdx, _] = getSortedImageAndMdx(fileFolder);
 
     const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
-
     const content = fs.readFileSync(filePath, "utf-8");
-    const matteredContent = matter(content);
-    return {
+    const matteredContent: Mdx = matter(content).data;
+
+    const meta: Meta = {
       id: mdx.replace(/\.md$/, ""),
-      ...matteredContent.data,
+      ...matteredContent,
     };
+    return meta;
   });
 };

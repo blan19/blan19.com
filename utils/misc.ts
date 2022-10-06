@@ -5,10 +5,14 @@ type ErrorWithMessage = {
 };
 
 export const getCategry = (data: Meta[]) => {
-  const category = new Set<string>();
+  const category = new Map<string, number>();
+  category.set("All", data.length);
   for (const d of data) {
     const { stack } = d;
-    stack.forEach((s: string) => category.add(s));
+    stack.forEach((s: string) => {
+      if (category.has(s)) category.set(s, category.get(s) + 1);
+      else category.set(s, 1);
+    });
   }
   return Array.from(category);
 };
