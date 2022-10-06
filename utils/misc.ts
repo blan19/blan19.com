@@ -1,15 +1,15 @@
-import { Meta } from "./markdown";
+import { PostMdxMeta } from "../types/mdx";
 
 type ErrorWithMessage = {
   message: string;
 };
 
-export const getCategry = (data: Meta[]) => {
+export const getCategry = (data: PostMdxMeta[]) => {
   const category = new Map<string, number>();
   category.set("All", data.length);
   for (const d of data) {
-    const { stack } = d;
-    stack.forEach((s: string) => {
+    const { categories } = d;
+    categories.forEach((s: string) => {
       if (category.has(s)) category.set(s, category.get(s) + 1);
       else category.set(s, 1);
     });

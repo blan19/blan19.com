@@ -17,7 +17,7 @@ const Posts = ({
   const posts = useMemo(
     () =>
       meta.filter((m) =>
-        selectedCategry !== "All" ? m.stack.includes(selectedCategry) : m
+        selectedCategry !== "All" ? m.categories.includes(selectedCategry) : m
       ),
     [meta, selectedCategry]
   );
@@ -33,7 +33,7 @@ const Posts = ({
       />
       <CardOutline>
         {posts.map((post) => (
-          <PostCard key={post.id} />
+          <PostCard key={post.title} />
         ))}
       </CardOutline>
     </Base>

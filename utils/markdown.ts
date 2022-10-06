@@ -3,6 +3,7 @@ import matter from "gray-matter";
 import path from "path";
 import { remark } from "remark";
 import html from "remark-html";
+import { PostMdxMeta } from "../types/mdx";
 
 interface Mdx {
   [key: string]: any;
@@ -59,13 +60,11 @@ export const getContentsMeta = (dirPath: string) => {
     const [mdx, _] = getSortedImageAndMdx(fileFolder);
 
     const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
-    const content = fs.readFileSync(filePath, "utf-8");
-    const matteredContent: Mdx = matter(content).data;
+    console.log(filePath);
 
-    const meta: Meta = {
-      id: mdx.replace(/\.md$/, ""),
-      ...matteredContent,
-    };
-    return meta;
+    const content = fs.readFileSync(filePath, "utf-8");
+    const matteredContent = matter(content).data as PostMdxMeta;
+
+    return matteredContent;
   });
 };
