@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useCallback, useMemo } from "react";
 
 export default function useSelectedCateogry() {
-  const { query, push, asPath } = useRouter();
+  const { query, push, pathname } = useRouter();
   const selectedCategry = useMemo(
     () =>
       typeof query.category !== "string" || !query.category
@@ -12,8 +12,10 @@ export default function useSelectedCateogry() {
   );
 
   const onPushQuery = useCallback(
-    (query: string) => push(asPath + query),
-    [asPath, push]
+    (query: string) => {
+      push(pathname + query);
+    },
+    [pathname, push]
   );
 
   return { selectedCategry, onPushQuery };
