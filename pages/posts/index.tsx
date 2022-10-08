@@ -33,7 +33,7 @@ const Posts = ({
       />
       <CardOutline>
         {posts.map((post) => (
-          <PostCard key={post.title} />
+          <PostCard key={post.title} {...post} />
         ))}
       </CardOutline>
     </Base>
