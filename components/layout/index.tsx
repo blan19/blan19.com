@@ -11,7 +11,9 @@ const Layout = ({ children }: Props) => {
   return (
     <>
       <Header />
-      <Base>{children}</Base>
+      <HeaderSpace />
+      <main>{children}</main>
+      <FooterSpace />
       <Footer />
     </>
   );
@@ -19,6 +21,12 @@ const Layout = ({ children }: Props) => {
 
 export default Layout;
 
-const Base = styled.main`
-  height: 100%;
+const HeaderSpace = styled.div`
+  width: 100%;
+  height: 50px;
+`;
+
+const FooterSpace = styled.div`
+  width: 100%;
+  height: 55px;
 `;

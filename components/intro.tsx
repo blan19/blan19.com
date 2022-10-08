@@ -25,7 +25,7 @@ const Intro = (props: Props) => {
 export default Intro;
 
 const Base = styled.section`
-  padding-top: 10rem;
+  padding-top: 7rem;
   h1 {
     margin-bottom: 0.5rem;
   }

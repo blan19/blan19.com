@@ -24,7 +24,7 @@ const Header: FunctionComponent = ({}) => {
               as="span"
               size="subtitle3_mobile"
               weight="semiBold"
-              color="white"
+              color="font"
             >
               blan19
             </Typography>
@@ -71,6 +71,7 @@ const HeaderContainer = styled.header`
   width: 100%;
   position: fixed;
   z-index: 999;
+  background-color: ${({ theme }) => theme.colors.sub};
 `;
 
 const HeaderWrapper = styled.div`

@@ -42,7 +42,7 @@ const Posts = ({
 
 export default Posts;
 
-export const getStaticProps = async ({}: GetStaticPropsContext) => {
+export const getStaticProps = async () => {
   const meta = await getContentsMeta("./contents/posts");
   const category = getCategry(meta);
 
