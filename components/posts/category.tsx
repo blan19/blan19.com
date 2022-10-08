@@ -3,7 +3,7 @@ import styled from "styled-components";
 
 interface Props {
   category: [string, number][];
-  selectedCategory: string;
+  selectedCategory?: string;
   onPushQuery: (query: string) => void;
 }
 

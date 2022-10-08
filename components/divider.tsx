@@ -17,5 +17,5 @@ const Base = styled.div<Props>`
   height: ${({ _height }) => (_height ? _height : "1.5px")};
   margin: ${({ _margin }) => _margin && _margin};
   background-color: ${({ theme, _color }) =>
-    _color ? _color : theme.colors.gray_1};
+    _color ? _color : theme.colors.gray_2};
 `;
