@@ -1,8 +1,6 @@
 import fs from "fs";
 import matter from "gray-matter";
 import path from "path";
-import { remark } from "remark";
-import html from "remark-html";
 import { PostMdxMeta } from "../types/mdx";
 
 interface Mdx {
@@ -45,14 +43,9 @@ export const getContent = async (
   const content = fs.readFileSync(filePath, "utf-8");
   const matteredContent = matter(content);
 
-  const remarkedContent = await remark()
-    .use(html)
-    .process(matteredContent.content);
-  const contentHtml = remarkedContent.toString();
-
   return {
     id,
-    contentHtml,
+    markdown: matteredContent.content,
     ...matteredContent.data,
   };
 };
