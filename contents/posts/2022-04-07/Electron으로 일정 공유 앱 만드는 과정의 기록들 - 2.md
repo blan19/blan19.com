@@ -4,7 +4,7 @@ title: "Electron으로 일정 공유 앱 만드는 과정의 기록들 - 2"
 creater: "blan19"
 categories: ["Typescript", "React", "Electron"]
 summary: "Electron Forge를 사용하여 Electron + Webpack + React + Typescript 환경에서 앱을 만들어보자"
-thumbnail: "./electron.png"
+thumbnail: "electron.png"
 ---
 
 ## Electron 일정 공유 앱을 만들어 보자 - 2

@@ -4,7 +4,7 @@ title: "Javascript - 스코프"
 creater: "blan19"
 categories: ["Javascript"]
 summary: "자바스크립트 스펙을 정리하고 복습해보자"
-thumbnail: "./자바스크립트.png"
+thumbnail: "자바스크립트.png"
 ---
 
 ## 스코프
@@ -24,15 +24,15 @@ Javascript를 다뤄본 개발자라면 스코프(Scope)라는 단어를 많이 
 아래 예제 코드를 통해 자세히 알아보겠습니다
 
 ```tsx
-let a = "global"
+let a = "global";
 
 function print() {
-  let a = "local"
-  console.log(a)
+  let a = "local";
+  console.log(a);
 }
 
-print() // local
-console.log(a) // global
+print(); // local
+console.log(a); // global
 ```
 
 같은 a여도 print() 함수 밖의 a는 전역 변수이고, print() 함수 안의 a는 print() 함수의 지역 변수입니다.
@@ -42,13 +42,13 @@ console.log(a) // global
 한번 print() 함수의 지역변수 a를 지우고 실행해 보겠습니다
 
 ```tsx
-let a = "global"
+let a = "global";
 
 function print() {
-  console.log(a)
+  console.log(a);
 }
 
-print() // global
+print(); // global
 ```
 
 결과는 에러를 출력하지 않고, 전역 변수인 a를 출력합니다
@@ -68,15 +68,15 @@ print() // global
 범위라는 말처럼 함수 안에서 선언된 변수는 해당 함수 안에서만 사용할 수 있습니다.
 
 ```tsx
-let a = "global"
+let a = "global";
 
 function print() {
-  let a = "local"
-  console.log(a)
+  let a = "local";
+  console.log(a);
 }
 
-print() // local
-console.log(a) // global
+print(); // local
+console.log(a); // global
 ```
 
 자바스크립트는 `변수의 범위`를 호출한 함수의 지역 스코프부터 전역 변수들이 있는 전역 스코프까지 점차 넓혀가며 찾습니다.
@@ -92,17 +92,17 @@ console.log(a) // global
 그리고 모든 함수들은 전역 객체에 접근할 수 있습니다.
 
 ```tsx
-let name = "Junseo"
+let name = "Junseo";
 function outer() {
-  console.log("외부", name)
+  console.log("외부", name);
   function inner() {
-    let enemy = "Hyo"
-    console.log("내부", name)
+    let enemy = "Hyo";
+    console.log("내부", name);
   }
-  inner()
+  inner();
 }
-outer()
-console.log(enemy) // undefined
+outer();
+console.log(enemy); // undefined
 ```
 
 inner 함수는 name 변수를 찾기 위해 먼저 자기 자신의 스코프에서 찾고, 없으면 한 단계 올라가 outer 스코프에서 찾고, 없으면 다시 올라가 결국 전역 스코프에서 찾습니다.
@@ -120,16 +120,16 @@ inner 함수는 name 변수를 찾기 위해 먼저 자기 자신의 스코프�
 정적 스코프라고도 불립니다.
 
 ```tsx
-let name = "Junseo"
+let name = "Junseo";
 function log() {
-  console.log(name)
+  console.log(name);
 }
 
 function wrapper() {
-  let name = "Hyo"
-  log()
+  let name = "Hyo";
+  log();
 }
-wrapper() // Junseo
+wrapper(); // Junseo
 ```
 
 스코프는 함수를 **선언** 할 때 생기므로, log 안의 name은 wrapper 안의 지역변수 name이 아니라, 전역변수 name을 가리킵니다.

@@ -4,7 +4,7 @@ title: "Javascript - 실행컨텍스트"
 creater: "blan19"
 categories: ["Javascript"]
 summary: "자바스크립트 스펙을 정리하고 복습해보자"
-thumbnail: "./자바스크립트.png"
+thumbnail: "자바스크립트.png"
 ---
 
 ## 실행 컨텍스트
@@ -14,18 +14,18 @@ thumbnail: "./자바스크립트.png"
 실행 컨텍스트는 자바스크립트가 왜 그렇게 동작하는 지 여러분께 설명해줍니다.
 
 ```tsx
-let name = "Junseo" // (1)변수 선언 (6)변수 대입
+let name = "Junseo"; // (1)변수 선언 (6)변수 대입
 function wow(word) {
   // (2)변수 선언 (3)변수 대입
-  console.log(word + " " + name) // (11)
+  console.log(word + " " + name); // (11)
 }
 function say() {
   // (4)변수 선언 (5)변수 대입
-  let name = "Hyo" // (8)
-  console.log(name) // (9)
-  wow("hello") // (10)
+  let name = "Hyo"; // (8)
+  console.log(name); // (9)
+  wow("hello"); // (10)
 }
-say() // (7)
+say(); // (7)
 ```
 
 먼저 어떻게 console이 찍힐지 생각해봅시다.
@@ -74,7 +74,7 @@ say() // (7)
 wow랑 say는 **`호이스팅`** 때문에 선언과 동시에 대입이 됩니다.
 
 ```tsx
-variable: [{ name: "Junseo" }, { wow: Function }, { say: Function }]
+variable: [{ name: "Junseo" }, { wow: Function }, { say: Function }];
 ```
 
 ### \***\*함수 컨텍스트\*\***
@@ -161,12 +161,12 @@ wow 컨텍스트에 따라, wow 함수는 애초에 say 컨텍스트와 일절 �
 아래처럼 sayWow처럼 **`함수 표현식`**이 아니라 **`함수 선언식`**일 때는 식 자체가 통째로 끌어올려집니다.
 
 ```tsx
-console.log(zero) // 에러가 아니라 undefined
-sayWow() // 정상적으로 wow
+console.log(zero); // 에러가 아니라 undefined
+sayWow(); // 정상적으로 wow
 function sayWow() {
-  console.log("wow")
+  console.log("wow");
 }
-var junseo = "Junseo"
+var junseo = "Junseo";
 ```
 
 변수 선언과 함수 선언식이 최상단으로 끌어올려졌기 때문에, 에러 없이 정상 작동합니다.
@@ -175,26 +175,26 @@ var junseo = "Junseo"
 
 ```tsx
 function sayWow() {
-  console.log("wow")
+  console.log("wow");
 }
-var junseo
-console.log(junseo)
-sayWow()
-junseo = "Junseo"
+var junseo;
+console.log(junseo);
+sayWow();
+junseo = "Junseo";
 ```
 
 하지만 같은 함수여도 함수 표현식으로 선언한 경우에는 에러가 발생합니다.
 
 ```tsx
-sayWow() // (3)
-sayYeah() // (5) 여기서 대입되기 전에 호출해서 에러
+sayWow(); // (3)
+sayYeah(); // (5) 여기서 대입되기 전에 호출해서 에러
 var sayYeah = function () {
   // (1) 선언 (6) 대입
-  console.log("yeah")
-}
+  console.log("yeah");
+};
 function sayWow() {
   // (2) 선언과 동시에 초기화(호이스팅)
-  console.log("wow") // (4)
+  console.log("wow"); // (4)
 }
 ```
 
@@ -225,13 +225,13 @@ sayWow 함수는 함수 선언식이므로 컨텍스트 생성 후 바로 대입
 
 ```tsx
 let makeClosure = function () {
-  let name = "junseo"
+  let name = "junseo";
   return function () {
-    console.log(name)
-  }
-}
-let closure = makeClosure() // function () { console.log(name); }
-closure() // 'junseo';
+    console.log(name);
+  };
+};
+let closure = makeClosure(); // function () { console.log(name); }
+closure(); // 'junseo';
 ```
 
 closure 함수 안에 console.log(name)이 있습니다.

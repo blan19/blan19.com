@@ -4,7 +4,7 @@ title: "인간 Typescript 되어보자 - 1"
 creater: "blan19"
 categories: ["Typescript"]
 summary: "타입스크립트를 복습하고 몰랐던 점을 기록해서 차근차근 정복해보자!"
-thumbnail: "./typescript.png"
+thumbnail: "typescript.png"
 ---
 
 ## Why Typescript?

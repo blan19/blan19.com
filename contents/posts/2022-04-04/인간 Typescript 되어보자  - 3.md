@@ -4,7 +4,7 @@ title: "인간 Typescript 되어보자 - 3"
 creater: "blan19"
 categories: ["Typescript"]
 summary: "타입스크립트를 복습하고 몰랐던 점을 기록해서 차근차근 정복해보자!"
-thumbnail: "./typescript.png"
+thumbnail: "typescript.png"
 ---
 
 ## 인터페이스
@@ -15,15 +15,15 @@ thumbnail: "./typescript.png"
 
 ```tsx
 interface LabeledValue {
-  label: string
+  label: string;
 }
 
 function printLabel(labeledObj: LabeledValue) {
-  console.log(labeledObj.label)
+  console.log(labeledObj.label);
 }
 
-let myObj = { size: 10, label: "Size 10 Object" }
-printLabel(myObj)
+let myObj = { size: 10, label: "Size 10 Object" };
+printLabel(myObj);
 ```
 
 타입스크립트는 값의 형태에 초점을 맞추는 구조적 서브 타이핑이기 때문에 단지 인터페이스가 요구하는 프로퍼티들이 존재하는지와 프로퍼티들이 요구하는 타입을 가졌는지만을 확인합니다.
@@ -36,22 +36,22 @@ printLabel(myObj)
 
 ```tsx
 interface SquareConfig {
-  color?: string
-  width?: number
+  color?: string;
+  width?: number;
 }
 
 function createSquare(config: SquareConfig): { color: string; area: number } {
-  let newSquare = { color: "white", area: 100 }
+  let newSquare = { color: "white", area: 100 };
   if (config.color) {
-    newSquare.color = config.color
+    newSquare.color = config.color;
   }
   if (config.width) {
-    newSquare.area = config.width * config.width
+    newSquare.area = config.width * config.width;
   }
-  return newSquare
+  return newSquare;
 }
 
-let mySquare = createSquare({ color: "black" })
+let mySquare = createSquare({ color: "black" });
 ```
 
 선택적 프로퍼티의 이점은 인터페이스에 속하지 않는 프로퍼티의 사용을 방지하면서, 사용 가능한 속성을 알려준다는 것입니다.
@@ -62,11 +62,11 @@ _일부 프로퍼티들은 객체가 처음 생성될 때만 수정 가능해야
 
 ```tsx
 interface Point {
-  readonly x: number
-  readonly y: number
+  readonly x: number;
+  readonly y: number;
 }
 
-let p_1: Point = { x: 10, y: 20 }
+let p_1: Point = { x: 10, y: 20 };
 // p_1.x = 1; // 읽기 전용이므로 오류 발생
 ```
 
@@ -75,15 +75,15 @@ _Typescript에서는 모든 변경 메서드가 제거된 Array<T>와 동일한 
 _그래서 생성 후에 배열을 변경하지 않음을 보장할 수 있습니다_
 
 ```tsx
-let a: number[] = [1, 2, 3, 4, 5, 6]
-let ro: ReadonlyArray<number> = a
+let a: number[] = [1, 2, 3, 4, 5, 6];
+let ro: ReadonlyArray<number> = a;
 // ro[0] = 1; // 오류 발생
 
 /**
  * 타입 단언으로 오버라이드하는 것은 가능합니다
  */
 
-a = ro as number[]
+a = ro as number[];
 ```
 
 _`readonly` vs `const`_
@@ -98,37 +98,37 @@ _객체 리터럴은 다른 변수에 할당할 때나 인수로 전달할 때, 
 
 ```tsx
 interface SquareConfig {
-  color?: string
-  width?: number
+  color?: string;
+  width?: number;
 }
 
 function createSquare(config: SquareConfig): { color: string; area: number } {
-  let newArea = { color: "", area: 10 }
+  let newArea = { color: "", area: 10 };
   if (config.color) {
-    newArea.color = config.color
+    newArea.color = config.color;
   }
   if (config.width) {
-    newArea.area = config.width * 2
+    newArea.area = config.width * 2;
   }
-  return newArea
+  return newArea;
 }
 
-let mySquare = createSquare({ colour: "red", width: 100 }) // 오류 발생!
+let mySquare = createSquare({ colour: "red", width: 100 }); // 오류 발생!
 
 /*
 이 검사를 피하는 방법은 정말 간단합니다. 가장 간단한 방법은 타입 단언을 사용하는 것입니다
 */
 
-let mySquare = createSquare({ width: 100, opacity: 0.5 } as SquareConfig)
+let mySquare = createSquare({ width: 100, opacity: 0.5 } as SquareConfig);
 ```
 
 _하지만 특별한 경우에, 추가 프로퍼티가 있음을 확신한다면, string index signature를 추가하는 것이 더 나은 방법입니다_
 
 ```tsx
 interface SquareIndexConfig {
-  color?: string
-  width?: number
-  [propName: string]: any
+  color?: string;
+  width?: number;
+  [propName: string]: any;
 }
 ```
 
@@ -139,8 +139,8 @@ _이 방법은 공통 프로퍼티가 있는 경우에만 사용할 수 있습�
 _만약에 공통 객체 프로퍼티가 없다면 에러가 발생합니다_
 
 ```tsx
-let mySquare_2 = { colour: "red", width: 100 }
-createSquare(mySquare_2)
+let mySquare_2 = { colour: "red", width: 100 };
+createSquare(mySquare_2);
 ```
 
 ### \***\*함수 타입 (Function Types)\*\***
@@ -151,24 +151,24 @@ createSquare(mySquare_2)
 
 ```tsx
 interface SearchFunc {
-  (source: string, subString: string): boolean
+  (source: string, subString: string): boolean;
 }
 
-let mySearch: SearchFunc
+let mySearch: SearchFunc;
 
 mySearch = function (source: string, subString: string) {
-  let result = source.search(subString)
-  return result > -1
-}
+  let result = source.search(subString);
+  return result > -1;
+};
 ```
 
 올바른 함수 타입 검사를 위해, 매개변수의 이름이 같을 필요는 없습니다. 예를 들어, 위의 예제를 아래와 같이 쓸 수 있습니다
 
 ```tsx
 mySearch = function (src: string, sub: string) {
-  let result = src.search(sub)
-  return result > -1
-}
+  let result = src.search(sub);
+  return result > -1;
+};
 ```
 
 ### \***\*인덱서블 타입 (Indexable Types)\*\***
@@ -177,13 +177,13 @@ mySearch = function (src: string, sub: string) {
 
 ```tsx
 interface StringArray {
-  [index: number]: string
+  [index: number]: string;
 }
 
-let myArray: StringArray
-myArray = ["Bob", "Fred"]
+let myArray: StringArray;
+myArray = ["Bob", "Fred"];
 
-let myStr: string = myArray[0]
+let myStr: string = myArray[0];
 ```
 
 인덱스 서명을 지원하는 타입에는 두 가지가 있습니다. `문자열과 숫자.`
@@ -194,16 +194,16 @@ let myStr: string = myArray[0]
 
 ```tsx
 class Animal {
-  name: string
+  name: string;
 }
 class Dog extends Animal {
-  breed: string
+  breed: string;
 }
 
 // 오류: 숫자형 문자열로 인덱싱을 하면 완전히 다른 타입의 Animal을 얻게 될 것입니다!
 interface NotOkay {
-  [x: number]: Animal
-  [x: string]: Dog
+  [x: number]: Animal;
+  [x: string]: Dog;
 }
 ```
 
@@ -211,9 +211,9 @@ interface NotOkay {
 
 ```tsx
 interface NumberDictionary {
-  [index: string]: number
-  length: number // 성공, length는 숫자입니다
-  name: string // 오류, `name`의 타입은 인덱서의 하위타입이 아닙니다
+  [index: string]: number;
+  length: number; // 성공, length는 숫자입니다
+  name: string; // 오류, `name`의 타입은 인덱서의 하위타입이 아닙니다
 }
 ```
 
@@ -221,9 +221,9 @@ interface NumberDictionary {
 
 ```tsx
 interface NumberOrStringDictionary {
-  [index: string]: number | string
-  length: number // 성공, length는 숫자입니다
-  name: string // 성공, name은 문자열입니다
+  [index: string]: number | string;
+  length: number; // 성공, length는 숫자입니다
+  name: string; // 성공, name은 문자열입니다
 }
 ```
 
@@ -231,10 +231,10 @@ interface NumberOrStringDictionary {
 
 ```tsx
 interface ReadonlyStringArray {
-  readonly [index: number]: string
+  readonly [index: number]: string;
 }
-let myArray: ReadonlyStringArray = ["Alice", "Bob"]
-myArray[2] = "Mallory" // 오류!
+let myArray: ReadonlyStringArray = ["Alice", "Bob"];
+myArray[2] = "Mallory"; // 오류!
 ```
 
 ### 레퍼런스

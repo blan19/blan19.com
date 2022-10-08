@@ -4,7 +4,7 @@ title: "jsx-control-statements 사용하여 JSX에서 깨끗한 조건문을 작
 creater: "blan19"
 categories: ["React"]
 summary: "jsx-control-statements 사용을 익히고 클린 코드를 작성해보자"
-thumbnail: "./learn.webp"
+thumbnail: "learn.webp"
 ---
 
 ## `JSX에서 깨끗한 조건문을 작성하는 방법`

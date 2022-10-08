@@ -4,7 +4,7 @@ title: "인간 Typescript 되어보자 - 2"
 creater: "blan19"
 categories: ["Typescript"]
 summary: "클래스와 인터페이스를 사용한 OOP - 1"
-thumbnail: "./typescript.png"
+thumbnail: "typescript.png"
 ---
 
 ## 클래스와 인터페이스를 사용한 OOP

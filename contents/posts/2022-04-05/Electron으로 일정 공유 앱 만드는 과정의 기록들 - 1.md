@@ -4,7 +4,7 @@ title: "Electron으로 일정 공유 앱 만드는 과정의 기록들 - 1"
 creater: "blan19"
 categories: ["Typescript", "React", "Electron"]
 summary: "Electron Forge를 사용하여 Electron + Webpack + React + Typescript 환경에서 앱을 만들어보자"
-thumbnail: "./electron.png"
+thumbnail: "electron.png"
 ---
 
 ## Electron 일정 공유 앱을 만들어 보자 - 1
@@ -26,28 +26,28 @@ React가 18버전을 release 하면서 클라이언트 렌더링 API 부분에�
 
 ```tsx
 // Before
-import { render } from "react-dom"
-const container = document.getElementById("app")
-render(<App tab="home" />, container)
+import { render } from "react-dom";
+const container = document.getElementById("app");
+render(<App tab="home" />, container);
 
 // After
-import { createRoot } from "react-dom/client"
-const container = document.getElementById("app")
-const root = createRoot(container)
-root.render(<App tab="home" />)
+import { createRoot } from "react-dom/client";
+const container = document.getElementById("app");
+const root = createRoot(container);
+root.render(<App tab="home" />);
 ```
 
 Electron Forge 프로젝트에 적용해보겠습니다
 
 ```tsx
 // renderer.tsx
-import React from "react"
-import { createRoot } from "react-dom/client"
-import App from "./app"
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./app";
 
-const container = document.getElementById("App")
-const root = createRoot(container)
-root.render(<App />)
+const container = document.getElementById("App");
+const root = createRoot(container);
+root.render(<App />);
 ```
 
 React 18v에 대한 더 많은 정보는 [Upgrade Guide](https://reactjs.org/blog/2022/03/08/react-18-upgrade-guide.html)를 참고하자!
@@ -61,11 +61,11 @@ React-router-dom V6로 업그레이드가 되면서 이전 버전과 달라진 �
 대표적으론 Routes와 중첩 라우팅, useRoutes, useNavigate 등으로 바뀌었습니다
 
 ```tsx
-import React from "react"
-import { HashRouter, Route, Routes } from "react-router-dom"
-import styled from "styled-components"
-import NavBar from "./components/NavBar"
-import GlobalStyles from "./lib/styles/GlobalStyles"
+import React from "react";
+import { HashRouter, Route, Routes } from "react-router-dom";
+import styled from "styled-components";
+import NavBar from "./components/NavBar";
+import GlobalStyles from "./lib/styles/GlobalStyles";
 
 const App = () => {
   return (
@@ -85,14 +85,14 @@ const App = () => {
         </Routes>
       </AppContainer>
     </HashRouter>
-  )
-}
+  );
+};
 
-export default App
+export default App;
 
 const AppContainer = styled.div`
   display: flex;
-`
+`;
 ```
 
 V6부터는 exact 는 더이상 사용하지 않고 여러 라우팅을 매칭하고 싶은 경우 URL 뒤에 \* 을 사용합니다.
@@ -114,23 +114,23 @@ npm i -D copy-webpack-plugin
 
 ```js
 // webpack.plugins.js
-const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
-const path = require("path")
-const CopyWebpackPlugin = require("copy-webpack-plugin")
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
-const assets = ["images"]
+const assets = ["images"];
 
-const copyAssets = assets.map(asset => {
+const copyAssets = assets.map((asset) => {
   return new CopyWebpackPlugin({
     patterns: [{ from: path.resolve(__dirname, "src", asset), to: asset }],
-  })
-})
+  });
+});
 
-module.exports = [...copyAssets, new ForkTsCheckerWebpackPlugin()]
+module.exports = [...copyAssets, new ForkTsCheckerWebpackPlugin()];
 ```
 
 ```tsx
-import React from "react"
+import React from "react";
 
 const NavBar = () => {
   return (
@@ -138,10 +138,10 @@ const NavBar = () => {
       <h1>Navbar</h1>
       <img src="images/electron.png" alt="electron" />
     </div>
-  )
-}
+  );
+};
 
-export default NavBar
+export default NavBar;
 ```
 
 src/images의 파일들을 절대 경로를 통해 가져올 수 있게되었습니다.
