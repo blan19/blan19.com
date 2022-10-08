@@ -9,11 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "dayjs": "^1.11.5",
     "gray-matter": "^4.0.3",
     "next": "12.3.1",
+    "next-mdx-remote": "^4.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-markdown": "^8.0.3",
     "react-switch": "^7.0.0",
+    "react-syntax-highlighter": "^15.5.0",
     "remark": "^14.0.2",
     "remark-html": "^15.0.1",
     "styled-components": "^5.3.6",
@@ -25,6 +29,7 @@
     "@types/node": "18.7.23",
     "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
+    "@types/react-syntax-highlighter": "^15.5.5",
     "@types/styled-components": "^5.1.26",
     "eslint": "8.24.0",
     "eslint-config-next": "12.3.1",
