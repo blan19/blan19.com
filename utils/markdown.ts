@@ -35,8 +35,13 @@ export const getContentsPaths = (dirPath: string) => {
 
 export const getContentsFolderFiles = (dirPath: string) => {};
 
-export const getContent = async (dirPath: string, id: string) => {
-  const filePath = path.join(dirPath, `${id}.md`);
+export const getContent = async (
+  dirPath: string,
+  id: string | string[] | undefined
+) => {
+  const fileFolder = fs.readdirSync(dirPath + `/${id}`);
+  const [mdx] = getSortedImageAndMdx(fileFolder);
+  const filePath = path.join(dirPath + `/${id}`, `${mdx}`);
   const content = fs.readFileSync(filePath, "utf-8");
   const matteredContent = matter(content);
 
@@ -57,13 +62,19 @@ export const getContentsMeta = (dirPath: string) => {
 
   return files.map((file) => {
     const fileFolder = fs.readdirSync(dirPath + `/${file}`);
-    const [mdx, thumbnail] = getSortedImageAndMdx(fileFolder);
+    const [mdx] = getSortedImageAndMdx(fileFolder);
 
     const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
 
     const content = fs.readFileSync(filePath, "utf-8");
-    const matteredContent = matter(content).data as PostMdxMeta;
 
-    return matteredContent;
+    const matteredContent = matter(content).data;
+
+    const meta = {
+      id: file.replace(/\.md$/, ""),
+      ...matteredContent,
+    } as PostMdxMeta;
+
+    return meta;
   });
 };

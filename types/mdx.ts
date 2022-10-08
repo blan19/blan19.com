@@ -1,4 +1,5 @@
 interface PostMdxMeta {
+  id: string;
   date: string;
   title: string;
   creater: string;
