@@ -57,10 +57,9 @@ export const getContentsMeta = (dirPath: string) => {
 
   return files.map((file) => {
     const fileFolder = fs.readdirSync(dirPath + `/${file}`);
-    const [mdx, _] = getSortedImageAndMdx(fileFolder);
+    const [mdx, thumbnail] = getSortedImageAndMdx(fileFolder);
 
     const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
-    console.log(filePath);
 
     const content = fs.readFileSync(filePath, "utf-8");
     const matteredContent = matter(content).data as PostMdxMeta;
