@@ -1,8 +1,10 @@
 import styled from "styled-components";
 import Divider from "../../components/divider";
 import Intro from "../../components/intro";
+import { getContentsMeta } from "../../utils/markdown";
+import type { GetStaticProps, InferGetStaticPropsType } from "next";
 
-const Daily = () => {
+const Daily = ({}: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
     <Base>
       <Intro
@@ -16,6 +18,16 @@ const Daily = () => {
 };
 
 export default Daily;
+
+export const getStaticProps: GetStaticProps = async () => {
+  const meta = await getContentsMeta("./contents/posts");
+
+  return {
+    props: {
+      meta,
+    },
+  };
+};
 
 const Base = styled.div`
   padding: 0 2rem;
