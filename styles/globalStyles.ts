@@ -46,10 +46,13 @@ const GlobalStyles = createGlobalStyle`
 
   html, body {
     font-family: 'Pretendard';
+    width: 100%;
     height: 100%;
+    background-color: ${({ theme }) => theme.colors.bg};
   }
 
   #__next {
+    width: 100%;
     height: 100%;
   }
 

@@ -1,7 +1,8 @@
 import React, { PropsWithChildren } from "react";
 import styled, { css } from "styled-components";
+import { useDarkMode } from "usehooks-ts";
 
-import { lightTheme as constants } from "../constants/theme";
+import { lightTheme, darkTheme } from "../constants/theme";
 
 const FONT_WEIGHT = {
   extraBold: 800,
@@ -11,9 +12,9 @@ const FONT_WEIGHT = {
   regular: 400,
 } as const;
 
-type FontSize = keyof typeof constants.fontSize;
+type FontSize = keyof typeof lightTheme.fontSize;
 
-type FontColor = keyof typeof constants.colors;
+type FontColor = keyof typeof lightTheme.colors;
 
 type FontWeight = keyof typeof FONT_WEIGHT;
 
@@ -26,6 +27,10 @@ interface TypographyProps extends PropsWithChildren {
   as?: React.ElementType;
 }
 
+interface StyledTypographyProps extends TypographyProps {
+  $isDarkMode: boolean;
+}
+
 const Typography = ({
   className,
   as = "p",
@@ -33,25 +38,30 @@ const Typography = ({
   lineHeight = "1.563rem",
   ...props
 }: TypographyProps): React.ReactElement => {
+  const { isDarkMode } = useDarkMode();
   return (
-    <BaseTypography as={as} color={color} {...props}>
+    <BaseTypography $isDarkMode={isDarkMode} as={as} color={color} {...props}>
       {props.children}
     </BaseTypography>
   );
 };
 export default Typography;
 
-const BaseTypography = styled.p<TypographyProps>`
+const BaseTypography = styled.p<StyledTypographyProps>`
   ${(props) => css`
     font-size: ${props.size !== undefined
       ? `${
           typeof props.size === "string"
-            ? constants.fontSize[props.size]
+            ? props.$isDarkMode
+              ? darkTheme.fontSize[props.size]
+              : lightTheme.fontSize[props.size]
             : props.size
         }`
       : ""};
     font-weight: ${props.weight && FONT_WEIGHT[props.weight]};
-    color: ${constants.colors[props.color || "black"]};
+    color: ${props.$isDarkMode
+      ? darkTheme.colors[props.color || "black"]
+      : lightTheme.colors[props.color || "black"]};
     white-space: pre-wrap;
     line-height: ${props.lineHeight};
   `}
