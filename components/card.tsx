@@ -2,6 +2,27 @@ import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
 import { PostMdxMeta } from "../types/mdx";
+import Divider from "./divider";
+import Typography from "./typography";
+
+const Tags = ({ tags }: { tags: string[] }) => {
+  return (
+    <TagsBase>
+      {tags.map((tag, idx) => (
+        <Tag key={`${Math.random() * 5 + idx}-${tag}`}>
+          <Typography
+            as="span"
+            size="caption2r_mobile"
+            weight="regular"
+            color="gray_1"
+          >
+            {`#${tag}`}
+          </Typography>
+        </Tag>
+      ))}
+    </TagsBase>
+  );
+};
 
 export const PostCard = ({
   title,
@@ -14,74 +35,104 @@ export const PostCard = ({
   return (
     <PostCardLink href="">
       <PostCardOutline>
-        <PostsCardImage
-          src={"/images/" + thumbnail}
-          alt="thumbnail"
-          width={200}
-          height={200}
-        />
+        <CardImageOutline>
+          <PostsCardImage
+            src={"/images/" + thumbnail}
+            alt="thumbnail"
+            width={150}
+            height={150}
+            objectFit="cover"
+            layout="fixed"
+          />
+        </CardImageOutline>
         <PostCardMeta>
-          {/* <div className="posts-item-title">{title}</div> */}
-          {/* <div className="posts-item-desc">{summary}</div> */}
-          {/* <div className="posts-item-date">{date}</div> */}
+          <CardInfo>
+            <Typography
+              as="span"
+              size="body3_mobile"
+              weight="regular"
+              color="gray_1"
+            >
+              {date}
+            </Typography>
+            <Typography
+              as="span"
+              size="body3_mobile"
+              weight="regular"
+              color="gray_1"
+            >
+              {`by `}
+              <Typography as="b" color="font">
+                {creater}
+              </Typography>
+            </Typography>
+          </CardInfo>
+          <Typography
+            as="h2"
+            size="subtitle3_mobile"
+            weight="semiBold"
+            color="font"
+          >
+            {title}
+          </Typography>
+          <Typography
+            as="p"
+            size="body3_mobile"
+            weight="regular"
+            color="gray_1"
+          >
+            {summary}
+          </Typography>
+          <Tags tags={categories} />
         </PostCardMeta>
-        <div className="posts-item-creater">
-          {/* <span>by</span> <b>{creater}</b> */}
-        </div>
       </PostCardOutline>
     </PostCardLink>
   );
 };
 
 const PostCardLink = styled(Link)`
+  width: 100%;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px;
   border-radius: 10px;
   background: ${({ theme }) => theme.colors.sub};
-  &:hover {
-    transform: translateY(-7px);
-    transition: all 0.4s ease-in-out;
-    box-shadow: rgba(0, 0, 0, 0.28) 0px 4px 7px;
-  }
-  .posts-item-creater {
-    font-size: small;
-    padding: 2rem 0;
-    /* border-top: 1px solid ${({ theme }) => theme.colors.bg}; */
-    span {
-      padding-left: 15px;
-    }
-    b {
-    }
-  }
 `;
 
-const PostCardOutline = styled.div``;
+const PostCardOutline = styled.div`
+  display: flex;
+  position: relative;
+  cursor: pointer;
+  gap: 1rem;
+`;
+
+const CardImageOutline = styled.div`
+  width: 150px;
+  height: 150px;
+`;
 
 const PostsCardImage = styled(Image)`
-  width: 100%;
-  height: 200px;
-  border-radius: 10px 10px 0 0;
+  border-radius: 5px;
 `;
 
 const PostCardMeta = styled.div`
-  flex: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  padding: 0 15px;
-  margin-top: 2.5rem;
-  .posts-item-title {
-    font-weight: bold;
-    font-size: large;
-    color: ${(props) => props.theme.colors.font};
-  }
-  .posts-item-desc {
-    font-size: small;
-    color: ${(props) => props.theme.colors.font};
-    margin: 0.5rem 0;
-  }
-  .posts-item-date {
-    color: ${(props) => props.theme.colors.font};
-    font-size: small;
-    margin-top: 5rem;
-    margin-bottom: 2rem;
-  }
+  justify-content: space-between;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  word-break: break-all;
 `;
+
+const CardInfo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const TagsBase = styled.ul`
+  display: flex;
+  gap: 5px;
+`;
+
+const Tag = styled.li``;

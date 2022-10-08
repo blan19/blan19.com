@@ -58,4 +58,9 @@ const Base = styled.div`
   padding: 0 2rem;
 `;
 
-const CardOutline = styled.div``;
+const CardOutline = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin: 2rem 0;
+`;
