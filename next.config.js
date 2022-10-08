@@ -5,6 +5,9 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   webpack(config) {
     const prod = process.env.NODE_ENV === "production";
     const plugins = [...config.plugins];
