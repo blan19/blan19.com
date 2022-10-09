@@ -10,7 +10,8 @@ export const getCategry = (data: PostMdxMeta[]) => {
   for (const d of data) {
     const { categories } = d;
     categories.forEach((s: string) => {
-      if (category.has(s)) category.set(s, category.get(s) + 1);
+      const v = category.get(s);
+      if (category.has(s) && v !== undefined) category.set(s, v + 1);
       else category.set(s, 1);
     });
   }
