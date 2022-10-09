@@ -8,6 +8,16 @@ import DetailInformation from "../../components/detail/information";
 import styled from "styled-components";
 import { applyReponsiveWidth } from "../../styles/responsive";
 import Content from "../../components/detail/contents";
+import DEVICE_LIST from "../../constants/device";
+import { applyMediaQuery } from "../../styles/mediaQuery";
+
+const responsivePadding = {
+  mobile: "0 1rem",
+  tablet: "0 1rem",
+  wideTablet: "100%",
+  desktop: "100%",
+  wideDesktop: "100%",
+};
 
 const PostsDetail = ({
   post,
@@ -47,4 +57,9 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 const Base = styled.article`
   margin: 0 auto;
   ${applyReponsiveWidth}
+  ${DEVICE_LIST.map(
+    (device) => `${applyMediaQuery(device)} {
+    padding: ${responsivePadding[device]};
+  }`
+  )}
 `;

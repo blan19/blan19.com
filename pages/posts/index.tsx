@@ -43,7 +43,7 @@ const Posts = ({
 export default Posts;
 
 export const getStaticProps = async () => {
-  const meta = await getContentsMeta("./contents/posts");
+  const meta = await getContentsMeta("./contents/posts").reverse();
   const category = getCategry(meta);
 
   return {

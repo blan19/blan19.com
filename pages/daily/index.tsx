@@ -24,7 +24,7 @@ const Daily = ({ meta }: InferGetStaticPropsType<typeof getStaticProps>) => {
 export default Daily;
 
 export const getStaticProps = async () => {
-  const meta = await getContentsMeta("./contents/daily");
+  const meta = await getContentsMeta("./contents/daily").reverse();
 
   return {
     props: {
