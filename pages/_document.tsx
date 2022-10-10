@@ -37,7 +37,7 @@ export default class MyDocument extends Document {
   }
   render(): JSX.Element {
     return (
-      <Html>
+      <Html lang="ko">
         <Head>
           {/* meta */}
           <meta name="application-name" content={APP_NAME} />

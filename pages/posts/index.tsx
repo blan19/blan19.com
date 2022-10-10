@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { getCategry } from "../../utils/misc";
 import { PostCard } from "../../components/card";
 import type { GetStaticPropsContext, InferGetStaticPropsType } from "next";
+import { NextSeo } from "next-seo";
 
 const Posts = ({
   meta,
@@ -23,20 +24,26 @@ const Posts = ({
   );
 
   return (
-    <Base>
-      <Intro icon="🧑‍💻" title="블로그 포스팅" desc="내 기록들" />
-      <Divider _height="0.5px" _margin="2rem 0" />
-      <Category
-        category={category}
-        selectedCategory={selectedCategry}
-        onPushQuery={onPushQuery}
+    <>
+      <NextSeo
+        title="blan19 블로그 포스팅"
+        description="내가 공부한 것에 대한 기록들"
       />
-      <CardOutline>
-        {posts.map((post) => (
-          <PostCard key={post.title} {...post} />
-        ))}
-      </CardOutline>
-    </Base>
+      <Base>
+        <Intro icon="🧑‍💻" title="블로그 포스팅" desc="내 기록들" />
+        <Divider _height="0.5px" _margin="2rem 0" />
+        <Category
+          category={category}
+          selectedCategory={selectedCategry}
+          onPushQuery={onPushQuery}
+        />
+        <CardOutline>
+          {posts.map((post) => (
+            <PostCard key={post.title} {...post} />
+          ))}
+        </CardOutline>
+      </Base>
+    </>
   );
 };
 
