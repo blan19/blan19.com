@@ -1,6 +1,12 @@
 import React, { PropsWithChildren } from "react";
-import styled, { css } from "styled-components";
+import styled, {
+  css,
+  DefaultTheme,
+  FlattenInterpolation,
+  ThemeProps,
+} from "styled-components";
 import { useDarkMode } from "usehooks-ts";
+import type { FlattenSimpleInterpolation } from "styled-components";
 
 import { lightTheme, darkTheme } from "../constants/theme";
 
@@ -25,6 +31,9 @@ interface TypographyProps extends PropsWithChildren {
   color?: FontColor;
   lineHeight?: string;
   as?: React.ElementType;
+  css?:
+    | FlattenSimpleInterpolation
+    | FlattenInterpolation<ThemeProps<DefaultTheme>>;
 }
 
 interface StyledTypographyProps extends TypographyProps {
@@ -65,4 +74,5 @@ const BaseTypography = styled.p<StyledTypographyProps>`
     white-space: pre-wrap;
     line-height: ${props.lineHeight};
   `}
+  ${(props) => props.css}
 `;
