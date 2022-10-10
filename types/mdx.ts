@@ -1,4 +1,4 @@
-interface PostMdxMeta {
+interface MdxMeta {
   id: string;
   date: string;
   title: string;
@@ -18,4 +18,12 @@ interface MdxDto<T> {
   id: string;
 }
 
-export type { MdxDto, PostMdxMeta, ProjectMdxMeta, DailyMdxMeta };
+type BlurredData<T> = T & {
+  base64: string;
+  src: string;
+  height: number;
+  width: number;
+  type?: string | undefined;
+};
+
+export type { MdxDto, MdxMeta, ProjectMdxMeta, DailyMdxMeta, BlurredData };
