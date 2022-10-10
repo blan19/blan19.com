@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import styled from "styled-components";
-import { PostMdxMeta } from "../types/mdx";
+import { BlurredData, MdxMeta } from "../types/mdx";
 import Typography from "./typography";
 
 const Tags = ({ tags }: { tags: string[] }) => {
@@ -34,7 +34,7 @@ export const PostCard = ({
   id,
   base64,
   src,
-}: PostMdxMeta) => {
+}: BlurredData<MdxMeta>) => {
   const { pathname } = useRouter();
 
   return (
