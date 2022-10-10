@@ -11,6 +11,8 @@ import Content from "../../components/detail/contents";
 import DEVICE_LIST from "../../constants/device";
 import { applyMediaQuery } from "../../styles/mediaQuery";
 import dynamic from "next/dynamic";
+import { NextSeo } from "next-seo";
+import { Suspense } from "react";
 
 const Comment = dynamic(() => import("../../components/detail/comment"), {
   suspense: true,
@@ -28,16 +30,21 @@ const PostsDetail = ({
   post,
 }: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
-    <Base>
-      <DetailInformation
-        title={post.title}
-        creater={post.creater}
-        date={post.date}
-        categories={post.categories}
-      />
-      <Content markdown={post.markdown} />
-      <Comment />
-    </Base>
+    <>
+      <NextSeo title={post.title} description={post.summary} />
+      <Base>
+        <DetailInformation
+          title={post.title}
+          creater={post.creater}
+          date={post.date}
+          categories={post.categories}
+        />
+        <Content markdown={post.markdown} />
+        <Suspense fallback={<div>loading..</div>}>
+          <Comment />
+        </Suspense>
+      </Base>
+    </>
   );
 };
 

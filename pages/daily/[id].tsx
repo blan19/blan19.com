@@ -5,11 +5,18 @@ import DEVICE_LIST from "../../constants/device";
 import { applyMediaQuery } from "../../styles/mediaQuery";
 import { applyReponsiveWidth } from "../../styles/responsive";
 import { getContent, getContentsPaths } from "../../utils/markdown";
+import { NextSeo } from "next-seo";
 import type {
   GetStaticPaths,
   GetStaticProps,
   InferGetStaticPropsType,
 } from "next/types";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+
+const Comment = dynamic(() => import("../../components/detail/comment"), {
+  suspense: true,
+});
 
 const responsivePadding = {
   mobile: "0 1rem",
@@ -23,15 +30,21 @@ const DailyDetail = ({
   daily,
 }: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
-    <Base>
-      <DetailInformation
-        title={daily.title}
-        creater={daily.creater}
-        date={daily.date}
-        categories={daily.categories}
-      />
-      <Content markdown={daily.markdown} />
-    </Base>
+    <>
+      <NextSeo title={daily.title} description={daily.summary} />
+      <Base>
+        <DetailInformation
+          title={daily.title}
+          creater={daily.creater}
+          date={daily.date}
+          categories={daily.categories}
+        />
+        <Content markdown={daily.markdown} />
+        <Suspense fallback={<div>loading..</div>}>
+          <Comment />
+        </Suspense>
+      </Base>
+    </>
   );
 };
 

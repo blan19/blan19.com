@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import styled from "styled-components";
 
-const repo = "https://github.com/blan19/Blog";
+const repo = "blan19/Blog";
 
 const Comment = () => {
   const ref = useRef<HTMLDivElement>(null);
