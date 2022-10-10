@@ -5,8 +5,9 @@ import { getContentsMeta } from "../../utils/markdown";
 import { PostCard } from "../../components/card";
 import { NextSeo } from "next-seo";
 import type { InferGetStaticPropsType } from "next";
+import { getBase64BlurImage } from "../../utils/misc";
 
-const Daily = ({ meta }: InferGetStaticPropsType<typeof getStaticProps>) => {
+const Daily = ({ data }: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
     <>
       <NextSeo title="blan19 블로그 포스팅" description="내가 일상 기록들" />
@@ -17,7 +18,7 @@ const Daily = ({ meta }: InferGetStaticPropsType<typeof getStaticProps>) => {
           desc="하나씩 내 일상으로 칠해가는 곳"
         />
         <Divider _height="0.5px" _margin="2rem 0" />
-        {meta.map((m) => (
+        {data.map((m) => (
           <PostCard key={m.title} {...m} />
         ))}
       </Base>
@@ -29,10 +30,11 @@ export default Daily;
 
 export const getStaticProps = async () => {
   const meta = await getContentsMeta("./contents/daily").reverse();
+  const data = await getBase64BlurImage(meta);
 
   return {
     props: {
-      meta,
+      data,
     },
   };
 };

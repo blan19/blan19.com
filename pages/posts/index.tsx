@@ -5,22 +5,22 @@ import useSelectedCateogry from "../../hooks/useSelectedCategory";
 import Category from "../../components/posts/category";
 import { getContentsMeta } from "../../utils/markdown";
 import { useMemo } from "react";
-import { getCategry } from "../../utils/misc";
+import { getBase64BlurImage, getCategry } from "../../utils/misc";
 import { PostCard } from "../../components/card";
-import type { GetStaticPropsContext, InferGetStaticPropsType } from "next";
 import { NextSeo } from "next-seo";
+import type { InferGetStaticPropsType } from "next";
 
 const Posts = ({
-  meta,
+  data,
   category,
 }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { selectedCategry, onPushQuery } = useSelectedCateogry();
   const posts = useMemo(
     () =>
-      meta.filter((m) =>
+      data.filter((m) =>
         selectedCategry !== "All" ? m.categories.includes(selectedCategry) : m
       ),
-    [meta, selectedCategry]
+    [data, selectedCategry]
   );
 
   return (
@@ -51,11 +51,12 @@ export default Posts;
 
 export const getStaticProps = async () => {
   const meta = await getContentsMeta("./contents/posts").reverse();
+  const data = await getBase64BlurImage(meta);
   const category = getCategry(meta);
 
   return {
     props: {
-      meta,
+      data,
       category,
     },
   };

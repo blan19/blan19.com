@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useMemo } from "react";
 import styled from "styled-components";
 import { PostMdxMeta } from "../types/mdx";
 import Typography from "./typography";
@@ -33,19 +32,24 @@ export const PostCard = ({
   creater,
   categories,
   id,
+  base64,
+  src,
 }: PostMdxMeta) => {
   const { pathname } = useRouter();
+
   return (
     <PostCardLink href={`${pathname}/${id}`}>
       <PostCardOutline>
         <CardImageOutline>
           <PostsCardImage
-            src={"/images/" + thumbnail}
+            src={src}
             alt="thumbnail"
             width={150}
             height={150}
             objectFit="cover"
             layout="fixed"
+            placeholder="blur"
+            blurDataURL={base64}
           />
         </CardImageOutline>
         <PostCardMeta>
