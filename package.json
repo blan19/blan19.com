@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@plaiceholder/next": "^2.5.0",
     "dayjs": "^1.11.5",
     "gray-matter": "^4.0.3",
     "next": "12.3.1",
     "next-mdx-remote": "^4.1.0",
     "next-seo": "^5.5.0",
+    "plaiceholder": "^2.5.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-markdown": "^8.0.3",
@@ -22,6 +24,7 @@
     "remark": "^14.0.2",
     "remark-gfm": "^3.0.1",
     "remark-html": "^15.0.1",
+    "sharp": "^0.31.1",
     "styled-components": "^5.3.6",
     "styled-reset": "^4.4.2",
     "usehooks-ts": "^2.7.2"
