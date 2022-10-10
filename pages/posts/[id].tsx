@@ -10,13 +10,18 @@ import { applyReponsiveWidth } from "../../styles/responsive";
 import Content from "../../components/detail/contents";
 import DEVICE_LIST from "../../constants/device";
 import { applyMediaQuery } from "../../styles/mediaQuery";
+import dynamic from "next/dynamic";
+
+const Comment = dynamic(() => import("../../components/detail/comment"), {
+  suspense: true,
+});
 
 const responsivePadding = {
   mobile: "0 1rem",
   tablet: "0 1rem",
-  wideTablet: "100%",
-  desktop: "100%",
-  wideDesktop: "100%",
+  wideTablet: "0",
+  desktop: "0",
+  wideDesktop: "0",
 };
 
 const PostsDetail = ({
@@ -31,6 +36,7 @@ const PostsDetail = ({
         categories={post.categories}
       />
       <Content markdown={post.markdown} />
+      <Comment />
     </Base>
   );
 };
