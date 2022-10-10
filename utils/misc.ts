@@ -1,10 +1,30 @@
-import { PostMdxMeta } from "../types/mdx";
+import { getPlaiceholder } from "plaiceholder";
+import { BlurredData, MdxMeta } from "../types/mdx";
+import path from "path";
+import fs from "fs";
 
 type ErrorWithMessage = {
   message: string;
 };
 
-export const getCategry = (data: PostMdxMeta[]) => {
+export const getBase64BlurImage = async (
+  data: MdxMeta[]
+): Promise<BlurredData<MdxMeta>[]> => {
+  const res = await Promise.all(
+    data.map(async (v) => {
+      const { base64, img } = await getPlaiceholder(`/images/${v.thumbnail}`);
+      return {
+        ...v,
+        ...img,
+        base64,
+      };
+    })
+  ).then((v) => v);
+
+  return res;
+};
+
+export const getCategry = (data: MdxMeta[]) => {
   const category = new Map<string, number>();
   category.set("All", data.length);
   for (const d of data) {

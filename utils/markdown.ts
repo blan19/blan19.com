@@ -1,7 +1,7 @@
 import fs from "fs";
 import matter from "gray-matter";
 import path from "path";
-import { PostMdxMeta } from "../types/mdx";
+import { MdxMeta } from "../types/mdx";
 
 interface Mdx {
   [key: string]: any;
@@ -66,7 +66,7 @@ export const getContentsMeta = (dirPath: string) => {
     const meta = {
       id: file.replace(/\.md$/, ""),
       ...matteredContent,
-    } as PostMdxMeta;
+    } as MdxMeta;
 
     return meta;
   });
