@@ -19,7 +19,13 @@ const Header: FunctionComponent = ({}) => {
       <HeaderContainer>
         <HeaderWrapper>
           <LogoOutline onClick={() => router.push("/")}>
-            <Image src={src} alt="profile" />
+            <Image
+              src={src}
+              alt="profile"
+              width={50}
+              height={50}
+              layout="fixed"
+            />
             <Typography
               as="span"
               size="subtitle3_mobile"
@@ -70,7 +76,7 @@ export default Header;
 const HeaderContainer = styled.header`
   width: 100%;
   position: fixed;
-  z-index: 999;
+  z-index: 9999;
   background-color: ${({ theme }) => theme.colors.sub};
 `;
 
