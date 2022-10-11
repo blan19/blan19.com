@@ -107,6 +107,11 @@ export default class MyDocument extends Document {
             type="font/woff2"
             crossOrigin=""
           />
+          {/* seo */}
+          <meta
+            name="naver-site-verification"
+            content="5d5a282174371b566161452d9211124f3cd16a1f"
+          />
         </Head>
         <body>
           <Main />
