@@ -36,7 +36,6 @@ export const PostCard = ({
   src,
 }: BlurredData<MdxMeta>) => {
   const { pathname } = useRouter();
-
   return (
     <PostCardLink href={`${pathname}/${id}`}>
       <PostCardOutline>

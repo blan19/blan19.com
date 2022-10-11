@@ -23,9 +23,11 @@ export const getContentsPaths = (dirPath: string) => {
   const files = fs.readdirSync(dirPath);
 
   return files.map((file) => {
+    const fileFolder = fs.readdirSync(dirPath + `/${file}`);
+    const [mdx] = getSortedImageAndMdx(fileFolder);
     return {
       params: {
-        id: file.replace(/\.md$/, ""),
+        id: file + "~" + mdx.replace(/\.md$/, ""),
       },
     };
   });
@@ -33,13 +35,9 @@ export const getContentsPaths = (dirPath: string) => {
 
 export const getContentsFolderFiles = (dirPath: string) => {};
 
-export const getContent = async (
-  dirPath: string,
-  id: string | string[] | undefined
-) => {
-  const fileFolder = fs.readdirSync(dirPath + `/${id}`);
-  const [mdx] = getSortedImageAndMdx(fileFolder);
-  const filePath = path.join(dirPath + `/${id}`, `${mdx}`);
+export const getContent = async (dirPath: string, id: string) => {
+  const [file, mdx] = id.split("~");
+  const filePath = path.join(dirPath + `/${file}`, `${mdx}.md`);
   const content = fs.readFileSync(filePath, "utf-8");
   const matteredContent = matter(content);
 
@@ -64,7 +62,7 @@ export const getContentsMeta = (dirPath: string) => {
     const matteredContent = matter(content).data;
 
     const meta = {
-      id: file.replace(/\.md$/, ""),
+      id: file + "~" + mdx.replace(/\.md$/, ""),
       ...matteredContent,
     } as MdxMeta;
 
