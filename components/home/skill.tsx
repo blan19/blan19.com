@@ -12,7 +12,7 @@ import NestLogo from "../../assets/svg/nestjs.svg";
 import MySQLLogo from "../../assets/svg/mysql.svg";
 import PostgreSQLLogo from "../../assets/svg/postgresql.svg";
 import AWSLogo from "../../assets/svg/amazonaws.svg";
-import VercelLogo from "../../assets/svg/Vercel.svg";
+import VercelLogo from "../../assets/svg/vercel.svg";
 import NetlifyLogo from "../../assets/svg/netlify.svg";
 import HerokuLogo from "../../assets/svg/heroku.svg";
 import Typography from "../typography";
