@@ -7,6 +7,7 @@ declare module "styled-components" {
       sub: string;
       gray_1: string;
       gray_2: string;
+      gray_3: string;
       black: string;
       white: string;
       font: string;
