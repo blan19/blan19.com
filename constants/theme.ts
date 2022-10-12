@@ -57,7 +57,7 @@ const darkTheme: DefaultTheme = {
     sub: "#292A2D",
     gray_1: "#868e96",
     gray_2: "#292A2D",
-    gray_2: "#292A2D",
+    gray_3: "#292A2D",
     black: "#000",
     white: "#fff",
     font: "#fff",
