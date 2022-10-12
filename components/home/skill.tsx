@@ -115,12 +115,13 @@ export default Skill;
 const Base = styled.div`
   width: 100%;
   padding: 2.75rem 0;
-  background-color: ${({ theme }) => theme.colors.gray_2};
+  background-color: ${({ theme }) => theme.colors.gray_3};
+  /* background-color: #f1f3f5; */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 2rem;
 `;
 
 const SkillOutline = styled.ul`

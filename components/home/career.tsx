@@ -15,7 +15,7 @@ export default Career;
 const Base = styled.div`
   width: 100%;
   padding: 2.75rem 0;
-  background-color: ${({ theme }) => theme.colors.gray_2};
+  background-color: ${({ theme }) => theme.colors.gray_3};
   display: flex;
   flex-direction: column;
   align-items: center;

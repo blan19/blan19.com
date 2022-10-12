@@ -8,7 +8,15 @@ interface MdxMeta {
   thumbnail: string;
 }
 
-interface ProjectMdxMeta {}
+interface ProjectMdxMeta {
+  id: string;
+  date: string;
+  title: string;
+  creater: string;
+  summary: string;
+  categories: string[];
+  thumbnail: string[];
+}
 
 interface DailyMdxMeta {}
 

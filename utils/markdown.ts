@@ -1,7 +1,9 @@
 import fs from "fs";
 import matter from "gray-matter";
 import path from "path";
-import { MdxMeta } from "../types/mdx";
+import { getPlaiceholder } from "plaiceholder";
+import { MdxMeta, ProjectMdxMeta } from "../types/mdx";
+import { getBase64BlurImage } from "./misc";
 
 interface Mdx {
   [key: string]: any;
@@ -33,7 +35,49 @@ export const getContentsPaths = (dirPath: string) => {
   });
 };
 
-export const getContentsFolderFiles = (dirPath: string) => {};
+export const getProjects = async (dirPath: string) => {
+  const files = fs.readdirSync(dirPath);
+
+  const mdxMeta = files.map((file) => {
+    const fileFolder = fs.readdirSync(dirPath + `/${file}`);
+    const [mdx] = getSortedImageAndMdx(fileFolder);
+
+    const filePath = path.join(dirPath + `/${file}`, `${mdx}`);
+
+    const content = fs.readFileSync(filePath, "utf-8");
+
+    const matterMarkdown = matter(content).content;
+    const matteredContent = matter(content).data;
+
+    const meta = {
+      id: file + "~" + mdx.replace(/\.md$/, ""),
+      ...matteredContent,
+    } as ProjectMdxMeta;
+
+    return {
+      ...meta,
+      markdown: matterMarkdown,
+    };
+  });
+
+  const res = mdxMeta.map(async (v) => {
+    const images = await Promise.all(
+      v.thumbnail.map(async (t) => {
+        const { base64, img } = await getPlaiceholder(`/images/${t}`);
+        return {
+          ...img,
+          base64,
+        };
+      })
+    ).then((res) => res);
+    return {
+      ...v,
+      images,
+    };
+  });
+
+  return res;
+};
 
 export const getContent = async (dirPath: string, id: string) => {
   const [file, mdx] = id.split("~");
