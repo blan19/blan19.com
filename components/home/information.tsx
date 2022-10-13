@@ -40,7 +40,7 @@ const infoList: InforList[] = [
   },
   {
     title: "학력",
-    desc: "숭실대학교\n(글로벌미디어학과)",
+    desc: "숭실대학교\n(글로벌미디어학부)",
     icon: <HatIcon />,
   },
 ];

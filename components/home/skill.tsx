@@ -87,7 +87,7 @@ const Skill = () => {
 const SkillList = ({ title, skill }: SkillList) => {
   return (
     <SkillListBase>
-      <Typography as="h3" size="subtitle3_pc" weight="regular" color="font">
+      <Typography as="h3" size="subtitle3_pc" weight="bold" color="font">
         # {title}
       </Typography>
       <SkillListOutline>

@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import Switch from "react-switch";
 import Image from "next/image";
-import { FunctionComponent } from "react";
+import { FunctionComponent, useCallback } from "react";
 import { useRouter } from "next/router";
 import src from "../../public/images/memoji-min.png";
 import ShareIcon from "../../assets/svg/share.svg";
@@ -14,6 +14,10 @@ import { useDarkMode } from "usehooks-ts";
 const Header: FunctionComponent = ({}) => {
   const router = useRouter();
   const { isDarkMode, toggle } = useDarkMode();
+  const onHandleTheme = useCallback(async () => {
+    await fetch("/api/theme", { method: "GET" });
+    toggle();
+  }, [toggle]);
   return (
     <>
       <HeaderContainer>
@@ -36,14 +40,14 @@ const Header: FunctionComponent = ({}) => {
             </Typography>
           </LogoOutline>
           <ItemsOutline>
-            <Item>
+            {/* <Item>
               <ShareIcon />
             </Item>
             <Item>
               <label>
                 <Switch
                   checked={isDarkMode}
-                  onChange={toggle}
+                  onChange={onHandleTheme}
                   width={50}
                   height={25}
                   handleDiameter={18}
@@ -62,7 +66,7 @@ const Header: FunctionComponent = ({}) => {
                   }
                 />
               </label>
-            </Item>
+            </Item> */}
           </ItemsOutline>
         </HeaderWrapper>
         <Progress />

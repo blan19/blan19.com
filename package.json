@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@plaiceholder/next": "^2.5.0",
+    "cookies-next": "^2.1.1",
     "dayjs": "^1.11.5",
     "gray-matter": "^4.0.3",
     "next": "12.3.1",

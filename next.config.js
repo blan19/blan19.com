@@ -3,7 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   compiler: {
-    styledComponents: true,
+    styledComponents: {
+      ssr: true,
+      displayName: true,
+      pure: true,
+    },
   },
   images: {
     formats: ["image/avif", "image/webp"],
