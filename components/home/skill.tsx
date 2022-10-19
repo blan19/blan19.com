@@ -1,6 +1,11 @@
 import styled from "styled-components";
 import Title from "./title";
 
+import Lottie from "lottie-react";
+import clsx from "clsx";
+
+import developer from "../../assets/json/developer.json";
+
 import CPlusPlusLogo from "../../assets/svg/cplusplus.svg";
 import JavascriptLogo from "../../assets/svg/javascript.svg";
 import TypescriptLogo from "../../assets/svg/typescript.svg";
@@ -16,6 +21,7 @@ import VercelLogo from "../../assets/svg/vercel.svg";
 import NetlifyLogo from "../../assets/svg/netlify.svg";
 import HerokuLogo from "../../assets/svg/heroku.svg";
 import Typography from "../typography";
+import { applyMediaQuery } from "../../styles/mediaQuery";
 
 interface Skill {
   name: string;
@@ -75,11 +81,14 @@ const Skill = () => {
   return (
     <Base>
       <Title title="Skills" />
-      <SkillOutline>
-        {skillList.map((skill) => (
-          <SkillList key={skill.title} {...skill} />
-        ))}
-      </SkillOutline>
+      <SkillWrapper>
+        <SkillOutline>
+          {skillList.map((skill) => (
+            <SkillList key={skill.title} {...skill} />
+          ))}
+        </SkillOutline>
+        <Lottie className={clsx("skill-lottie")} animationData={developer} />
+      </SkillWrapper>
     </Base>
   );
 };
@@ -124,17 +133,35 @@ const Base = styled.div`
   gap: 2rem;
 `;
 
+const SkillWrapper = styled.div`
+  display: flex;
+  .skill-lottie {
+    display: none;
+  }
+  ${applyMediaQuery("desktop", "wideDesktop")} {
+    .skill-lottie {
+      display: block;
+    }
+  }
+`;
+
 const SkillOutline = styled.ul`
   width: 100%;
+  gap: 1.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
   justify-content: center;
-  gap: 1.25rem;
+  ${applyMediaQuery("desktop", "wideDesktop")} {
+    align-items: flex-start;
+    text-align: initial;
+  }
 `;
 
 const SkillListBase = styled.li`
-  text-align: center;
+  display: flex;
+  flex-direction: column;
 `;
 
 const SkillListOutline = styled.div`
