@@ -4,6 +4,9 @@ import Pagination from "./pagination";
 import Title from "./title";
 import { useMemo, useState } from "react";
 import type { ProjectMdxMeta } from "../../types/mdx";
+import Typography from "../typography";
+import Divider from "../divider";
+import Link from "next/link";
 
 interface ProjectProps extends ProjectMdxMeta {
   images: {
@@ -33,13 +36,52 @@ const ProjectTitle = ({ title }: ProjectTitleProps) => {
   );
 };
 
-const ProjectItem = ({ images, title }: ProjectProps) => {
+const ProjectItem = ({
+  images,
+  title,
+  summary,
+  date,
+  github,
+  stack,
+}: ProjectProps) => {
   return (
     <ProjectItemBase>
+      <Typography as="span" size="caption1_pc" weight="regular" color="gray_1">
+        {date}
+      </Typography>
       <ProjectTitle title={title} />
       <CarouselOutline>
         <Carousel images={images} />
       </CarouselOutline>
+      <ProjectContents>
+        <Typography as="p" size="subtitle2r_mobile">
+          {summary}
+        </Typography>
+        <Divider _margin="1rem 0" />
+        <Typography as="b" size="subtitle2r_mobile" weight="bold">
+          ✔ Detail{"         "}
+          <Typography as="a" weight="regular">
+            <a
+              target="_blank"
+              rel="noreferrer"
+              href={github}
+              style={{
+                textDecoration: "underLine",
+              }}
+            >
+              리드미 & 호스팅
+            </a>
+          </Typography>
+        </Typography>
+        <Typography as="b" size="subtitle2r_mobile" weight="bold">
+          ✔ Stack{"         "}
+          {stack.map((s, idx) => (
+            <Typography key={idx} as="span" color="black" weight="regular">
+              {s}
+            </Typography>
+          ))}
+        </Typography>
+      </ProjectContents>
     </ProjectItemBase>
   );
 };
@@ -124,4 +166,9 @@ const ProjectTitleText = styled.span<{ idx: number }>`
   text-transform: uppercase;
   animation: ${wave} 3s infinite;
   animation-delay: ${({ idx }) => `calc(0.3s * ${idx})`};
+`;
+
+const ProjectContents = styled.div`
+  display: flex;
+  flex-direction: column;
 `;

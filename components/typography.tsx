@@ -72,7 +72,7 @@ const BaseTypography = styled.p<StyledTypographyProps>`
       ? darkTheme.colors[props.color || "black"]
       : lightTheme.colors[props.color || "black"]};
     white-space: pre-wrap;
-    line-height: ${props.lineHeight};
+    line-height: ${props.lineHeight || "150%"};
   `}
   ${(props) => props.css}
 `;
