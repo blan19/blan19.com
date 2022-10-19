@@ -16,6 +16,8 @@ interface ProjectMdxMeta {
   summary: string;
   categories: string[];
   thumbnail: string[];
+  github: string;
+  stack: string[];
 }
 
 interface DailyMdxMeta {}

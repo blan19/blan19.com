@@ -15,7 +15,7 @@ const Home: NextPage = ({
       <Information />
       <Skill />
       <Projects projects={projects} />
-      <Career />
+      {/* <Career /> */}
     </>
   );
 };

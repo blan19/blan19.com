@@ -3,7 +3,6 @@ import matter from "gray-matter";
 import path from "path";
 import { getPlaiceholder } from "plaiceholder";
 import { MdxMeta, ProjectMdxMeta } from "../types/mdx";
-import { getBase64BlurImage } from "./misc";
 
 interface Mdx {
   [key: string]: any;
