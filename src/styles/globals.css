@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .responsive {
+    @apply mx-auto w-full md:w-[768px] lg:w-[1024px] xl:w-[1280px];
+  }
+  .card {
+    @apply border border-greyscale-5 dark:border-greyscale-7 bg-greyscale-1 dark:bg-greyscale-8 rounded flex items-center justify-between px-3 py-4;
+  }
+}
