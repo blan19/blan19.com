@@ -27,7 +27,7 @@ const NavbarItem = ({ name, path }: { name: string; path: string }) => {
       <span className="relative">
         {name}
         {isActive && (
-          <div className="absolute w-full h-[1px] top-6 inset-0 bg-greyscale-4 bg-neutral-200 dark:bg-neutral-800" />
+          <div className="absolute w-full h-[1px] top-6 inset-0 bg-greyscale-5 dark:bg-greyscale-7" />
         )}
       </span>
     </Link>
