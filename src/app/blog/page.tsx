@@ -1,5 +1,7 @@
 import Card from "@/components/ui/card";
 import { getBlogPosts } from "@/app/db/blog";
+import Tags from "@/components/ui/tags";
+import Link from "next/link";
 
 const Blog = ({
   searchParams: { tag },
@@ -21,15 +23,23 @@ const Blog = ({
       </h1>
       <p className="w-full text-greyscale-5">내 기록들</p>
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
-      <ul>
-        <li>
-          <Card
-            title="내가 next.js@14를 사용하는  이유 내가 next.js@14를 사용하는  이유"
-            tags={["react", "next.js"]}
-            date="2023-12-10"
-            view={10000}
-          />
-        </li>
+      <Tags posts={posts} seletedTag={tag} />
+      <ul className="flex flex-col gap-8 pt-7">
+        {selectedPosts.map(({ metadata, slug }) => (
+          <li key={slug}>
+            <Link href={`/blog/${slug}`}>
+              <Card
+                title={metadata.title}
+                tags={metadata.tags}
+                date={metadata.publishedAt}
+              >
+                <span className="text-sm text-greyscale-7 dark:text-greyscale-2">
+                  10000 views
+                </span>
+              </Card>
+            </Link>
+          </li>
+        ))}
       </ul>
     </section>
   );
