@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  p > code > span {
+    @apply text-system-2;
+  }
+
+  /* mdx renderer style */
+  .mdx-renderer > h3 {
+    @apply relative font-medium text-4xl tracking-tighter mt-16 mb-6;
+  }
+
+  .mdx-renderer > h3 > a:hover:before {
+    @apply absolute -left-9 text-greyscale-7;
+    content: "#";
+  }
+
+  .mdx-renderer > h4 {
+    @apply font-medium text-2xl tracking-tighter mt-16 mb-6;
+  }
+
+  .mdx-renderer > p {
+    @apply leading-relaxed text-lg dark:text-greyscale-4 my-4;
+  }
+
+  .mdx-renderer > p > a {
+    @apply text-greyscale-0 text-lg my-4 underline underline-offset-4;
+  }
+
+  .mdx-renderer > blockquote {
+    @apply leading-relaxed text-lg italic border-l-4 border-l-greyscale-7 my-12 pl-5;
+  }
+
+  .mdx-renderer > ul {
+  }
+
+  .mdx-renderer > ul > li {
+    @apply relative leading-relaxed text-lg dark:text-greyscale-4 my-4 pl-4 ml-2;
+  }
+
+  .mdx-renderer > ul > li > a {
+    @apply text-greyscale-0 text-lg my-4 underline underline-offset-4;
+  }
+
+  .mdx-renderer > ul > li::before {
+    @apply absolute left-0 text-2xl;
+    content: "·";
+  }
+
+  .mdx-renderer > pre {
+    @apply my-12;
+  }
+}
+
 @layer components {
   .responsive {
     @apply mx-auto w-full md:w-[768px] lg:w-[1024px] xl:w-[1280px];
