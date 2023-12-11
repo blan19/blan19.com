@@ -1,6 +1,7 @@
 import MDX from "@/components/ui/mdx";
 import Table from "@/components/ui/table";
 import formatDate from "@/utils/formatDate";
+import Comment from "@/components/ui/comment";
 import { getBlogPosts } from "@/app/db/blog";
 import { notFound } from "next/navigation";
 
@@ -30,6 +31,7 @@ const Post = ({ params: { slug } }: { params: { slug: string } }) => {
       </p>
       <Table contents={post.content} />
       <MDX contents={post.content} />
+      <Comment />
     </section>
   );
 };
