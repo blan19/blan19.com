@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 import Header from "@/components/layouts/header";
 import localFont from "next/font/local";
+import Footer from "@/components/layouts/footer";
 
 const pretendard = localFont({
   src: [
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body>
         <Header />
         <main className="responsive pt-12">{children}</main>
+        <Footer />
       </body>
     </html>
   );
