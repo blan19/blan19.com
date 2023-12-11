@@ -8,6 +8,7 @@ import jsx from "react-syntax-highlighter/dist/cjs/languages/prism/jsx";
 import typescript from "react-syntax-highlighter/dist/cjs/languages/prism/typescript";
 import tsx from "react-syntax-highlighter/dist/cjs/languages/prism/tsx";
 import bash from "react-syntax-highlighter/dist/cjs/languages/prism/bash";
+import generateSlug from "@/utils/generateSlug";
 import type { ReactNode } from "react";
 
 SyntaxHighlighter.registerLanguage("javascript", javascript);
@@ -19,24 +20,6 @@ SyntaxHighlighter.registerLanguage("bash", bash);
 interface MDXProps {
   contents: string;
 }
-
-const generateSlug = (str: string) => {
-  str = str?.replace(/^\s+|\s+$/g, "");
-  str = str?.toLowerCase();
-  const from = "àáãäâèéëêìíïîòóöôùúüûñç·/_,:;";
-  const to = "aaaaaeeeeiiiioooouuuunc------";
-
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), "g"), to.charAt(i));
-  }
-
-  str = str
-    ?.replace(/[^a-z0-9 -]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-
-  return str;
-};
 
 const Code = ({
   className,
