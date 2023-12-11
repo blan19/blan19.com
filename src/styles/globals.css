@@ -3,11 +3,27 @@
 @tailwind utilities;
 
 @layer base {
+  /* base style */
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  /* mdx renderer style */
   p > code > span {
     @apply text-system-2;
   }
 
-  /* mdx renderer style */
   .mdx-renderer > h3 {
     @apply relative font-medium text-4xl tracking-tighter mt-16 mb-6;
   }
