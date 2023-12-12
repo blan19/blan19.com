@@ -1,7 +1,21 @@
 import Card from "@/components/ui/card";
-import { getBlogPosts } from "@/app/db/blog";
 import Tags from "@/components/ui/tags";
 import Link from "next/link";
+import ViewCounter from "@/components/ui/view-counter";
+import { getBlogPosts } from "@/app/db/blog";
+import { getViewCount } from "@/app/db/queries";
+import { Suspense } from "react";
+
+const View = async ({ slug }: { slug: string }) => {
+  const view = await getViewCount(slug);
+
+  return (
+    <ViewCounter
+      className="text-sm text-greyscale-7 dark:text-greyscale-2"
+      view={view?.count ?? 0}
+    />
+  );
+};
 
 const Blog = ({
   searchParams: { tag },
@@ -33,9 +47,9 @@ const Blog = ({
                 tags={metadata.tags}
                 date={metadata.publishedAt}
               >
-                <span className="text-sm text-greyscale-7 dark:text-greyscale-2">
-                  10000 views
-                </span>
+                <Suspense fallback={null}>
+                  <View slug={slug} />
+                </Suspense>
               </Card>
             </Link>
           </li>

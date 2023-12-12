@@ -4,6 +4,20 @@ import formatDate from "@/utils/formatDate";
 import Comment from "@/components/ui/comment";
 import { getBlogPosts } from "@/app/db/blog";
 import { notFound } from "next/navigation";
+import { Suspense, cache } from "react";
+import { increment } from "@/app/db/action";
+import { getViewCount } from "@/app/db/queries";
+import ViewCounter from "@/components/ui/view-counter";
+
+const incrementView = cache(increment);
+
+const View = async ({ slug }: { slug: string }) => {
+  const view = await getViewCount(slug);
+  incrementView(slug);
+  return (
+    <ViewCounter className="dark:text-greyscale-4" view={view?.count ?? 0} />
+  );
+};
 
 const Post = ({ params: { slug } }: { params: { slug: string } }) => {
   const post = getBlogPosts("tech").find((post) => post.slug === slug);
@@ -26,9 +40,14 @@ const Post = ({ params: { slug } }: { params: { slug: string } }) => {
       <h1 className="font-medium text-4xl tracking-tighter mb-3">
         {post.metadata.title}
       </h1>
-      <p className="mb-10 dark:text-greyscale-4 my-4">
-        {formatDate(post.metadata.publishedAt)}
-      </p>
+      <div className="flex justify-between items-center my-4 mb-10">
+        <p className="dark:text-greyscale-4">
+          {formatDate(post.metadata.publishedAt)}
+        </p>
+        <Suspense fallback={<p>Loading..</p>}>
+          <View slug={post.slug} />
+        </Suspense>
+      </div>
       <Table contents={post.content} />
       <MDX contents={post.content} />
       <Comment />
