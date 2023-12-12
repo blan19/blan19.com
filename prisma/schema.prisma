@@ -7,3 +7,10 @@ datasource db {
   url       = env("POSTGRES_PRISMA_URL")
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
+
+model View {
+  id Int @id @default(autoincrement())
+  slug String @unique
+  count Int @default(0)
+  updatedAt DateTime @updatedAt
+}
