@@ -1,5 +1,3 @@
-import generateSlug from "@/utils/generateSlug";
-
 interface TableProps {
   contents: string;
 }
@@ -37,7 +35,7 @@ const Table = ({ contents }: TableProps) => {
       <ol className="flex flex-col gap-1">
         {headings?.map((heading) => {
           const headingText = heading.replace("### ", "");
-          const headingID = generateSlug(headingText);
+          const headingID = headingText.trim();
           return (
             <li
               key={headingID}
