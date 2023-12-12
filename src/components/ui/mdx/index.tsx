@@ -8,7 +8,6 @@ import jsx from "react-syntax-highlighter/dist/cjs/languages/prism/jsx";
 import typescript from "react-syntax-highlighter/dist/cjs/languages/prism/typescript";
 import tsx from "react-syntax-highlighter/dist/cjs/languages/prism/tsx";
 import bash from "react-syntax-highlighter/dist/cjs/languages/prism/bash";
-import generateSlug from "@/utils/generateSlug";
 import type { ReactNode } from "react";
 
 SyntaxHighlighter.registerLanguage("javascript", javascript);
@@ -124,7 +123,7 @@ const MDX = ({ contents }: MDXProps) => {
               )
               .join("");
 
-            const slug = generateSlug(heading);
+            const slug = heading.trim();
 
             return (
               <h3 id={slug}>
