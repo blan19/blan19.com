@@ -27,12 +27,12 @@ const Tags = ({ posts, seletedTag }: TagsProps) => {
           >
             <li
               className={clsx(
-                "flex gap-1 p-2 rounded-xl text-sm md:text-base",
+                "flex gap-1 p-2 rounded-xl text-sm md:text-base box-border",
                 {
-                  "bg-greyscale-1 dark:bg-greyscale-8": isSeleted,
+                  "bg-greyscale-4 dark:bg-greyscale-8": isSeleted,
                 },
                 {
-                  "border border-greyscale-5 dark:border-greyscale-8 text-greyscale-6":
+                  "border border-greyscale-2 dark:border-greyscale-8 text-greyscale-5 dark:text-greyscale-6":
                     !isSeleted,
                 }
               )}
@@ -41,10 +41,10 @@ const Tags = ({ posts, seletedTag }: TagsProps) => {
               <span
                 className={clsx(
                   {
-                    "text-greyscale-6": isSeleted,
+                    "dark:text-greyscale-6": isSeleted,
                   },
                   {
-                    "text-greyscale-7": !isSeleted,
+                    "text-greyscale-5 dark:text-greyscale-7": !isSeleted,
                   }
                 )}
               >{`(${count})`}</span>
