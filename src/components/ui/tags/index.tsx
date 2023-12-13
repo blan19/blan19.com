@@ -10,7 +10,7 @@ interface TagsProps {
 const Tags = ({ posts, seletedTag }: TagsProps) => {
   const tags = getBlogTags(posts);
   return (
-    <ul className="flex w-full justify-center items-center gap-3">
+    <ul className="flex w-full justify-center items-center gap-3 flex-wrap">
       {tags.map(([tag, count]) => {
         const isSeleted =
           tag === seletedTag || (tag === "all" && seletedTag === undefined);
@@ -27,7 +27,7 @@ const Tags = ({ posts, seletedTag }: TagsProps) => {
           >
             <li
               className={clsx(
-                "flex gap-1 p-2 rounded-xl",
+                "flex gap-1 p-2 rounded-xl text-sm md:text-base",
                 {
                   "bg-greyscale-1 dark:bg-greyscale-8": isSeleted,
                 },
