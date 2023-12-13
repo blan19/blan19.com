@@ -26,6 +26,25 @@ const ArrowIcon = () => {
   );
 };
 
+const Skeleton = () => {
+  return (
+    <div className="border border-greyscale-7 shadow rounded-md p-4 w-full">
+      <div className="animate-pulse flex space-x-4">
+        <div className="w-[50%] space-y-6 py-1">
+          <div className="h-2 bg-greyscale-7 rounded"></div>
+          <div className="w-[50%] space-y-3">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-2 bg-greyscale-7 rounded col-span-2"></div>
+              <div className="h-2 bg-greyscale-7 rounded col-span-1"></div>
+            </div>
+            <div className="h-2 bg-greyscale-7 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FindMeLink = ({
   children,
   link,
@@ -118,7 +137,7 @@ export default function Home() {
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
           최근 블로그 포스팅
         </h1>
-        <Suspense fallback={<p>loading..</p>}>
+        <Suspense fallback={<Skeleton />}>
           <Blogs type="latest" posts={posts} />
         </Suspense>
       </div>
@@ -126,8 +145,8 @@ export default function Home() {
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
           조회수가 가장 높은 블로그 포스팅
         </h1>
-        <Suspense fallback={<p>loading..</p>}>
-          <Blogs type="best" posts={posts} />
+        <Suspense fallback={<Skeleton />}>
+          <Blogs type="latest" posts={posts} />
         </Suspense>
       </div>
       <div>
