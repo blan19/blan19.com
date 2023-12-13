@@ -6,7 +6,8 @@ interface Metadata {
   title: string;
   publishedAt: string;
   tags: string[];
-  id: string;
+  description: string;
+  reference: string[];
 }
 
 function parseRawMDX(raw: string) {
