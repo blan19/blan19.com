@@ -1,4 +1,13 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import {
+  getBestBlogPosts,
+  getLatestBlogPosts,
+  getViewCount,
+} from "@/app/db/queries";
+import { getBlogPosts } from "@/app/db/blog";
+import Card from "@/components/ui/card";
+import Link from "next/link";
+import ViewCounter from "@/components/ui/view-counter";
 
 const ArrowIcon = () => {
   return (
@@ -44,7 +53,59 @@ const FindMeLink = ({
   );
 };
 
+const View = async ({ slug }: { slug: string }) => {
+  const view = await getViewCount(slug);
+
+  return (
+    <ViewCounter
+      className="text-xs md:text-sm text-greyscale-7 dark:text-greyscale-2"
+      view={view?.count ?? 0}
+    />
+  );
+};
+
+const Blogs = async ({
+  type,
+  posts,
+}: {
+  type: "latest" | "best";
+  posts: ReturnType<typeof getBlogPosts>;
+}) => {
+  let blogs: Awaited<ReturnType<typeof getLatestBlogPosts>>;
+  if (type === "latest") blogs = await getLatestBlogPosts();
+  else blogs = await getBestBlogPosts();
+
+  if (!blogs.length)
+    return (
+      <div className="card">
+        <p>아직 블로그 게시글이 존재하지 않아요 😢</p>
+      </div>
+    );
+
+  return (
+    <ul>
+      {posts
+        .filter((post) => blogs.find((blog) => blog.slug == post.slug))
+        .map((post) => (
+          <li key={post.slug}>
+            <Link href={post.slug}>
+              <Card
+                title={post.metadata.title}
+                tags={post.metadata.tags}
+                date={post.metadata.publishedAt}
+              >
+                <View slug={post.slug} />
+              </Card>
+            </Link>
+          </li>
+        ))}
+    </ul>
+  );
+};
+
 export default function Home() {
+  const posts = getBlogPosts("tech");
+
   return (
     <section className="grid gap-12">
       <div>
@@ -57,17 +118,17 @@ export default function Home() {
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
           최근 블로그 포스팅
         </h1>
-        <div className="card">
-          <p>아직 블로그 게시글이 존재하지 않아요 😢</p>
-        </div>
+        <Suspense fallback={<p>loading..</p>}>
+          <Blogs type="latest" posts={posts} />
+        </Suspense>
       </div>
       <div>
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
           조회수가 가장 높은 블로그 포스팅
         </h1>
-        <div className="card">
-          <p>아직 블로그 게시글이 존재하지 않아요 😢</p>
-        </div>
+        <Suspense fallback={<p>loading..</p>}>
+          <Blogs type="best" posts={posts} />
+        </Suspense>
       </div>
       <div>
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
