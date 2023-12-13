@@ -4,7 +4,6 @@ import Header from "@/components/layouts/header";
 import localFont from "next/font/local";
 import Footer from "@/components/layouts/footer";
 import Script from "next/script";
-import Head from "next/head";
 
 const pretendard = localFont({
   src: [
@@ -59,12 +58,6 @@ export default function RootLayout({
       lang="en"
       className={`${pretendard.variable} font-pretendard bg-greyscale-0 text-greyscale-9 dark:bg-greyscale-9 dark:text-greyscale-0`}
     >
-      <Head>
-        <meta
-          name="naver-site-verification"
-          content={`${process.env.NEXT_PUBLIC_NAVER_ANALYTICS_ID}`}
-        />
-      </Head>
       <body>
         <Header />
         <main className="responsive pt-12">{children}</main>
