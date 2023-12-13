@@ -32,8 +32,16 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Tech Blog by blan19",
+  metadataBase: new URL("https://www.blan19.com"),
+  title: {
+    default: "Tech Blog by blan19",
+    template: "%s | blan19",
+  },
   description: "Tech Blog by blan19",
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -46,6 +54,7 @@ export default function RootLayout({
       lang="en"
       className={`${pretendard.variable} font-pretendard bg-greyscale-0 text-greyscale-9 dark:bg-greyscale-9 dark:text-greyscale-0`}
     >
+      <link rel="icon" href="/favicon.ico" sizes="any" />
       <body>
         <Header />
         <main className="responsive pt-12">{children}</main>

@@ -8,6 +8,45 @@ import { Suspense, cache } from "react";
 import { increment } from "@/app/db/action";
 import { getViewCount } from "@/app/db/queries";
 import ViewCounter from "@/components/ui/view-counter";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params: { slug },
+}: {
+  params: { slug: string };
+}): Promise<Metadata | undefined> {
+  let post = getBlogPosts("tech").find((post) => post.slug == slug);
+
+  if (!post) {
+    return;
+  }
+
+  const { title, description, publishedAt: publishedTime } = post.metadata;
+  let ogImage = `https://www.blan19.com/og?title=${title}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      publishedTime,
+      type: "article",
+      url: `https://www.blan19.com/blog/${post.slug}`,
+      images: [
+        {
+          url: ogImage,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
 
 const incrementView = cache(increment);
 

@@ -5,6 +5,13 @@ import ViewCounter from "@/components/ui/view-counter";
 import { getBlogPosts } from "@/app/db/blog";
 import { getViewCount } from "@/app/db/queries";
 import { Suspense } from "react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tech Posts",
+  description:
+    "Read my thoughts on the Frontend ecosystem and everyday my life",
+};
 
 const View = async ({ slug }: { slug: string }) => {
   const view = await getViewCount(slug);
