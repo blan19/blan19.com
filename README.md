@@ -5,9 +5,9 @@ A Markdown Blog built with Next.js, Tailwind and Vercel. Designed, built, and ma
 ### Primarily Built with:
 
 [next.js](https://github.com/vercel/next.js)  
-[tailwind](https://github.com/tailwind)
-[react-markdown](https://github.com/remarkjs/react-markdown)
-[prisma](https://github.com/prisma/prisma)
+[tailwind](https://github.com/tailwind)  
+[react-markdown](https://github.com/remarkjs/react-markdown)  
+[prisma](https://github.com/prisma/prisma)  
 [vercel](https://github.com/vercel)
 
 ---
