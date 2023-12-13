@@ -21,12 +21,18 @@ export async function generateMetadata({
     return;
   }
 
-  const { title, description, publishedAt: publishedTime } = post.metadata;
+  const {
+    title,
+    description,
+    tags: keywords,
+    publishedAt: publishedTime,
+  } = post.metadata;
   let ogImage = `https://www.blan19.com/og?title=${title}`;
 
   return {
     title,
     description,
+    keywords: keywords,
     openGraph: {
       title,
       description,
