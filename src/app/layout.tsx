@@ -42,6 +42,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -54,7 +57,6 @@ export default function RootLayout({
       lang="en"
       className={`${pretendard.variable} font-pretendard bg-greyscale-0 text-greyscale-9 dark:bg-greyscale-9 dark:text-greyscale-0`}
     >
-      <link rel="icon" href="/favicon.ico" sizes="any" />
       <body>
         <Header />
         <main className="responsive pt-12">{children}</main>
