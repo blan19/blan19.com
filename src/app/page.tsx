@@ -107,7 +107,7 @@ const Blogs = async ({
         .filter((post) => blogs.find((blog) => blog.slug == post.slug))
         .map((post) => (
           <li key={post.slug}>
-            <Link href={post.slug}>
+            <Link href={`/blog/${post.slug}`}>
               <Card
                 title={post.metadata.title}
                 tags={post.metadata.tags}
