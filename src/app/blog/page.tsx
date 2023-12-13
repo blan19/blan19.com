@@ -11,7 +11,7 @@ const View = async ({ slug }: { slug: string }) => {
 
   return (
     <ViewCounter
-      className="text-sm text-greyscale-7 dark:text-greyscale-2"
+      className="text-xs md:text-sm text-greyscale-7 dark:text-greyscale-2"
       view={view?.count ?? 0}
     />
   );
@@ -47,7 +47,9 @@ const Blog = ({
                 tags={metadata.tags}
                 date={metadata.publishedAt}
               >
-                <Suspense fallback={null}>
+                <Suspense
+                  fallback={<p className="text-xs md:text-sm">......</p>}
+                >
                   <View slug={slug} />
                 </Suspense>
               </Card>

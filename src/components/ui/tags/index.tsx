@@ -27,7 +27,7 @@ const Tags = ({ posts, seletedTag }: TagsProps) => {
           >
             <li
               className={clsx(
-                "flex gap-1 p-2 rounded-xl",
+                "flex gap-1 p-2 rounded-xl text-sm md:text-base",
                 {
                   "bg-greyscale-1 dark:bg-greyscale-8": isSeleted,
                 },

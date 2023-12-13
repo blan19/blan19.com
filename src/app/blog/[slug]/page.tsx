@@ -15,7 +15,10 @@ const View = async ({ slug }: { slug: string }) => {
   const view = await getViewCount(slug);
   incrementView(slug);
   return (
-    <ViewCounter className="dark:text-greyscale-4" view={view?.count ?? 0} />
+    <ViewCounter
+      className="text-sm md:text-base dark:text-greyscale-4"
+      view={view?.count ?? 0}
+    />
   );
 };
 
@@ -31,20 +34,20 @@ const Post = ({ params: { slug } }: { params: { slug: string } }) => {
       <ul className="flex gap-2 mb-4">
         {post.metadata.tags.map((tag) => (
           <li key={tag}>
-            <span className="text-lg font-medium text-greyscale-5 tracking-tighter">
+            <span className="text-base md:text-lg font-medium text-greyscale-5 tracking-tighter">
               #{tag}
             </span>
           </li>
         ))}
       </ul>
-      <h1 className="font-medium text-4xl tracking-tighter mb-3">
+      <h1 className="font-medium text-3xl md:text-4xl tracking-tighter mb-3">
         {post.metadata.title}
       </h1>
       <div className="flex justify-between items-center my-4 mb-10">
-        <p className="dark:text-greyscale-4">
+        <p className="text-sm md:text-base dark:text-greyscale-4">
           {formatDate(post.metadata.publishedAt)}
         </p>
-        <Suspense fallback={<p>Loading..</p>}>
+        <Suspense fallback={<p className="text-sm md:text-base">......</p>}>
           <View slug={post.slug} />
         </Suspense>
       </div>
