@@ -28,7 +28,7 @@ const Table = ({ contents }: TableProps) => {
             />
           </svg>
         </span>{" "}
-        <h4 className="text-greyscale-5 text-xl font-bold tracking-tighter">
+        <h4 className="text-greyscale-5 text-lg md:text-xl font-bold tracking-tighter">
           Table of Contents:
         </h4>
       </summary>
@@ -39,9 +39,9 @@ const Table = ({ contents }: TableProps) => {
           return (
             <li
               key={headingID}
-              className="flex items-center gap-3 text-lg text-greyscale-5 pl-3"
+              className="flex items-center gap-3 text-base md:text-lg text-greyscale-5 pl-3"
             >
-              <span className="text-3xl">·</span>
+              <span className="text-2xl md:text-3xl">·</span>
               <a
                 className="underline underline-offset-4 hover:no-underline"
                 href={`#${headingID}`}
