@@ -10,7 +10,7 @@ interface TagsProps {
 const Tags = ({ posts, seletedTag }: TagsProps) => {
   const tags = getBlogTags(posts);
   return (
-    <ul className="flex w-full justify-center items-center gap-3">
+    <ul className="flex w-full justify-center items-center gap-3 flex-wrap">
       {tags.map(([tag, count]) => {
         const isSeleted =
           tag === seletedTag || (tag === "all" && seletedTag === undefined);
