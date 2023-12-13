@@ -34,7 +34,7 @@ const Post = ({ params: { slug } }: { params: { slug: string } }) => {
       <ul className="flex gap-2 mb-4">
         {post.metadata.tags.map((tag) => (
           <li key={tag}>
-            <span className="text-base md:text-lg font-medium text-greyscale-5 tracking-tighter">
+            <span className="text-base md:text-lg font-medium text-greyscale-7 dark:text-greyscale-5 tracking-tighter">
               #{tag}
             </span>
           </li>

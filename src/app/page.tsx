@@ -28,16 +28,16 @@ const ArrowIcon = () => {
 
 const Skeleton = () => {
   return (
-    <div className="border border-greyscale-7 shadow rounded-md p-4 w-full">
+    <div className="border border-greyscale-5 dark:border-greyscale-7 shadow rounded-md p-4 w-full">
       <div className="animate-pulse flex space-x-4">
         <div className="w-[50%] space-y-6 py-1">
-          <div className="h-2 bg-greyscale-7 rounded"></div>
+          <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded"></div>
           <div className="w-[50%] space-y-3">
             <div className="grid grid-cols-3 gap-4">
-              <div className="h-2 bg-greyscale-7 rounded col-span-2"></div>
-              <div className="h-2 bg-greyscale-7 rounded col-span-1"></div>
+              <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded col-span-2"></div>
+              <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded col-span-1"></div>
             </div>
-            <div className="h-2 bg-greyscale-7 rounded"></div>
+            <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded"></div>
           </div>
         </div>
       </div>
