@@ -149,6 +149,15 @@ export default function Home() {
           <Blogs type="latest" posts={posts} />
         </Suspense>
       </div>
+      <div className="flex justify-center">
+        <Link href="/blog" className="animate-bounce relative flex flex-col">
+          <div className="flex items-center gap-2">
+            <p>전체 게시글 보기</p>
+            <ArrowIcon />
+          </div>
+          <div className="absolute w-full h-[1px] top-6 inset-0 bg-greyscale-5 dark:bg-greyscale-7" />
+        </Link>
+      </div>
       <div>
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
           저를 이곳에서 찾을 수 있어요 🙋‍♂️
