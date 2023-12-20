@@ -41,7 +41,7 @@ const getLatestBlogPosts = cache(
   async () => {
     const posts = await prisma.view.findMany({
       orderBy: {
-        createAt: "asc",
+        createAt: "desc",
       },
       take: 3,
     });
