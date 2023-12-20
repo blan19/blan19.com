@@ -42,7 +42,7 @@
   }
 
   .mdx-renderer > p > a {
-    @apply text-greyscale-0 text-base md:text-lg my-4 underline underline-offset-4;
+    @apply text-greyscale-9 dark:text-greyscale-0 text-base md:text-lg my-4 underline underline-offset-4;
   }
 
   .mdx-renderer > blockquote {
@@ -54,7 +54,7 @@
   }
 
   .mdx-renderer > ul > li > a {
-    @apply text-greyscale-0 text-base md:text-lg my-4 underline underline-offset-4;
+    @apply text-greyscale-9 dark:text-greyscale-0 text-base md:text-lg my-4 underline underline-offset-4;
   }
 
   .mdx-renderer > ul > li::before {
