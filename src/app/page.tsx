@@ -102,7 +102,7 @@ const Blogs = async ({
     );
 
   return (
-    <ul>
+    <ul className="flex flex-col gap-4">
       {posts
         .filter((post) => blogs.find((blog) => blog.slug == post.slug))
         .map((post) => (
@@ -146,7 +146,7 @@ export default function Home() {
           조회수가 가장 높은 블로그 포스팅
         </h1>
         <Suspense fallback={<Skeleton />}>
-          <Blogs type="latest" posts={posts} />
+          <Blogs type="best" posts={posts} />
         </Suspense>
       </div>
       <div className="flex justify-center">
