@@ -32,9 +32,13 @@ const Blog = ({
   };
 }) => {
   const posts = getBlogPosts("tech");
-  const selectedPosts = posts.filter((post) =>
-    tag !== "all" && tag !== undefined ? post.metadata.tags.includes(tag) : post
-  );
+  const selectedPosts = posts
+    .filter((post) =>
+      tag !== "all" && tag !== undefined
+        ? post.metadata.tags.includes(tag)
+        : post
+    )
+    .reverse();
 
   return (
     <section>
