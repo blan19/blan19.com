@@ -24,7 +24,7 @@ const getBestBlogPosts = cache(
   async () => {
     const posts = await prisma.view.findMany({
       orderBy: {
-        count: "asc",
+        count: "desc",
       },
       take: 3,
     });

@@ -103,17 +103,17 @@ const Blogs = async ({
 
   return (
     <ul className="flex flex-col gap-4">
-      {posts
-        .filter((post) => blogs.find((blog) => blog.slug == post.slug))
-        .map((post) => (
-          <li key={post.slug}>
-            <Link href={`/blog/${post.slug}`}>
+      {blogs
+        .map((blog) => posts.find((post) => blog.slug === post.slug))
+        .map((blog) => (
+          <li key={blog!.slug}>
+            <Link href={`/blog/${blog!.slug}`}>
               <Card
-                title={post.metadata.title}
-                tags={post.metadata.tags}
-                date={post.metadata.publishedAt}
+                title={blog!.metadata.title}
+                tags={blog!.metadata.tags}
+                date={blog!.metadata.publishedAt}
               >
-                <View slug={post.slug} />
+                <View slug={blog!.slug} />
               </Card>
             </Link>
           </li>
