@@ -175,7 +175,7 @@ export default function Home() {
               </svg>
             </FindMeLink>
           </li>
-          <li>
+          {/* <li>
             <FindMeLink
               link="https://www.linkedin.com/in/junseo-park-976400236"
               name="링크드인"
@@ -198,7 +198,7 @@ export default function Home() {
                 </g>
               </svg>
             </FindMeLink>
-          </li>
+          </li> */}
         </ul>
       </div>
       <div>
