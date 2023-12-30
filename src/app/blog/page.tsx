@@ -1,5 +1,5 @@
 import Card from "@/components/ui/card";
-import Tags from "@/components/ui/tags";
+// import Tags from "@/components/ui/tags";
 import Link from "next/link";
 import ViewCounter from "@/components/ui/view-counter";
 import { getBlogPosts } from "@/app/db/blog";
@@ -48,7 +48,7 @@ const Blog = ({
       </h1>
       <p className="w-full text-greyscale-5">내 기록들</p>
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
-      <Tags posts={posts} seletedTag={tag} />
+      {/* <Tags posts={posts} seletedTag={tag} /> */}
       <ul className="flex flex-col gap-8 pt-7">
         {selectedPosts.map(({ metadata, slug }) => (
           <li key={slug}>
