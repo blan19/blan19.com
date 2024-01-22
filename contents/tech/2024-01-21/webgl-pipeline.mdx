@@ -1,0 +1,161 @@
+---
+publishedAt: "2024-01-21"
+title: "인터렉티브 웹 개발 시리즈 - WebGL 파이프라인"
+tags: ["WebGL"]
+description: "인터렉티브 웹개발 시리지의 WebGL 파이프라인에 포스팅입니다."
+reference:
+  [
+    "https://woo-dev.tistory.com",
+    "https://duriansoftware.com/joe/an-intro-to-modern-opengl.-chapter-1:-the-graphics-pipeline",
+    "https://lvngd.com/blog/how-write-custom-fragment-shader-glsl-and-use-it-threejs/",
+    "https://dev.opera.com/articles/introduction-to-webgl-part-1/",
+  ]
+---
+
+### WebGL에 대한 간단 개요
+
+`WebGL`은 브라우저에서 3D 그래픽 구현에 사용되는 `네이티브 API`입니다.  
+WebGL을 사용하기 위해 다른 플러그인은 필요하지 않으며 [OpenGL ES 2.0](https://www.khronos.org/opengles/) 기반으로 canvas에 3D 웹 컨텐츠를 렌더링 할 수 있게 기능을 제공합니다.
+
+WebGL은 DOM과는 별도로 동작합니다.  
+별도의 브라우저 그래픽 API으로서 GPU를 사용하여 3D 렌더링이 `<canvas/>`에서 이루어 집니다.  
+따라서 DOM 트리 업데이트에 직접 영향을 미치지 않고, 3D 오브젝트를 <canvas/>에 렌더링합니다.
+
+현재 대부분의 브라우저에서는 WebGL을 지원하고 있으며 더 자세한 최신 정보는 (여기)[www.khronos.org/webgl]에서 확인할 수 있습니다.
+
+### WebGL의 타임라인
+
+WebGL 파이프라인에 대한 설명에 앞서 WebGL 개발 역사에 대해 알아보겠습니다.
+
+- WebGL에 대한 초기 아이디어(2006): Mozilla Foundation의 Brendan Eich와 Vlad Vukicevic가 3D 그래픽을 위한 웹 기반 API에 대한 제안을 했습니다.
+- WebGL 1.0(2011): 2007년에 도입된 OpenGL ES 2.0을 기반으로 한 최초의 stable한 WebGL 1.0 명세가 발표 되었습니다.
+- WebGL 2.0(2017): 1.0 이후 6년 만에 출시된 2.0은 OpenGL ES 3.0을 기반으로 하였습니다.
+
+최근에는 WebGL의 진화된 형태로 `WebGPU`라는 새로운 API가 등장했습니다.  
+아직 정식으로 안정적인 버전이 나온 것은 아니며 W3C GPU for the Web Community Group에서 표준을 만들기 위해 노력하고 있습니다.
+
+### WebGL의 파이프라인
+
+![Learn {priority} {caption: https://duriansoftware.com/joe/} {768x432}](https://github.com/blan19/Coding_Test/assets/66871265/74fddd96-f800-4fe5-bde0-366f0625ec7c)
+
+WebGL의 그래픽 파이프라인은 일반적인 그래픽 파이프라인과 상당히 유사합니다.
+
+#### 3D 오브젝트 정의
+
+먼저, GPU의 Vertex Buffer에 그리고자 하는 3D 오브젝트를 정의하여 넣어줍니다.  
+React에서는 라이브러리를 사용하여 간단히 아래와 같은 코드를 사용하여 정의할 수 있습니다.  
+예시는 React로 간단하게 들었지만, WebGL을 사용하여 3D 오브젝트를 정의할 경우엔 직접 버텍스 정보와 컬러등을 버퍼에 할당해 주어야합니다.
+
+```tsx
+import { Canvas } from "@react-three/fiber";
+
+const Scene = () => {
+  return (
+    <Canvas>
+      <mesh>
+        <boxGeometry args={[1, 1]} />
+        <meshStandardMaterial color="#000000" />
+      </mesh>
+    </Canvas>
+  );
+};
+```
+
+#### Vertex Processing
+
+3D 오브젝트에 대한 정보가 Vertex Buffer에 들어왔다면 그 다음엔 `Vertex Processing` 단계가 진행됩니다.
+간단하게 설명하자면 2D 화면에 렌더링 하기 위해 물체의 모양과 위치가 정해지는 단계입니다.
+브라우저에 단순히 3D 오브젝트를 렌더링하는 것이 아닌 적절한 위치에 오브젝트를 이동시키고 렌더링 하기 위해 Vertex Processing 과정이 수행 되는 것입니다.
+
+이를 위해 3단계의 변환을 가지게 됩니다.
+
+- world transform: 오브젝트의 고유 좌표계인 로컬 좌표계에서 여러 오브젝트들이 함께 존재하는 월드 공간인 월드 좌표계로 변환합니다.
+- view transform: 월드 공간에 존재하는 오브젝트를 뷰 공간으로 전환합니다. 이는 카메라가 보는 시점에서의 상대적인 좌표로 전환하는 과정입니다.
+- projection transform: 마지막으로 projection transform으로 클립 공간으로 전환하는데, 카메라의 시점, 시야각, 종횡비 등을 고려하여 시야에 보이는 물체들만 위치하는 클립 공간으로 전환합니다.
+
+위 과정들을 통해 3차원 좌표는 우리가 원하는 2차원의 좌표로 변환됩니다.
+
+#### Primitive Assembly
+
+![Learn {priority} {caption: https://duriansoftware.com/joe/} {768x432}](https://github.com/blan19/Coding_Test/assets/66871265/97fe1dc2-9505-4856-9389-527dc6f2f889)
+
+변환을 거친 정점들은 이제 WebGl의 Primitive인 점, 선, 삼각형으로 `Primitive Assembly` 단계가 시작됩니다.
+
+정점 사이에 선을 긋거나, 세개의 정점을 모아서 삼각형을 만들 고 삼각형을 모아서 다각형을 만드는 등 정점이 어떤 Primitive로 이루어 졌는지 계산하는 과정입니다.
+
+Primitive Assembly 단계에서 각 Primitive에 대한 속성 또한 결정되는데, 텍스처 uv 좌표/색상/법선 벡터등이 결정됩니다. 또한 추가적으로 조명, 그림자 등에 대한 속성이 계산될 수도 있습니다.
+
+#### Rasterization
+
+Primitive Assembly 단계를 거친 각 Primitive는 결국 브라우저에 보여지기 위해 2차원 평면에 픽셀로 채워지게 됩니다.
+
+![Learn {priority} {caption: https://youtu.be/LAsnQoBUG4Q} {768x432}](https://github.com/blan19/Coding_Test/assets/66871265/318deb53-aa98-442c-a27b-c7122a809822)
+
+이를 위해 각 Primitive들을 픽셀 단위로 분해합니다.
+이때, 픽셀의 좌표를 기준으로 `Fragment`를 생성합니다.
+픽셀에 대응 되는 점을 Fragment라고 이해하셔도 무방합니다.
+
+[여기서](https://codepen.io/learosema/full/VwKLqdw) `Rasterization`을 시각적으로 좀 더 이해가 되도록 도움이 될 수 있습니다.
+
+> 대부분의 WebGL 파이프라인 단계는 프로그래밍 가능한 영역이지만 Rasterization은 프로그래밍이 가능한 영역이 아닙니다.
+
+#### Fragment Processing
+
+Rasterization 과정에서 생성된 각 픽셀에 대응되는 Fragment들은 색상, 깊이 값 등의 정보 속성을 가지고 있습니다.
+
+`Fragment Processing`는 이러한 각 Fragment들에 대해 색을 입히는 과정이라고 볼 수 있습니다.
+
+각 Fragment 당 색을 입히는 과정이기 때문에 텍스처 이미지를 Texturing과 빛이 조명에 따라 색상 변화, 음영, 깊이감을 처리하게 됩니다.
+
+> 수많은 Fragment들에 대한 계산을 하나씩 순차적으로 진행하면 느리지 않나? 라는 생각을 했었는데 역시나 병렬로 Fragment Processing을 진행합니다.
+
+React에서는 아래와 같은 코드로 직접 원하는 glsl 코드를 넣어 Fragment Processing 단계를 프로그래밍할 수 있습니다.
+
+```tsx
+import { extend } from "@react-three/fiber"
+import { shaderMaterial } from "@react-three/drei"
+
+const CustomMaterial = shaderMaterial(
+  ...,
+  // fragment processing
+  // glsl code
+  `
+    uniform float time;
+    uniform vec3 color;
+    varying vec2 vUv;
+    void main() {
+      gl_FragColor.rgba = vec4(0.5 + 0.3 * sin(vUv.yxx + time) + color, 1.0);
+    }
+  `
+)
+
+// 기존 fiber 컴포넌트들 처럼 전역으로 사용할 수 있게 extend
+extend({ CustomMaterial });
+```
+
+#### Frame Buffer
+
+렌더링 파이프라인의 마지막 단계입니다.  
+브라우저의 2D 화면에 출력될 장면이 최종적으로 생성되고 저장되는 단계입니다.
+
+`Frame Buffer`는 하나 이상의 `컬러 버퍼`와 `깊이 버퍼`, `스텐실 버퍼` 3가지를 통틀어 `프레임 버퍼`라고 합니다
+
+최종 프레임 버퍼가 저장되기까지 몇가지의 테스트를 거치게 됩니다.
+
+- 깊이 테스트
+- 스텐실 테스트
+- 블렌딩
+
+이러한 테스트는 깊이 버퍼와 스텐실 버퍼가 사용되며 모두 선택적으로 활성화/비활성화 할 수 있습니다.
+
+이러한 테스트들을 통과한 Fragment들은 프레임 버퍼에 저장되어 최종 렌더링 될 장면을 형성합니다.
+
+#### 마치면서
+
+WebGL은 Unity와 같은 3D 엔진에 비해 여러 가지 장점을 가지고 있습니다.
+
+- 쉬운 디버깅: Unity와 같은 3D 엔진에서 브라우저 환경으로 직접 테스트하기 위해서는 빌드된 정적인 결과물을 통해 확인해야합니다. 그에반해 WebGL은 네이티브 API로서 실시간 디버깅이 가능합니다.
+- 기존 어플리케이션과의 확장성: WebGL은 언제든지 React와 같은 어플리케이션과 통합이 가능합니다.
+- 크로스 플랫폼: WebGL은 모든 주요 웹 브라우저에서 지원되기 때문에 운영체제나 디바이스에 관계없이 일관적인 3D 경험을 제공합니다.
+
+이 밖에도 많은 장점을 가지고 있으며 `WebGPU`가 등장함으로써 성능면에서도 많은 발전이 있을 거라고 생각합니다.
