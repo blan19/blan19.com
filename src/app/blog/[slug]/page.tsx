@@ -97,7 +97,7 @@ const Post = ({ params: { slug } }: { params: { slug: string } }) => {
         </Suspense>
       </div>
       <Table contents={post.content} />
-      <MDX contents={post.content} />
+      <MDX contents={post.content} reference={post.metadata.reference} />
       <Comment />
     </section>
   );
