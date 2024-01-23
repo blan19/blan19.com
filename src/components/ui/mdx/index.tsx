@@ -18,6 +18,7 @@ SyntaxHighlighter.registerLanguage("bash", bash);
 
 interface MDXProps {
   contents: string;
+  reference?: string[];
 }
 
 const Code = ({
@@ -41,7 +42,7 @@ const Code = ({
   );
 };
 
-const MDX = ({ contents }: MDXProps) => {
+const MDX = ({ contents, reference }: MDXProps) => {
   return (
     <>
       <MDXRenderer
@@ -135,6 +136,20 @@ const MDX = ({ contents }: MDXProps) => {
       >
         {contents}
       </MDXRenderer>
+      <h3 className="relative font-medium text-3xl md:text-2xl tracking-tighter mt-24 mb-6">
+        글 작성에 도움을 준 레퍼런스들
+      </h3>
+      <ul className="flex flex-col gap-3">
+        {reference?.map((ref) => (
+          <li key={ref}>
+            <a href={ref} target="_blank">
+              <span className="font-medium text-md md:text-sm dark:text-greyscale-4 tracking-tighter">
+                {ref}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </>
   );
 };
