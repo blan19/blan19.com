@@ -49,6 +49,10 @@
     @apply leading-relaxed text-base md:text-lg italic border-l-4 border-l-greyscale-7 my-12 pl-5;
   }
 
+  .mdx-renderer > ul {
+    @apply my-12;
+  }
+
   .mdx-renderer > ul > li {
     @apply relative leading-relaxed text-base md:text-lg dark:text-greyscale-4 my-4 pl-4 ml-2;
   }

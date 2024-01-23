@@ -43,10 +43,6 @@ const Blog = ({
   return (
     <section>
       <h1 className="text-8xl mb-6">🧑‍💻</h1>
-      <h1 className="font-medium text-2xl mb-1 tracking-tighter">
-        블로그 포스팅
-      </h1>
-      <p className="w-full text-greyscale-5">내 기록들</p>
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
       {/* <Tags posts={posts} seletedTag={tag} /> */}
       <ul className="flex flex-col gap-8 pt-7">
