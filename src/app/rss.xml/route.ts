@@ -12,10 +12,6 @@ export async function GET() {
     favicon: `${config.url}favicon.ico`,
     copyright: "All rights reserved since 2023, blan19",
     generator: "generate-rss",
-    feedLinks: {
-      json: `${config.url}json`,
-      atom: `${config.url}atom`,
-    },
     author: config.author,
   });
 
