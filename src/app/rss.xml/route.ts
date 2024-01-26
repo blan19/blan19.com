@@ -22,23 +22,26 @@ export async function GET() {
   getBlogPosts("tech").forEach((post) =>
     feed.addItem({
       title: post.metadata.title,
-      id: post.slug,
+      id: `${config.url}blog/${post.slug}`,
       link: `${config.url}blog/${post.slug}`,
       description: post.metadata.description,
       content: post.content,
       author: [config.author],
       contributor: [config.author],
       date: new Date(post.metadata.publishedAt),
-      image: `${config.url}og?title=${post.metadata.title}`,
+      image: {
+        url: `${config.url}og?title=${post.metadata.title}`,
+        type: "image/png",
+      },
       category: post.metadata.tags.map((tag) => ({ name: tag })) || [],
     })
   );
 
   feed.addCategory("Technologies");
 
-  return new Response(feed.rss2(), {
+  return new Response(feed.atom1(), {
     headers: {
-      "Content-Type": "application/rss+xml; charset=utf-8",
+      "Content-Type": "application/atom+xml; charset=utf-8",
     },
   });
 }
