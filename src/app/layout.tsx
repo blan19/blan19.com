@@ -4,6 +4,7 @@ import Header from "@/components/layouts/header";
 import localFont from "next/font/local";
 import Footer from "@/components/layouts/footer";
 import Script from "next/script";
+import Head from "next/head";
 
 const pretendard = localFont({
   src: [
@@ -63,6 +64,20 @@ export default function RootLayout({
       lang="en"
       className={`${pretendard.variable} font-pretendard bg-greyscale-0 text-greyscale-9 dark:bg-greyscale-9 dark:text-greyscale-0`}
     >
+      <Head>
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          href="/rss.xml"
+          title="RSS"
+        />
+        <link
+          rel="alternate"
+          type="application/atom+xml"
+          href="/rss-atom.xml"
+          title="RSS Atom"
+        />
+      </Head>
       <body>
         <Header />
         <main className="responsive pt-12">{children}</main>

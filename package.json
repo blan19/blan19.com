@@ -13,6 +13,7 @@
     "@types/react-syntax-highlighter": "^15.5.11",
     "@vercel/postgres": "^0.5.1",
     "clsx": "^2.0.0",
+    "feed": "^4.2.2",
     "gray-matter": "^4.0.3",
     "next": "^14.0.5-canary.22",
     "prisma": "^5.7.0",
