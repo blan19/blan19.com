@@ -11,7 +11,7 @@ const Log = () => {
       </p>
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
       <ul className="flex flex-col gap-8 pt-7">
-        {posts.map(({ metadata, slug, content }) => (
+        {posts.reverse().map(({ metadata, slug, content }) => (
           <li key={slug}>
             <div className="card flex flex-col items-start">
               <h1 className="font-medium  text-lg md:text-xl mb-1 tracking-tighter">
