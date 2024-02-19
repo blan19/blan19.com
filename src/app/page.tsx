@@ -107,7 +107,7 @@ const Blogs = async ({
         .map((blog) => posts.find((post) => blog.slug === post.slug))
         .map((blog) => (
           <li key={blog!.slug}>
-            <Link href={`/blog/${blog!.slug}`}>
+            <Link href={`/tech/${blog!.slug}`}>
               <Card
                 title={blog!.metadata.title}
                 tags={blog!.metadata.tags}

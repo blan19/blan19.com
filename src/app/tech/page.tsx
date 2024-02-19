@@ -42,13 +42,16 @@ const Blog = ({
 
   return (
     <section>
-      <h1 className="text-8xl mb-6">🧑‍💻</h1>
+      <h1 className="font-medium text-2xl mb-4 tracking-tighter">Tech.</h1>
+      <p className="w-full prose prose-neutral dark:prose-invert whitespace-pre-line">
+        a record of what I studied, learned, and felt
+      </p>
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
       {/* <Tags posts={posts} seletedTag={tag} /> */}
       <ul className="flex flex-col gap-8 pt-7">
         {selectedPosts.map(({ metadata, slug }) => (
           <li key={slug}>
-            <Link href={`/blog/${slug}`}>
+            <Link href={`/tech/${slug}`}>
               <Card
                 title={metadata.title}
                 tags={metadata.tags}
