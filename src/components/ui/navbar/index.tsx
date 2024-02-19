@@ -13,6 +13,10 @@ const links = [
     name: "tech",
     path: "/tech",
   },
+  {
+    name: "log",
+    path: "/log",
+  },
 ];
 
 const NavbarItem = ({ name, path }: { name: string; path: string }) => {
