@@ -24,21 +24,8 @@ const View = async ({ slug }: { slug: string }) => {
   );
 };
 
-const Blog = ({
-  searchParams: { tag },
-}: {
-  searchParams: {
-    tag: string;
-  };
-}) => {
+const Blog = () => {
   const posts = getBlogPosts("tech");
-  const selectedPosts = posts
-    .filter((post) =>
-      tag !== "all" && tag !== undefined
-        ? post.metadata.tags.includes(tag)
-        : post
-    )
-    .reverse();
 
   return (
     <section>
@@ -49,7 +36,7 @@ const Blog = ({
       <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
       {/* <Tags posts={posts} seletedTag={tag} /> */}
       <ul className="flex flex-col gap-8 pt-7">
-        {selectedPosts.map(({ metadata, slug }) => (
+        {posts.reverse().map(({ metadata, slug }) => (
           <li key={slug}>
             <Link href={`/tech/${slug}`}>
               <Card
