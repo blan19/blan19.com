@@ -10,16 +10,17 @@ const links = [
     path: "/",
   },
   {
-    name: "blog",
-    path: "/blog",
+    name: "tech",
+    path: "/tech",
   },
 ];
 
 const NavbarItem = ({ name, path }: { name: string; path: string }) => {
   let pathname = usePathname() || "/";
-  if (pathname.includes("/blog/")) {
-    pathname = "/blog";
+  if (pathname.includes("/tech/")) {
+    pathname = "/tech";
   }
+
   const isActive = path === pathname;
 
   return (

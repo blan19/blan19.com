@@ -48,7 +48,7 @@ const Blog = ({
       <ul className="flex flex-col gap-8 pt-7">
         {selectedPosts.map(({ metadata, slug }) => (
           <li key={slug}>
-            <Link href={`/blog/${slug}`}>
+            <Link href={`/tech/${slug}`}>
               <Card
                 title={metadata.title}
                 tags={metadata.tags}
