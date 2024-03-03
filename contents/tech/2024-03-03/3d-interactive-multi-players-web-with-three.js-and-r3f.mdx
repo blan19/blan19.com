@@ -1,0 +1,663 @@
+---
+publishedAt: "2024-03-03"
+title: "3D 인터랙티브 멀티플레이어 웹 with Three.js and R3F"
+tags: ["three.js", "r3f"]
+description: "Three.js와 R3F를 사용하여 실시간 채팅이 가능한 3D 인터랙티브 멀티플레이어 웹 구현하기"
+reference: []
+---
+
+평소 자주 보던 개발 유튜브인 GIS Developer님의 영상을 보던 중 [다음](https://www.youtube.com/watch?v=_GB-rN_bjO0&t=72s)과 같은 영상을 보게 되었습니다.
+
+영상의 코드는 공개 상태가 아니기도 했으며, 간단해보이지만 구현한다면 꽤 까다로운 부분들이 있을 수도 있어 공부에 도움이 될 것 같아 직접 구현해보기로 하였습니다.
+
+[구현된 프로젝트 구경하기](https://3-d-interactive-meta-client.vercel.app/)
+
+### 주요 기능
+
+구현 할 3D 인터랙티브 멀티플레이어 앱의 주요 기능은 3가지 정도만 존재합니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/430444a8-7cc2-4ba3-a3e8-ff3b5f008114)
+
+- 아바타 선택
+- 실시간 채팅
+- 플레이어의 아바타 움직임 동기화
+
+기능은 몇개 존재하지 않지만 소켓 서버 구현부터 시작해, 3D 오브젝트의 움직임을 동기화 시켜주는 부분이 은근히 까다로울 수 있습니다.
+
+3D 그래픽스 관점에서 구현해야하기도 하지만 모델의 애니메이션은 컴포넌트의 리렌더링이 일어난다면 중지되기 때문에 조금 더 신경을 써주어야 합니다.
+
+### 소켓 서버
+
+소켓 서버와 클라이언트 간 플로우를 간단하게 다이어그램으로 표현해보았습니다.
+
+사용자의 Authorization이 필요 없는 앱이기 때문에, 복잡하게 DB를 사용하지 않고 서버의 in-memory 객체를 사용하여 소켓에 커넥트된 플에이어를 저장할 것 입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/e1fafde1-a580-4381-8414-73539ecbb2d0)
+
+#### 소켓 서버 이벤트
+
+3D 인터랙티브 멀티플레이어 웹에서 필요한 이벤트입니다.
+
+실시간으로 동기화가 필요한 기능이 채팅과 아바타의 움직임이기 때문에 관련된 소켓 이벤트가 대다수입니다.
+
+- world joined: 아바타를 생성하면 생성된 아바타를 world에 업데이트
+- pressed: 사용자의 키보드 입력을 감지합니다. 입력에 따라 아바타의 포지션을 업데이트하기 위함
+- update position: 플레이어들의 변경된 아바타의 포지션을 동기화하기 위한 이벤트
+- chat: 플레이어들의 실시간 채팅
+
+```tsx
+// apps/server/src/index.ts
+
+import fastify from "fastify";
+import fastifySocketIO from "fastify-socket.io";
+import cors from "@fastify/cors";
+import { Server } from "socket.io";
+
+declare module "fastify" {
+  interface FastifyInstance {
+    io: Server;
+  }
+}
+
+const PORT = 8080;
+
+const server = fastify({ logger: true });
+
+// middleware manage
+server.register(cors, {
+  origin: "*",
+  credentials: true,
+});
+server.register(fastifySocketIO, {
+  cors: {
+    origin: "*",
+  },
+});
+
+// world manage by in-memory object
+const world = [];
+
+// socket manage
+server.ready((error) => {
+  // ... socket event
+});
+
+server.listen({ port: PORT }, (error, address) => {
+  if (error) {
+    server.log.error(error);
+    process.exit(1);
+  }
+
+  console.log("running fastify server on ", address);
+});
+```
+
+서버는 Fastify를 통해 간단하게 소켓 서버를 만들어 주었습니다.
+
+따로 모듈화를 진행할 만큼 볼륨이 크지 않아 index.ts 파일 내에서 모두 처리해주었습니다.
+
+### 클라이언트
+
+3D 멀티플레이어 웹을 구현하기 위한 몇가지 주요 라이브러리입니다.
+
+- Three.js: WebGL Api를 wrapping한 하이레벨 라이브러리입니다. WebGL 코드를 더 간단하게 작성할 수 있도록 도와주며 관련 레퍼런스가 압도적입니다
+- R3F: Three.js를 React에 맞춰 최적화한 라이브러리입니다. Three.js를 더 간단하게 사용할 수 있으며, 3D 오브젝트의 auto-dispose를 지원해줍니다
+- Zustand: 쉽고 가벼우며 중앙 집중 형식의 스토어 구조로 사용 가능합니다
+- Readyplayerme: 커스텀 3D 아바타를 쉽게 제공할 수 있게 도와주는 라이브러리입니다
+
+#### 아바타 선택
+
+웹에서 플레이어들이 사용할 아바타를 선택하는 기능은 Readyplayerme을 사용해서 간단하게 구현할 수 있었습니다.
+
+Readyplayerme는 플레이어rk 수천 개의 사용자 정의 옵션 중에서 선택하여 자신의 정체성을 가장 잘 나타내는 아바타를 만들 수 있습니다. 선택한 아바타는 즉시 애니메이션을 적용할 수 있는 3D 모델로 제공됩니다.
+
+![Learn {priority} {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/26d17593-28c2-4b6a-adf9-50b2f1b14d5d)
+
+사진을 첨부해 유사한 아바타를 만들수도 있고 여러 에셋들을 선택해 원하는 독창적인 캐릭터를 커스텀할 수 있습니다.
+
+![Learn {priority} {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/d350955e-2b43-4199-8143-ee077f5fe358)
+
+Readyplayerme는 React를 위한 SDK를 지원하고 있어 쉽게 React 앱으로 확장할 수 있습니다.
+
+```bash
+npm i @readyplayerme/react-avatar-creator
+```
+
+```jsx
+import {
+  AvatarCreator,
+  AvatarCreatorConfig,
+  AvatarExportedEvent,
+} from "@readyplayerme/react-avatar-creator";
+
+const config: AvatarCreatorConfig = {
+  clearCache: true, // 이전에 선택한 아바타 로드
+  bodyType: "fullbody", // 반신 or 전신 선택
+  quickStart: false, // 플레이어 정의 옵션을 사용하는 대신 Readyplayerme 계정에 로그인하여 모델 직접 선택
+  language: "en", // Readyplayerme에서 사용할 기본 언어 설정
+};
+
+const style = { width: "100%", height: "100vh", border: "none" };
+
+export default function App() {
+  const handleOnAvatarExported = (event: AvatarExportedEvent) => {
+    console.log(`Avatar URL is: ${event.data.url}`); // 플레이어가 선택한 아바타의 모델 주소 핸들링
+  };
+
+  return (
+    <>
+      <AvatarCreator
+        subdomain="YOUR-SUBDOMAIN"
+        config={config}
+        style={style}
+        onAvatarExported={handleOnAvatarExported}
+      />
+    </>
+  );
+}
+```
+
+#### World 구성
+
+아바타를 선택했다면 플레이어들이 상호작용할 월드도 있어야합니다.
+
+플레이어들이 World에서 움직이고 상호작용을 하기 위해서는 3D 오브젝트간 충돌을 검출해야합니다
+
+이를 위해 물리엔진을 적용해 오브젝트간 충돌에 관한 상호작용 처리를 하거나 Three.js의 Raycaster를 통해 오브젝트가 충돌할 경우 직접 포지션 처리를 해줄 수 있습니다.
+
+저는 `Rapier`라는 물리엔진을 통해 오브젝트간 충돌 처리를 해주었습니다.
+
+R3F에서 Rapier sdk를 지원해주기 때문에 React에서 간단하게 물리엔진을 적용할 수 있습니다.
+
+```bash
+npm install @react-three/rapier
+```
+
+`<Physics />` 컴포넌트를 통해 캔버스에 간단하게 물리세계를 적용할 수 있습니다.
+
+Physics 컴포넌트는 lazy initialization을 하기 때문에 Suspense 컴포넌트로 감싸주어야 합니다.
+
+```jsx
+import { Canvas } from "@react-three/fiber";
+import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
+
+const App = () => {
+  return (
+    <Canvas>
+      <Suspense>
+        <Physics>// meshes..</Physics>
+      </Suspense>
+    </Canvas>
+  );
+};
+```
+
+Physics 컴포넌트로 감쌌다면 이제 물리세계에 오브젝트를 추가해주면 됩니다.
+
+플레이어가 상호작용할 공간을 추가해주겠습니다.
+
+무료에셋인 city.glb를 받아와 `<RigidBody />` 컴포넌트의 children으로 넣어주게 된다면 하위에 있는 mesh들은 물리 세계에 mesh의 모양에 따라 Colliders가 자동으로 생성되어 추가됩니다.
+
+```jsx
+import * as THREE from "three";
+import { useGLTF } from "@react-three/drei";
+import { RigidBody } from "@react-three/rapier";
+
+const City = () => {
+  const { scene } = useGLTF("/models/city/city.glb");
+
+  return (
+    <RigidBody type="fixed">
+      <primitive
+        object={scene}
+        position={new THREE.Vector3(0, -3)}
+        scale={0.02}
+      />
+    </RigidBody>
+  );
+};
+
+useGLTF.preload("/models/city/city.glb");
+
+export default City;
+```
+
+City 오브젝트에는 `type=”fixed"` 를 적용해주었는데, 이는 물리 세계에서 어떠한 힘의 영향도 받지 않기 위함입니다.
+
+```tsx
+/*
+Auto-generated by: https://github.com/pmndrs/gltfjsx
+Command: npx gltfjsx@6.2.3 public/models/city city.glb -o src/components/city/index.jsx -r public
+*/
+
+import { useAnimations, useGLTF } from "@react-three/drei";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { SkeletonUtils } from "three-stdlib";
+import { Vector3 } from "../../lib/three";
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import * as THREE from "three";
+
+const Avatar = memo(function AvatarImpl({
+  url,
+  id,
+  nickname,
+  speed = 3,
+  direction = new Vector3(),
+  frontVector = new Vector3(),
+  sideVector = new Vector3(),
+  ...props
+}: AvatarProps) {
+  // ...
+  return (
+    <group>
+      <RigidBody ref={ref} position={position} lockRotations>
+        <group name={`player-${id}`} ref={group} dispose={null}>
+          <primitive object={clone} ref={avatar} />
+        </group>
+      </RigidBody>
+    </group>
+  );
+});
+
+export default Avatar;
+
+useGLTF.preload("/animations/M_Walk_001.glb");
+useGLTF.preload("/animations/M_Standing_Idle_001.glb");
+```
+
+아바타의 RigidBody에는 `lockRotations` 옵션을 true로 설정해주었는데, 아바타가 움직일 때 발생한 힘에 의해 원하지 않는 rotation 변경이 일어날 수 있기 때문입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/ac54f62d-fc18-42dc-8cec-4a0368c1242d)
+
+이렇게 플레이어에 의해 생성된 아바타와 물리엔진이 적용된 World의 City 오브젝트가 정상적으로 충돌 감지가 되어 정상적으로 도시 위에 아바타가 서있을 수 있습니다.
+
+#### 플레이어 이동
+
+이제 물리엔진이 적용된 World에서 플레어의 아바타에 대한 이동 기능을 구현해주면 됩니다
+
+이 기능은 키보드의 WASD 키 또는 방향키를 통해 이동이 가능하도록 처리하겠습니다.
+
+키보드 입력에 대한 이벤트는 @react-three/drei에서 제공하는 `KeyboardControls` 컴포넌트와 `useKeyboardControls` 훅을 통해 간단하게 처리할 수 있습니다.
+
+```tsx
+import { useMemo } from "react";
+import { Canvas } from "@react-three/fiber";
+import Scene from "./components/scene";
+import useLoaded from "./hooks/useLoaded";
+import Loading from "./components/loading";
+import {
+  KeyboardControls,
+  type KeyboardControlsEntry,
+} from "@react-three/drei";
+
+export enum Controls {
+  forward = "forward",
+  back = "back",
+  left = "left",
+  right = "right",
+  jump = "jump",
+}
+
+function App() {
+  const { loaded } = useLoaded();
+  const map = useMemo<KeyboardControlsEntry<Controls>[]>(
+    () => [
+      { name: Controls.forward, keys: ["ArrowUp", "KeyW"] },
+      { name: Controls.back, keys: ["ArrowDown", "KeyS"] },
+      { name: Controls.left, keys: ["ArrowLeft", "KeyA"] },
+      { name: Controls.right, keys: ["ArrowRight", "KeyD"] },
+      { name: Controls.jump, keys: ["Space"] },
+    ],
+    []
+  );
+
+  return (
+    <main className="relative h-full w-full">
+      <KeyboardControls map={map}>
+        <Canvas>
+          <Scene />
+        </Canvas>
+      </KeyboardControls>
+      {!loaded && <Loading />}
+    </main>
+  );
+}
+
+export default App;
+```
+
+이벤트를 감지할 Scene 또는 App에 KeyboardControls 컴포넌트를 래핑하고 감지를 원하는 키를 map 프롭에 넘겨주면 됩니다.
+
+```tsx
+import { useEffect } from "react";
+import { useKeyboardControls } from "@react-three/drei";
+import { Controls } from "../App";
+import { useChatFocusStore, useUserStore } from "../store";
+import { socket } from "../lib/socket";
+
+export default function useKeyboard() {
+  const { id } = useUserStore();
+  const { focus } = useChatFocusStore();
+  const [sub] = useKeyboardControls<Controls>();
+
+  useEffect(() => {
+    if (!id) return;
+
+    return sub(
+      (state) => state,
+      (pressed) => {
+        if (focus) return;
+        socket.emit("pressed", pressed);
+      }
+    );
+  }, [id, focus]);
+}
+```
+
+```tsx
+import { Suspense } from "react";
+import { PerspectiveCamera, Sky } from "@react-three/drei";
+import { useWorldStore } from "../../store";
+import { Physics } from "@react-three/rapier";
+import Avatar from "../avatar";
+import City from "../city";
+import useKeyboard from "../../hooks/useKeyboard";
+
+const Scene = () => {
+  const { world } = useWorldStore();
+
+  useKeyboard();
+
+  return (
+    <Suspense>
+      <Sky />
+      <Physics debug>
+        <ambientLight />
+        <directionalLight />
+        <City />
+        <PerspectiveCamera />
+        {world.map((character) => (
+          <Suspense key={character.id} fallback={null}>
+            <Avatar
+              id={character.id}
+              url={character.avatar}
+              nickname={character.nickname}
+              position={character.position}
+            />
+          </Suspense>
+        ))}
+      </Physics>
+    </Suspense>
+  );
+};
+
+export default Scene;
+```
+
+저는 따로 커스텀훅을 만들어 키 입력에 대한 변화를 구독하여 socket 이벤트를 처리하였습니다
+
+아바타의 움직임을 구현하기 위해선 입력 받은 키에 따라 방향 벡터를 구하고 정규화하여 속도에 따라 최종 벡터를 계산해 아바타의 최종 포지션 이동을 구현하여야 합니다.
+
+말이 좀 어려울 수 있지만 코드로 한줄 한줄 보면서 이해해보도록 하겠습니다.
+
+```tsx
+const Avatar = memo(function AvatarImpl({
+  url,
+  id,
+  nickname,
+  speed = 3,
+  direction = new Vector3(),
+  frontVector = new Vector3(),
+  sideVector = new Vector3(),
+  ...props
+}: AvatarProps) {
+  // 중간 코드 생략...
+
+  const ref = useRef<InstanceType<typeof RapierRigidBody>>(null);
+  const avatar = useRef<InstanceType<typeof THREE.Group>>(null);
+  // re-render를 방지하기 위한 ref 사용
+  const pressed = useRef<PressedType>(PRESSED_INITIAL_STATE);
+  const { id: userId } = useUserStore();
+
+  // socket playerMove 이벤트 핸들러
+  const onPlayerMove = (value: { id: string; pressed: PressedType }) => {
+    const { id: socketId, pressed: newPressed } = value;
+    // 월드에 있는 아바타가 플레이어의 아바타라면 키 입력에 따라 동기화
+    if (socketId === id) {
+      pressed.current = newPressed;
+      // 다른 플레이어들에게도 아바타 움직임 동기화
+      socket.emit("updatePosition", socketId, ref.current?.translation());
+    }
+  };
+
+  // socket 이벤트 바인딩
+  useEffect(() => {
+    socket.on("playerMove", onPlayerMove);
+
+    return () => {
+      socket.off("playerMove", onPlayerMove);
+    };
+  }, [id]);
+
+  useFrame((_state) => {
+    const { forward, back, left, right } = pressed.current;
+    // 아바타에서 'Hips'라는 이름의 객체를 찾고, 해당 객체의 위치를 y축은 유지한 채 x, z축을 0으로 설정
+    const hips = avatar.current?.getObjectByName("Hips");
+    hips?.position.set(0, hips.position.y, 0);
+
+    if (!(avatar.current && ref.current)) return;
+
+    // Rigidbody의 현재 선형 속도를 가져온다
+    const velocity = ref.current.linvel();
+    // 이동 중인지 여부를 확인
+    const isMove = back || forward || left || right;
+    // 입력 받은 키에 따라 앞뒤 이동 및 좌우 이동을 위한 벡터를 설정
+    frontVector.set(0, 0, Number(back) - Number(forward));
+    sideVector.set(Number(left) - Number(right), 0, 0);
+
+    direction
+      .subVectors(frontVector, sideVector)
+      .normalize() // 방향 벡터를 정규화
+      .multiplyScalar(speed); // 속도를 곱하여 최종 속도 벡터를 계산
+
+    // 계산된 벡터를 바탕으로 아바타의 선형 속도를 설정
+    ref.current.setLinvel(
+      { x: direction.x, y: velocity.y, z: direction.z },
+      true
+    );
+
+    // 방향 벡터가 0보다 크면 움직임이 있다는 뜻이므로 아바타의 rotation을 조정
+    if (direction.lengthSq() > 0) {
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        direction.clone().normalize()
+      );
+
+      avatar.current.quaternion.copy(quaternion);
+    }
+
+    // 이동 중이면 'M_Walk_001' 애니메이션을, 그렇지 않으면 'M_Standing_Idle_001' 애니메이션을 재생
+    if (isMove) {
+      setAnimation("M_Walk_001");
+    } else {
+      setAnimation("M_Standing_Idle_001");
+    }
+  });
+
+  return (
+    <group>
+      <RigidBody ref={ref} position={position} lockRotations>
+        <group name={`player-${id}`} ref={group} dispose={null}>
+          <primitive object={clone} ref={avatar} />
+        </group>
+      </RigidBody>
+    </group>
+  );
+});
+```
+
+이제 World에서 플레이어의 아바타는 키보드 입력에 따라 오른쪽, 왼쪽, 앞, 뒤로 이동이 가능해졌으며 다른 오브젝트들과 상호작용이 가능해졌습니다.
+
+플레이어의 아바타는 원하는 World의 공간을 자유자재로 이동할 수 있습니다.
+
+> State의 변화에 따른 Re-render가 일어난다면 애니메이션 재생이 초기화되기 때문에 자연스러운 애니메이션 흐름에 방해가 됩니다. 이를 위해 Ref로 pressed에 대한 변화를 관리하였습니다
+
+![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/44bcfcd2-3568-407e-8793-8d38249e0061)
+
+#### 실시간 채팅
+
+실시간 채팅을 구현하기 위해 먼저 채팅 메세지를 입력할 수 있는 Form이 필요합니다.
+
+캔버스의 위에 위치해야 하므로 z-index 998를 주어 앞에 위치하도록 해주었습니다.
+
+```tsx
+import { useState } from "react";
+import { useChatFocusStore, useUserStore } from "../../../store";
+import { socket } from "../../../lib/socket";
+
+const ChatForm = () => {
+  const { id } = useUserStore((state) => state);
+  const [chat, setChat] = useState("");
+  const { updateFocus } = useChatFocusStore((state) => state);
+
+  const onSubmit = () => {
+    if (!chat.length) return;
+    socket.emit("chat", chat);
+    setChat("");
+  };
+  return (
+    <div
+      className={`${
+        id ? "absolute" : "hidden"
+      } bottom-4 right-[50%] z-[998] flex translate-x-2/4 flex-col items-center justify-end `}
+    >
+      <form
+        className="flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <input
+          className="w-[200px] rounded p-2"
+          type="text"
+          placeholder="chat"
+          value={chat}
+          onChange={(event) => {
+            setChat(event.target.value);
+          }}
+          onFocus={() => updateFocus(true)}
+          onBlur={() => updateFocus(false)}
+        />
+        <button
+          className="w-[50px] rounded bg-white"
+          type="button"
+          onClick={() => {
+            onSubmit();
+          }}
+        >
+          <span>보내기</span>
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default ChatForm;
+```
+
+> onFocus와 onBlur를 통해 focus에 대한 state를 전역으로 관리하는 이유는 이미 캔버스에서 키보드 입력에 따라 아바타의 움직임을 구현해 두었기 때문입니다. Form에 focus가 되어있다면 바인드 되어 있는 socket pressed 이벤트를 취소하기 위함입니다.
+
+Form에 채팅 메세지를 입력하고 socket chat 이벤트를 emit하도록 구현하였습니다.
+
+이제 실시간으로 소켓을 통해 채팅을 보냈다면 아바타 위에 채팅을 띄워주고 다른 플레이어들에게도 채팅이 보이도록 해보겠습니다.
+
+```tsx
+const Chat = ({ id }: { id: string }) => {
+  // chat
+  const [chat, setChat] = useState("");
+  const [showChatBubble, setShowChatBubble] = useState(false);
+
+  let chatMessageBubbleTimeout: number | undefined;
+  const onChatMessage = (value: { id: string; chat: string }) => {
+    const { id: socketId, chat: newChat } = value;
+    if (socketId === id) {
+      setChat(newChat);
+      clearTimeout(chatMessageBubbleTimeout);
+      setShowChatBubble(true);
+      chatMessageBubbleTimeout = setTimeout(() => {
+        setShowChatBubble(false);
+      }, 3500);
+    }
+  };
+
+  useEffect(() => {
+    socket.on("playerChat", onChatMessage);
+
+    return () => {
+      socket.off("playerChat", onChatMessage);
+    };
+  }, [id]);
+
+  return (
+    <Html position-y={2.4}>
+      <div className="w-60 max-w-full">
+        <p
+          className={`absolute max-w-full -translate-x-1/2 -translate-y-full break-words rounded-lg bg-white bg-opacity-40 p-2 px-4 text-center text-black backdrop-blur-sm transition-opacity duration-500 ${
+            showChatBubble ? "" : "opacity-0"
+          }`}
+        >
+          {chat}
+        </p>
+      </div>
+    </Html>
+  );
+};
+
+const Avatar = memo(function AvatarImpl({
+  url,
+  id,
+  nickname,
+  speed = 3,
+  direction = new Vector3(),
+  frontVector = new Vector3(),
+  sideVector = new Vector3(),
+  ...props
+}: AvatarProps) {
+  // 중간 코드 생략..
+  return (
+    <group>
+      <RigidBody ref={ref} position={position} lockRotations>
+        <Chat id={id} />
+        <Html position-y={2.15}>
+          <h1 className="-translate-x-1/2 transform whitespace-nowrap text-center font-bold">
+            {nickname}
+          </h1>
+        </Html>
+        <group name={`player-${id}`} ref={group} dispose={null}>
+          <primitive object={clone} ref={avatar} />
+        </group>
+      </RigidBody>
+    </group>
+  );
+});
+
+export default Avatar;
+```
+
+채팅이 몇초간 보이고 사라지는 것을 구현하기 위해 setTimeout을 사용했습니다.
+
+3.5초간 보여진다음 서서히 사라지도록 해두었습니다.
+
+Chat 컴포넌트는 drei의 `Html` 컴포넌트를 사용하였는데, canvas 내에서 html 태그들을 사용할 수 있도록 도와주는 컴포넌트입니다.
+
+또한 부모의 포지션에 따라 로컬 좌표계를 설정할 수 있어 쉽게 포지션을 설정할 수 있습니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/2efee7dd-e875-4834-a2ac-00add80a0f00)
+
+### 마무리하며
+
+코드 설명을 자세히 하면 글이 길어지므로, 많은 부분을 생략했습니다. 모든 코드는 [깃허브 레포](https://github.com/blan19/3D_Interactive_Meta)에서 확인할 수 있습니다.
+
+이번 프로젝트는 실시간 채팅과 플레이어 움직임 동기화를 주요 기능으로 하는 3D 웹이었고, 구현하는데 꽤 재미있었습니다. 다음 프로젝트는 그리드 뷰에 가구를 배치하고 방을 꾸미는 웹을 개발해 블로그에 소개할 예정입니다!
