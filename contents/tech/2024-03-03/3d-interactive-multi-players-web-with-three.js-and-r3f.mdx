@@ -329,13 +329,17 @@ export default App;
 이벤트를 감지할 Scene 또는 App에 KeyboardControls 컴포넌트를 래핑하고 감지를 원하는 키를 map 프롭에 넘겨주면 됩니다.
 
 ```tsx
-import { useEffect } from "react";
-import { useKeyboardControls } from "@react-three/drei";
-import { Controls } from "../App";
-import { useChatFocusStore, useUserStore } from "../store";
-import { socket } from "../lib/socket";
+import { Suspense } from "react";
+import { PerspectiveCamera, Sky } from "@react-three/drei";
+import { useWorldStore } from "../../store";
+import { Physics } from "@react-three/rapier";
+import Avatar from "../avatar";
+import City from "../city";
+import useKeyboard from "../../hooks/useKeyboard";
 
-export default function useKeyboard() {
+const Scene = () => {
+  const socket = useSocket(socketInstance);
+  const { world } = useWorldStore();
   const { id } = useUserStore();
   const { focus } = useChatFocusStore();
   const [sub] = useKeyboardControls<Controls>();
@@ -351,22 +355,6 @@ export default function useKeyboard() {
       }
     );
   }, [id, focus]);
-}
-```
-
-```tsx
-import { Suspense } from "react";
-import { PerspectiveCamera, Sky } from "@react-three/drei";
-import { useWorldStore } from "../../store";
-import { Physics } from "@react-three/rapier";
-import Avatar from "../avatar";
-import City from "../city";
-import useKeyboard from "../../hooks/useKeyboard";
-
-const Scene = () => {
-  const { world } = useWorldStore();
-
-  useKeyboard();
 
   return (
     <Suspense>
@@ -394,7 +382,7 @@ const Scene = () => {
 export default Scene;
 ```
 
-저는 따로 커스텀훅을 만들어 키 입력에 대한 변화를 구독하여 socket 이벤트를 처리하였습니다
+저는 따로 `useKeyboardControls` 훅을 사용하여 키 입력에 대한 변화를 구독하여 socket 이벤트를 처리하였습니다
 
 아바타의 움직임을 구현하기 위해선 입력 받은 키에 따라 방향 벡터를 구하고 정규화하여 속도에 따라 최종 벡터를 계산해 아바타의 최종 포지션 이동을 구현하여야 합니다.
 
@@ -405,6 +393,7 @@ const Avatar = memo(function AvatarImpl({
   url,
   id,
   nickname,
+  socket,
   speed = 3,
   direction = new Vector3(),
   frontVector = new Vector3(),
@@ -413,7 +402,7 @@ const Avatar = memo(function AvatarImpl({
 }: AvatarProps) {
   // 중간 코드 생략...
 
-  const ref = useRef<InstanceType<typeof RapierRigidBody>>(null);
+  const rb = useRef<InstanceType<typeof RapierRigidBody>>(null);
   const avatar = useRef<InstanceType<typeof THREE.Group>>(null);
   // re-render를 방지하기 위한 ref 사용
   const pressed = useRef<PressedType>(PRESSED_INITIAL_STATE);
@@ -426,7 +415,7 @@ const Avatar = memo(function AvatarImpl({
     if (socketId === id) {
       pressed.current = newPressed;
       // 다른 플레이어들에게도 아바타 움직임 동기화
-      socket.emit("updatePosition", socketId, ref.current?.translation());
+      socket.emit("updatePosition", socketId, rb.current?.translation());
     }
   };
 
@@ -445,10 +434,10 @@ const Avatar = memo(function AvatarImpl({
     const hips = avatar.current?.getObjectByName("Hips");
     hips?.position.set(0, hips.position.y, 0);
 
-    if (!(avatar.current && ref.current)) return;
+    if (!(avatar.current && rb.current)) return;
 
     // Rigidbody의 현재 선형 속도를 가져온다
-    const velocity = ref.current.linvel();
+    const velocity = rb.current.linvel();
     // 이동 중인지 여부를 확인
     const isMove = back || forward || left || right;
     // 입력 받은 키에 따라 앞뒤 이동 및 좌우 이동을 위한 벡터를 설정
@@ -461,34 +450,31 @@ const Avatar = memo(function AvatarImpl({
       .multiplyScalar(speed); // 속도를 곱하여 최종 속도 벡터를 계산
 
     // 계산된 벡터를 바탕으로 아바타의 선형 속도를 설정
-    ref.current.setLinvel(
+    rb.current.setLinvel(
       { x: direction.x, y: velocity.y, z: direction.z },
       true
     );
 
     // 방향 벡터가 0보다 크면 움직임이 있다는 뜻이므로 아바타의 rotation을 조정
     if (direction.lengthSq() > 0) {
-      const quaternion = new THREE.Quaternion();
+      const quaternion = quat();
       quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
+        vec3({ x: 0, y: 0, z: 1 }),
         direction.clone().normalize()
       );
 
-      avatar.current.quaternion.copy(quaternion);
+      avatar.current.quaternion.slerp(quaternion, 0.1);
     }
 
     // 이동 중이면 'M_Walk_001' 애니메이션을, 그렇지 않으면 'M_Standing_Idle_001' 애니메이션을 재생
-    if (isMove) {
-      setAnimation("M_Walk_001");
-    } else {
-      setAnimation("M_Standing_Idle_001");
-    }
+    if (isMove) setAnimation("M_Walk_001");
+    else setAnimation("M_Standing_Idle_001");
   });
 
   return (
     <group>
-      <RigidBody ref={ref} position={position} lockRotations>
-        <group name={`player-${id}`} ref={group} dispose={null}>
+      <RigidBody ref={rb} position={position} lockRotations>
+        <group name={`player-${id}`} dispose={null}>
           <primitive object={clone} ref={avatar} />
         </group>
       </RigidBody>
