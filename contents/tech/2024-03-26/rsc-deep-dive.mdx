@@ -1,0 +1,253 @@
+---
+publishedAt: "2024-03-26"
+title: "React Server Components(RSC) 차근차근 이해하기"
+tags: ["react.js", "rsc"]
+description: "리액트 서버 컴포넌트를 차근차근 이해해보자"
+reference:
+  [
+    "https://servercomponents.dev",
+    "https://pyjun01.github.io/v/rsc/",
+    "https://react.dev/blog/2020/12/21/data-fetching-with-react-server-components",
+    "https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md",
+    "https://www.plasmic.app/blog/how-react-server-components-work#life-of-an-rsc-render",
+    "https://www.joshwcomeau.com/react/server-components/",
+    "https://github.com/reactwg/react-18/discussions/37",
+    "https://github.com/reactwg/server-components/discussions/5",
+  ]
+---
+
+### React Server Components(RSC)의 등장 배경
+
+RSC를 들여다보기에 앞서 왜 RSC가 등장하게 되었는지 알아볼 필요가 있습니다.
+
+리액트팀에서는 RSC가 등장하게된 동기 부여를 이렇게 설명했습니다.
+
+`근본적인 문제는 React 앱이 클라이언트 중심적이고 서버를 충분히 활용하지 못한다는 것입니다.`
+
+물론 여러 메타 프레임워크(Next나 Remix 등)들이 해결책을 제시하였지만, 각각 프레임워크들마다 제시하는 서버 사이드 접근 방식이 달랐으며 모든 리액트 컴포넌트들에 대해 hydration을 진행한다는 점이였습니다.
+
+리액트팀은 이 문제들에 대한 공식적인 해결책을 찾으려 노력해왔고 그 결과물이 RSC로서 등장하게 되었습니다.
+
+> RSC가 왜 등장했는지 맥락적으로 이해하기 위해선 서버 사이드 렌더링(SSR)과 같은 기존의 렌더링 방식을 이해할 필요가 있습니다.
+
+#### CSR
+
+일반적인 리액트 앱에서 Tanstack Query나 SWR으로 데이터 페칭을 거쳐 컨텐츠를 가져오는 프로세스의 렌더링 과정은 다음과 같이 시각화할 수 있습니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/085d4e25-9509-4f35-bc75-69e4e8250de1)
+
+CSR은 브라우저가 HTML을 받으면서 시작됩니다. 다들 익숙하실 거에요 `<div id="root">` 와 같은 비어있는 HTML을요. 이 HTML 파일에는 하나 이상의 `<script>` 태그가 있습니다. 자바스크립트 번들이 다운로드되며 파싱이 끝난다면 리액트 앱은 이제 동적인 컨텐츠를 보여줄 것 입니다.
+
+CSR은 자바스크립트 번들에 대한 프로세스가 끝난다면 빠르게 인터랙티브한 앱을 보여줄 수 있다는 장점이 있지만 우리는 자바스크립트가 로드될 때까지 텅빈 화면을 보면서 기다려야합니다. 앱이 커지면 커질수록 자바스크립트 번들은 커질 것이고 단점은 부각될 것 입니다.
+
+> 물론 React.lazy와 같은 Code Spliting이나 Suspense와 같은 기술로 리액트 생태계는 단점을 극복하고자 하였습니다.
+
+Next.js나 Remix와 같은 메타 프레임워크들은 이런 CSR에서 발생하는 단점들을 개선하고자 노력했으며 등장한 패러다임이 서버 사이드 렌더링(SSR) 입니다.
+
+#### SSR
+
+SSR에서 일반적인 렌더링 프로세스는 다음과 같을 것 입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/68b63954-654b-481e-ada6-582e50a9f2cb)
+
+또는 서버 사이드에서 데이터베이스 쿼리를 진행해 컨텐츠로 완전히 채워 렌더를 할수도 있을 것 입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/2a823114-088e-4e13-b88c-fc647d06c9ba)
+
+이제 서버에서 비어있는 HTML 대신 내용이 채워진 HTML을 보내 사용자들은 빈 화면을 보지 않게 되었습니다.
+
+하지만 이 HTML이 사용자들과 인터랙티브하게 상호작용하기 위해서는 `하이드레이션` 이 필요합니다.
+
+> 하이드레이션을 간단히 설명하자면, 다운로드된 자바스크립트를 통해 실제 DOM에 이벤트 핸들러를 연결하는 과정입니다. 하이드레이션을 통해 정적이던 웹은 동적으로 바뀌게 됩니다.
+
+확실히 SSR로 인해 앱에 대한 최초 접근면에서는 많은 개선이 이루어졌습니다. 하지만 SSR도 여전히 클라이언트 중심의 리액트에서 벗어나지 못했으며 SSR에서 몇가지 문제점도 존재했습니다
+
+- 보여주길 원하는 모든 것들은 서버에서 페치되어야 합니다.
+- 자바스크립트 번들이 모두 다운되기전까지 하이드레이션은 진행하지 않습니다.
+- 하이드레이션이 끝나기 전까진, 리액트 앱은 정적이며 사용자와 상호작용을 할 수 없습니다.
+
+[Streaming SSR](https://github.com/reactwg/react-18/discussions/37) 덕분에 `선택적인 하이드레이션`이 가능해졌고 사용자는 모든 하이드레이션 과정이 끝나길 기다리기 전에 상호작용이 가능해졌지만, 여전히 리액트 컴포넌트들은 하이드레이션을 하기 위해 자바스크립트 번들을 다운 받아야하는 과정은 필수입니다.
+
+### 드디어 RSC
+
+리액트 서버 컴포넌트(RSC)는 말 그대로 `서버의 컴포넌트화`입니다.
+
+기존의 서버에서 하던 작업들을 컴포넌트 단위에서 할 수 있기 때문에 서버 사이드 데이터에 접근하거나 UI를 서버에서 그려줄 수 있습니다.
+
+RSC를 사용한다면 기존의 클라이언트 컴포넌트와 결합하여 서로 각자가 잘하는 일에 집중 할 수 있습니다.
+
+> 주의해야 할 부분은 RSC는 단 한번만 렌더링됩니다. RSC는 서버에서 단 한번 생성되며 이는 브라우저에 전송되어 바뀌지 않습니다. 이는 브라우저 API와 React API를 사용하지 못한다는 의미입니다.
+
+### RSC로 인해 확장된 React 환경
+
+RSC가 추가됨으로 React 환경은 크게 바뀌었을까요?
+
+Dan Abramov가 쓴 글인 [Why do Client Components get SSR'd to HTML?](https://github.com/reactwg/server-components/discussions/4)을 확인해본다면 크게 바뀐 점은 없어보입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/ee46e6c6-d329-4d7d-a65b-2c71353b89ee)
+
+RSC는 클라이언트 React 트리를 변경하지 않고 이전에 미리 서버 트리를 구성합니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/52108407-587f-4b5d-a2eb-f2c2b2dd81c6)
+
+기존의 React 트리를 Client 트리로 바꾸기만 하면 RSC가 추가된 React의 환경이 됩니다.
+
+여기서 알 수 있는 점은 RSC는 필수적인 것은 아니며 RSC를 쓰지 않는다면 기존의 React 트리로 잘 작동합니다. RSC가 추가된다면 기존 React 트리에 서버 트리가 추가되는 것일 뿐이죠
+
+#### RSC가 포함된 React 컴포넌트 트리
+
+먼저 React 팀은 서버/클라이언트 트리를 구분하기 위해 특정 키워드를 최상단에 선언하기로 정의했습니다.
+
+“use client”라는 키워드를 최상단에 선언한다면 이 컴포넌트를 기준으로 클라이언트 트리로 취급됩니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/09fed757-5e7b-4506-bd4c-c1b3d1ef1dfe)
+
+“use client”가 선언된 컴포넌트와 import 된 컴포넌트를 모두 클라이언트 컴포넌트로 취급합니다.
+
+```tsx
+// src/components/other-client-components
+
+const OtherCComponent = () => {
+  return <div>Hello, Other Components</div>;
+};
+
+// src/components/client-components
+
+("use client");
+
+import OtherClientComponent from "@/components/other-component";
+
+const ClientComponent = () => {
+  return (
+    <div>
+      Hello, Client Components
+      <OtherComponent />
+    </div>
+  );
+};
+```
+
+OtherClientComponent는 “use client” 키워드를 사용하지 않았지만 키워드를 사용한 ClientComponent에 불러와 사용되었기 때문에 클라이언트 컴포넌트로서 취급되어질 것 입니다.
+
+그럼 아래와 같은 컴포넌트는 클라이언트 컴포넌트로서 취급되어서 트리에 될까요?
+
+```tsx
+// src/components/server-components
+
+import db from "db";
+
+const ServerComponent = async () => {
+  const data = await db.find(...query);
+  return <div>Hello, {data.name}</div>;
+};
+
+// src/components/client-components
+
+("use client");
+
+import ServerComponent from "@/components/server-component";
+
+const ClientComponent = () => {
+  return (
+    <div>
+      Hello, Client Components
+      <ServerComponent />
+    </div>
+  );
+};
+```
+
+결론적으로는 렌더링 실패합니다. async를 사용하는 컴포넌트거나 서버 레벨의 API를 사용하는등 서버 컴포넌트의 조건을 만족한다면 클라이언트 컴포넌트에서 직접적으로 import해서 사용할 수 없습니다.
+
+OtherComponent를 ClientComponent에서 불러와 사용할 수 있었던 서버/클라이언트 컴포넌트와 다른 공유 컴포넌트이기 때문입니다.
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/363ab161-346a-4e40-a334-491a1ea0992e)
+
+도표로 보면 공유 컴포넌트를 사용하기 위해선 꽤나 제한적으로 보이지만 이미 우리는 공유 컴포넌트를 많이 사용하고 있습니다.
+브라우저 API와 리액트 훅을 사용하지 않고 stateless한 컴포넌트이기만 하면 되기 때문이죠!
+
+그렇다고 서버 컴포넌트를 아예 클라이언트 컴포넌트의 하위 트리로 포함시킬 수 없는 것은 아닙니다.
+
+```tsx
+// src/components/server-components
+
+import db from "db"
+
+const ServerComponent = async () => {
+  const data = await db.find(...query)
+  return (
+    <div>
+      Hello, {data.name}
+    </div>
+  )
+}
+
+// src/components/client-components
+
+"use client"
+
+const ClientComponent = (props) => {
+  return (
+    <div>
+      Hello, Client Components
+      {props.children}
+    </div>
+  )
+}
+
+// src/component/outer-components
+
+import ServerComponent from "@/components/server-component"
+import ClientComponent from "@/components/client-component"
+
+const OuterComponent = () => {
+  return (
+    <ClientComponent>
+      <ServerComponent />
+    <ClientComponent/>
+  )
+}
+```
+
+Composition 패턴을 사용해 클라이언트 컴포넌트의 children으로 서버 컴포넌트를 넘기면 클라이언트 트리에 서버 컴포넌트를 포함시킬 수 있다
+
+### RSC의 장/단점
+
+#### 장점
+
+- 번들 사이즈: 서버 컴포넌트에서 사용되는 의존성들은 자바스크립트 번들에 포함되지 않기 때문에 번들 사이즈 개선을 위한 고민을 하지 않아도 됩니
+- data fetch: 데이터베이스 쿼리와 같은 서버 레벨에 접근이 가능하기 때문에 데이터 소스와 가까운 이점을 잘 살릴수 있습니다.
+- auto code splitting: 서버 컴포넌트는 클라이언트 컴포넌트 import를 code splitting의 기점으로 처리하기 때문에 우리는 React.lazy와 같은 code splitting 사용에 대한 고민보단 앱 개발 자체에 더 집중할 수 있습니다.
+- waterfall 개선: 클라이언트에서 이루어졌던 서버-클라이언트간 순차적인 데이터 페칭이 서버 컴포넌트의 서버에서만 이루어지기 때문에 waterfall 문제가 개선됩니다.
+- 컴포넌트 단위 개발: Next.js(13버전 이전)에서 페이지 루트에서만 서버 사이드 접근이 가능했었지만 이제 우리는 컴포넌트 단위의 서버 사이드 컴포넌트 개발이 가능해졌습니다.
+
+#### 단점
+
+- 높은 러닝커브: RSC를 사용하기 위해선 프레임워크는 필수적입니다. RSC를 사용하기 위해선 번들러 구성도 필요하며 서버에서 적절한 렌더링 처리를 해주어야 하기 때문입니다. 당연히 이를 배우기 위한 리소스가 필요할 것이고 또한 기존 리액트 모델이 서버/클라이언트로 바뀌는 것이기 때문에 적응도 필요합니다.
+- 높아진 개발자의 역량: RSC 덕분에 컴포넌트 단위로 서버 사이드 개발이 가능해졌지만, 우리는 이제 클라이언트 뿐만 아니라 서버 사이드까지 고민하고 디버깅해야합니다.
+
+### RSC는 SSR을 대체할까요?
+
+물론 RSC는 SSR을 개선하여 줄어든 자바스크립트 번들 덕분에 더 빠르게 상호작용이 가능합니다.
+
+SSR을 사용한 렌더링
+
+![Learn {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/0920b577-13ce-4add-970b-7ac5e7d461e9)
+
+RSC를 사용한 렌더링
+
+![RSC {priority} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/b21ce7f7-717c-4926-91f7-47a354bcd238)
+
+하지만 RSC는 SSR을 대체할 수 없습니다.
+
+기본적으로 RSC는 HTML 파일이 아닌 RSC Payload라고 불리는 직렬화된 데이터를 브라우저에 전달하기 때문에 SEO 관점에서 HTML을 생성해 초기 페이지 생성을 하는 SSR은 RSC와 상호 보완할 수 있는 관계입니다.
+
+> RSC Payload는 `I[5250,["250","static/chunks/250-daded5fd7fe94ffb.js","931","static/chunks/app/page-1e419731a7baac39.js"],""]`와 같은 형식으로 이루어져있습니다. HTML이 아닌 직렬화된 데이터를 사용하는 이유는 필요한 데이터만 보내기 때문에 효율적으로 데이터 전송이 가능하고 트리 구조로 최적화 되어 있기 때문에 컴포넌트 트리 업데이트가 용이하기 때문입니다.
+
+### 마무리하며
+
+RSC 덕분에 우리는 서버 사이드에서도 컴포넌트 단위로 개발이 가능해졌습니다. 서버와 클라이언트를 리액트스럽게 컴포넌트 단위로 자연스러운 결합이 RSC의 가장 큰 장점이라고 생각합니다.
+
+React 19 버전에 안정화되어서 릴리즈될 날이 벌써부터 기다려집니다!
+
+> 현재 RSC는 [리액트 팀에서 추천하는 프레임워크들 중에서](https://react.dev/learn/start-a-new-react-project#bleeding-edge-react-frameworks) Next.js의 앱 라우터에서 사용 가능합니다.
