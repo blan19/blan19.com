@@ -150,7 +150,7 @@ export default function Home() {
         </Suspense>
       </div>
       <div className="flex justify-center">
-        <Link href="/blog" className="animate-bounce relative flex flex-col">
+        <Link href="/tech" className="animate-bounce relative flex flex-col">
           <div className="flex items-center gap-2">
             <p>전체 게시글 보기</p>
             <ArrowIcon />
