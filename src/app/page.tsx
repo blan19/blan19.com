@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { unstable_noStore as noStore } from "next/cache";
 import {
   getBestBlogPosts,
   getLatestBlogPosts,
@@ -90,6 +91,7 @@ const Blogs = async ({
   type: "latest" | "best";
   posts: ReturnType<typeof getBlogPosts>;
 }) => {
+  noStore();
   let blogs: Awaited<ReturnType<typeof getLatestBlogPosts>>;
   if (type === "latest") blogs = await getLatestBlogPosts();
   else blogs = await getBestBlogPosts();
