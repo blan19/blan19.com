@@ -192,8 +192,9 @@ export default function Home() {
           현재 내가 빠져있는 것들 💘
         </h1>
         <ul className="flex gap-3 whitespace-pre-wrap flex-wrap">
+          <li className="card">Typescript</li>
+          <li className="card">Rust</li>
           <li className="card">WebGL</li>
-          <li className="card">Three.js</li>
           <li className="card">Next.js</li>
           <li className="card">Flutter</li>
           <li className="card">Opensource</li>
