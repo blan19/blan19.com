@@ -131,9 +131,9 @@ export default function Home() {
     <section className="grid gap-12">
       <div>
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          Welcome to My Tech Blog 👋
+          Welcome to My Blog 👋
         </h1>
-        <p className="w-full prose prose-neutral dark:prose-invert whitespace-pre-line">{`안녕하세요!\nSoftware Enginner '박준서' 입니다.\n블로그를 통해 제가 관심 있어 하거나 새롭게 배운 내용을 많은 분과 공유하고 소통하는 것이 제 목표입니다!\n글에서 부족한 부분이 보인다면 편하게 댓글로 부족한 부분을 짚어주세요\n함께 성장하고 발전하는 공간이 되었으면 합니다 😀`}</p>
+        <p className="w-full prose prose-neutral dark:prose-invert whitespace-pre-line">{`안녕하세요!\n블로그를 통해 제가 관심 있어 하거나 새롭게 배운 내용을 많은 분과 공유하고 소통하는 것이 제 목표입니다!\n글에서 부족한 부분이 보인다면 편하게 댓글로 부족한 부분을 짚어주세요\n함께 성장하고 발전하는 공간이 되었으면 합니다 😀`}</p>
       </div>
       <div>
         <h1 className="font-medium text-2xl mb-4 tracking-tighter">
