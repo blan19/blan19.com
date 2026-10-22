@@ -2,8 +2,8 @@ import Card from "@/components/ui/card";
 // import Tags from "@/components/ui/tags";
 import Link from "next/link";
 import ViewCounter from "@/components/ui/view-counter";
-import { getBlogPosts } from "@/app/db/blog";
-import { getViewCount } from "@/app/db/queries";
+import { getBlogPosts } from "@/lib/posts";
+import { getViewCount } from "@/lib/db/queries";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 

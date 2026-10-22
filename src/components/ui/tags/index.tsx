@@ -1,4 +1,4 @@
-import { getBlogPosts, getBlogTags } from "@/app/db/blog";
+import { getBlogPosts, getBlogTags } from "@/lib/posts";
 import clsx from "clsx";
 import Link from "next/link";
 

@@ -1,12 +1,12 @@
 import MDX from "@/components/ui/mdx";
-import Table from "@/components/ui/table";
-import formatDate from "@/utils/formatDate";
+import Toc from "@/components/ui/toc";
+import formatDate from "@/lib/format-date";
 import Comment from "@/components/ui/comment";
-import { getBlogPosts } from "@/app/db/blog";
+import { getBlogPosts } from "@/lib/posts";
 import { notFound } from "next/navigation";
 import { Suspense, cache } from "react";
-import { increment } from "@/app/db/action";
-import { getViewCount } from "@/app/db/queries";
+import { increment } from "@/lib/db/action";
+import { getViewCount } from "@/lib/db/queries";
 import ViewCounter from "@/components/ui/view-counter";
 import type { Metadata } from "next";
 import config from "@/lib/config";
@@ -99,7 +99,7 @@ const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
           <View slug={post.slug} />
         </Suspense>
       </div>
-      <Table contents={post.content} />
+      <Toc contents={post.content} />
       <MDX contents={post.content} reference={post.metadata.reference} />
       <Comment />
     </section>

@@ -4,8 +4,8 @@ import {
   getBestBlogPosts,
   getLatestBlogPosts,
   getViewCount,
-} from "@/app/db/queries";
-import { getBlogPosts } from "@/app/db/blog";
+} from "@/lib/db/queries";
+import { getBlogPosts } from "@/lib/posts";
 import Card from "@/components/ui/card";
 import Link from "next/link";
 import ViewCounter from "@/components/ui/view-counter";

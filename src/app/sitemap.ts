@@ -1,4 +1,4 @@
-import { getBlogPosts } from "@/app/db/blog";
+import { getBlogPosts } from "@/lib/posts";
 import config from "@/lib/config";
 
 export default async function sitemap() {

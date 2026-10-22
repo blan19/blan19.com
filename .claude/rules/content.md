@@ -9,7 +9,7 @@ paths:
 
 ## 경로와 slug
 
-- `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`. 날짜 폴더 하나에 `.mdx` 는 정확히 1개다. 같은 날 두 번째 글은 다른 날짜 폴더에 둔다. 카테고리 폴더 바로 아래에는 날짜 폴더만 둔다(`.DS_Store` 같은 파일도 안 된다). 어기면 `src/app/db/blog.ts` 가 실패해 모든 페이지가 깨진다.
+- `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`. 날짜 폴더 하나에 `.mdx` 는 정확히 1개다. 같은 날 두 번째 글은 다른 날짜 폴더에 둔다. 카테고리 폴더 바로 아래에는 날짜 폴더만 둔다(`.DS_Store` 같은 파일도 안 된다). 어기면 `src/lib/posts.ts` 가 실패해 모든 페이지가 깨진다.
 - slug = 파일명 = URL(`/tech/<slug>`) = 조회수 DB 키. 영문 소문자, 숫자, `.`, `-` 만 쓴다(예: `why-using-next.js-14`). 카테고리와 무관하게 유일해야 한다(검사기가 error 로 막는다).
 - 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 순서를 따른다. 새 글은 폴더 날짜와 `publishedAt` 을 같게 둔다. 다르면 검사기는 error 가 아니라 warn 을 낸다. 기존 글 하나(`2023-12-11/javascript-memory-management`, publishedAt 12-12)가 이미 다르고, 공개된 글의 폴더는 옮기지 않기 때문이다.
@@ -33,7 +33,7 @@ reference: ["https://react.dev/blog/2024/04/25/react-19"]  # http(s) URL 배열.
 ## tech 본문 (react-markdown + remark-gfm. JSX/MDX 컴포넌트와 raw HTML 은 렌더되지 않는다)
 
 - 제목은 `###`(목차에 나오는 섹션)와 `####`(하위)만 쓴다. `#`/`##` 는 스타일이 없다. `###` 제목에는 `#`, 굵게, 코드, 링크 서식을 넣지 않고 중복시키지 않는다(목차 앵커가 어긋난다).
-- 코드 블록에는 언어를 붙인다. 하이라이트되는 언어는 `src/components/ui/mdx/index.tsx` 의 `registerLanguage` 목록이다. 그 밖의 언어는 색 없이 나오고 검사기가 warn 한다. TOC(`ui/table`)는 원문 줄 어디에서든 `###` 부터 줄 끝까지를 정규식으로 뽑으므로(`#` 가 정확히 3개일 때) 문단, 인라인 코드, 코드 블록에 `###` 를 쓰지 않는다. 검사기는 코드 블록 안만 warn 한다.
+- 코드 블록에는 언어를 붙인다. 하이라이트되는 언어는 `src/components/ui/mdx/index.tsx` 의 `registerLanguage` 목록이다. 그 밖의 언어는 색 없이 나오고 검사기가 warn 한다. TOC(`ui/toc`)는 원문 줄 어디에서든 `###` 부터 줄 끝까지를 정규식으로 뽑으므로(`#` 가 정확히 3개일 때) 문단, 인라인 코드, 코드 블록에 `###` 를 쓰지 않는다. 검사기는 코드 블록 안만 warn 한다.
 - 인용 `>` 는 보충 설명이나 인용에, 목록은 `-` 를 쓴다. 외부 링크는 새 탭으로 열린다.
 
 ### 이미지

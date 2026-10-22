@@ -1,4 +1,4 @@
-import { getBlogPosts } from "@/app/db/blog";
+import { getBlogPosts } from "@/lib/posts";
 
 const Log = () => {
   const posts = getBlogPosts("log");

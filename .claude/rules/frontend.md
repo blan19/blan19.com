@@ -20,14 +20,14 @@ paths:
 ## MDX 렌더러 (`src/components/ui/mdx/index.tsx`, `.mdx-renderer`)
 
 - react-markdown + remark-gfm 이다. 글 스타일은 `globals.css` 의 `.mdx-renderer > h3/h4/p/a/blockquote/ul/li/pre` 규칙이 담당하며 **직계 자식에만** 적용된다. 마크업 구조를 바꾸면 스타일이 빠진다.
-- 커스텀 렌더: code(PrismLight, a11yDark, 등록 언어 5개), p(첫 자식이 img 면 next/image 로 바꾸고 alt 메타 파싱), a(http 는 새 탭), h3(id 앵커). TOC 는 `ui/table` 이 원문에서 `###` 를 정규식으로 뽑는다. h3 id 생성 방식을 바꾸면 TOC 도 같이 바꾼다.
+- 커스텀 렌더: code(PrismLight, a11yDark, 등록 언어 5개), p(첫 자식이 img 면 next/image 로 바꾸고 alt 메타 파싱), a(http 는 새 탭), h3(id 앵커). TOC 는 `ui/toc` 이 원문에서 `###` 를 정규식으로 뽑는다. h3 id 생성 방식을 바꾸면 TOC 도 같이 바꾼다.
 - 하이라이트 언어를 추가하면 `registerLanguage` 만 늘리면 된다. 검사기(`scripts/validate-content.mjs`)가 같은 파일에서 목록을 읽는다.
 - alt 메타 형식(`{priority}`, `{caption: …}`, `{WxH}`)을 바꾸면 기존 글 전부와 검사기의 `checkImageMeta` 도 함께 바꾼다.
 
 ## 컴포넌트
 
 - 기본은 Server Component 다. `"use client"` 는 `src/app/error.tsx`, `ui/navbar`(usePathname), `ui/comment`(utterances) 세 곳뿐이다. 클라이언트 경계는 최소로 유지한다.
-- `src/app/db/action.ts`, `queries.ts` 는 `"use server"` 파일이다. Client Component 에서 import 하면 export 가 공개 POST 엔드포인트가 된다(`increment` 를 누구나 호출 가능). 클라이언트에서 import 하지 않는다.
+- `src/lib/db/action.ts`, `queries.ts` 는 `"use server"` 파일이다. Client Component 에서 import 하면 export 가 공개 POST 엔드포인트가 된다(`increment` 를 누구나 호출 가능). 클라이언트에서 import 하지 않는다.
 - DB 를 읽는 컴포넌트는 `<Suspense>` 로 감싸는 기존 패턴을 따른다(`View` in `tech/page.tsx`, `tech/[slug]/page.tsx`). 두 파일의 Suspense fallback `<p>` 는 `View` 의 글자 크기 클래스를 복사해 둔 것이라, 한쪽을 바꾸면 다른 쪽도 같이 바꾼다(아니면 레이아웃이 흔들린다).
 - Next 16: 페이지와 `generateMetadata` 의 `params`/`searchParams` 는 `Promise` 타입이고 `await` 한다. route handler 에도 같은 규칙이 적용된다.
 - 이미지는 `next/image` 를 쓴다. 원격 호스트는 `next.config.js` 의 `images.remotePatterns` 에 있어야 한다. 호스트를 추가하면 검사기도 자동으로 따라간다(설정을 require 함).
@@ -37,10 +37,10 @@ paths:
 
 ## 알려진 이슈 (요청 없이 고치지 말 것)
 
-- MDX 렌더러: fenced code 가 `<pre>` 안에 중첩된다. TOC(`ui/table`)와 h3 id 를 만드는 방식이 서로 다르다.
+- MDX 렌더러: fenced code 가 `<pre>` 안에 중첩된다. TOC(`ui/toc`)와 h3 id 를 만드는 방식이 서로 다르다.
 - `layout.tsx` 에 동작하지 않는 `next/head` 가 남아 있고 `<html lang="en">` 이다.
 - OG 이미지 URL 의 title 을 인코딩하지 않는다(`tech/[slug]/page.tsx`).
 - utterances 댓글(`ui/comment`)은 cleanup 이 없다.
-- `generateSlug`, `getBlogTags`, `ui/tags`, `ui/typography`, `styles/theme.ts` 는 쓰이지 않는다.
+- `getBlogTags`(`src/lib/posts.ts`), `ui/tags`, `ui/typography`, `styles/theme.ts` 는 쓰이지 않는다.
 
 화면 확인은 `/run-app` 으로 한다(DB 차단). 검증 순서는 CLAUDE.md 의 작업 규칙을 따른다.
