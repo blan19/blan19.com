@@ -11,10 +11,11 @@ import ViewCounter from "@/components/ui/view-counter";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
-  params: { slug },
+  params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata | undefined> {
+  const { slug } = await params;
   let post = getBlogPosts("tech").find((post) => post.slug == slug);
 
   if (!post) {
@@ -67,7 +68,8 @@ const View = async ({ slug }: { slug: string }) => {
   );
 };
 
-const Post = ({ params: { slug } }: { params: { slug: string } }) => {
+const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params;
   const post = getBlogPosts("tech").find((post) => post.slug === slug);
 
   if (!post) {

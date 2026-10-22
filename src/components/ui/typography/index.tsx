@@ -1,6 +1,12 @@
 import theme from "@/styles/theme";
 import { forwardRef } from "react";
-import type { AllHTMLAttributes, CSSProperties, ReactNode, Ref } from "react";
+import type {
+  AllHTMLAttributes,
+  CSSProperties,
+  JSX,
+  ReactNode,
+  Ref,
+} from "react";
 
 type FontSize = (typeof theme.fontSize)[number];
 
