@@ -37,10 +37,10 @@ paths:
 
 ## 알려진 이슈 (요청 없이 고치지 말 것)
 
-- MDX 렌더러: 이미지 alt 크기 정규식이 소문자 x 에 걸린다(작성 규칙은 content.md). fenced code 가 `<pre>` 안에 중첩된다. TOC(`ui/table`)와 h3 id 를 만드는 방식이 서로 다르다.
+- MDX 렌더러: fenced code 가 `<pre>` 안에 중첩된다. TOC(`ui/table`)와 h3 id 를 만드는 방식이 서로 다르다.
 - `layout.tsx` 에 동작하지 않는 `next/head` 가 남아 있고 `<html lang="en">` 이다.
 - OG 이미지 URL 의 title 을 인코딩하지 않는다(`tech/[slug]/page.tsx`).
-- `formatDate` 는 연/월/일 필드 차이를 따로 비교해 경계에서 틀린다(예: 12/31 글을 1/1 에 보면 `1y ago`). utterances 댓글(`ui/comment`)은 cleanup 이 없다.
+- utterances 댓글(`ui/comment`)은 cleanup 이 없다.
 - `generateSlug`, `getBlogTags`, `ui/tags`, `ui/typography`, `styles/theme.ts` 는 쓰이지 않는다.
 
 화면 확인은 `/run-app` 으로 한다(DB 차단). 검증 순서는 CLAUDE.md 의 작업 규칙을 따른다.

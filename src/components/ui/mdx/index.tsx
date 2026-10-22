@@ -58,11 +58,10 @@ const MDX = ({ contents, reference }: MDXProps) => {
               if (node.children[0].tagName === "img") {
                 const image = node.children[0];
                 const metastring = image.properties.alt;
-                const alt = metastring?.replace(/ *\{[^)]*\} */g, "");
-                const metaWidth = metastring.match(/{([^}]+)x/);
-                const metaHeight = metastring.match(/x([^}]+)}/);
-                const width = metaWidth ? metaWidth[1] : "768";
-                const height = metaHeight ? metaHeight[1] : "432";
+                const alt = metastring?.replace(/\s*\{[^}]*\}/g, "").trim();
+                const metaSize = metastring.match(/\{(\d+)x(\d+)\}/);
+                const width = metaSize ? metaSize[1] : "768";
+                const height = metaSize ? metaSize[2] : "432";
                 const isPriority = metastring?.toLowerCase().match("{priority}");
                 const hasCaption = metastring
                   ?.toLowerCase()
