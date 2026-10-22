@@ -89,9 +89,7 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 
 고치는 게 작업이면 먼저 사용자와 범위를 맞춘다. 영역별 이슈는 각 rule 파일에 있다.
 
-- slug 를 바꾸거나 글을 지우면 조회수 연결이 끊긴다. DB 에 행이 남은 slug 가 사라지고 그 slug 가 홈의 최근/인기 상위 3개에 들면 `src/app/page.tsx` 의 `blog!.slug` 에서 크래시한다.
-- `/blog` 시절 링크가 남아 있어 404 가 난다: `src/app/sitemap.ts`, RSS 두 route, `tech/[slug]` 의 `openGraph.url`, `ui/tags`. sitemap 에는 `/tech`, `/log` 가 없다.
-- `/rss.xml` 이 실제로는 Atom 을 내보내며 `/rss-atom.xml` 과 내용이 같다.
+- slug 를 바꾸거나 글을 지우면 조회수 연결이 끊긴다. DB 에 행만 남은 slug 는 홈의 최근/인기 목록에서 빠지므로(상위 3개를 가져온 뒤 거른다) 목록이 3개보다 적게 보일 수 있다.
 - `unstable_cache`, `unstable_noStore` 는 Next 16 에서 레거시 API 다. 마이그레이션은 별도 작업으로 다룬다.
 
 ## 스킬
