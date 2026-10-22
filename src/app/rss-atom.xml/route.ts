@@ -20,8 +20,8 @@ export async function GET() {
   getBlogPosts("tech").forEach((post) =>
     feed.addItem({
       title: post.metadata.title,
-      id: `${config.url}blog/${post.slug}`,
-      link: `${config.url}blog/${post.slug}`,
+      id: `${config.url}tech/${post.slug}`,
+      link: `${config.url}tech/${post.slug}`,
       description: post.metadata.description,
       content: post.content,
       author: [config.author],
