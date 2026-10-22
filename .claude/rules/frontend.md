@@ -32,7 +32,7 @@ paths:
 - Next 16: 페이지와 `generateMetadata` 의 `params`/`searchParams` 는 `Promise` 타입이고 `await` 한다. route handler 에도 같은 규칙이 적용된다.
 - 이미지는 `next/image` 를 쓴다. 원격 호스트는 `next.config.js` 의 `images.remotePatterns` 에 있어야 한다. 호스트를 추가하면 검사기도 자동으로 따라간다(설정을 require 함).
 - 메타데이터는 `export const metadata` / `generateMetadata` 를 쓴다. `next/head` 는 App Router 에서 동작하지 않는다.
-- 사이트 URL `https://www.blan19.com` 은 layout, robots, sitemap, `tech/[slug]` 에 하드코딩되어 있고 RSS 는 `src/lib/config.ts` 의 `url` 을 쓴다. 바꿀 때는 모두 찾아 바꾼다.
+- 사이트 URL 은 `src/lib/config.ts` 의 `url`(`https://www.blan19.xyz/`, 끝 `/` 포함) 하나다. layout(metadataBase), robots, sitemap, `tech/[slug]`, RSS 가 모두 이 값을 쓰니 경로는 `${config.url}tech/...` 처럼 앞에 `/` 없이 붙인다. 2026-10 에 `blan19.com` 에서 옮겼고 옛 도메인은 리다이렉트할 수 없다. 저장소 이름(`blan19/blan19.com`: utterances, GitHub 첨부 이미지 URL)은 도메인과 무관하니 바꾸지 않는다.
 - UI 문구는 한국어와 영어가 섞여 있다. 수정하는 화면의 기존 언어를 따른다.
 
 ## 알려진 이슈 (요청 없이 고치지 말 것)

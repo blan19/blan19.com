@@ -61,7 +61,7 @@ warn 은 의도한 것인지 확인하고 보고에 남긴다. 남은 `TODO:`(�
 
 ## 7. 마무리 보고
 
-- 만든 파일 경로, slug, URL(`https://www.blan19.com/tech/<slug>`, log 는 `/log`)
+- 만든 파일 경로, slug, URL(`https://www.blan19.xyz/tech/<slug>`, log 는 `/log`)
 - content:check 결과(error/warn 개수), 남은 `TODO:`
 - 제안 커밋 메시지: `contents: <slug>` (커밋은 사용자가 요청할 때만 한다)
 - 참고: 새 tech 글은 홈 "최근 블로그 포스팅"에 바로 나오지 않는다. 처음 조회된 뒤에, 그리고 캐시 때문에 최대 1시간 뒤에 나온다.

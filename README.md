@@ -1,4 +1,4 @@
-# [blan19.com](https://www.blan19.com)
+# [blan19.xyz](https://www.blan19.xyz)
 
 A Markdown Blog built with Next.js, Tailwind and Vercel. Designed, built, and maintained by [@blan19](https://github.com/blan19)
 

@@ -8,7 +8,7 @@ const Header = () => {
         <Link href="/">
           <div className="flex items-center">
             <h2 className="text-xl font-medium tracking-tighter italic">
-              blan19.com
+              blan19.xyz
             </h2>
           </div>
         </Link>

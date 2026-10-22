@@ -1,6 +1,6 @@
 # blan19.com
 
-개인 한국어 기술 블로그(https://www.blan19.com). `contents/` 의 MDX 글을 Next.js App Router 로 렌더하고, Postgres 는 글 조회수에만 쓴다. Vercel GitHub 연동으로 배포(브랜치 push → Preview(PR 유무 무관), main → Production). 앱 테스트 코드는 없다(훅 테스트만 있다). 검증은 `npm run verify`.
+개인 한국어 기술 블로그(https://www.blan19.xyz). `contents/` 의 MDX 글을 Next.js App Router 로 렌더하고, Postgres 는 글 조회수에만 쓴다. Vercel GitHub 연동으로 배포(브랜치 push → Preview(PR 유무 무관), main → Production). 앱 테스트 코드는 없다(훅 테스트만 있다). 검증은 `npm run verify`.
 
 - 스택: Next.js 16.4 (Turbopack), React 19.3, TypeScript 6.0, Tailwind CSS 4.3, Prisma 7.10 (`@prisma/adapter-pg`), ESLint 10 flat config, Node 24 / npm 11.
 - Next 16 API 가 헷갈리면 학습 데이터 대신 버전이 맞는 로컬 문서를 먼저 본다: `node_modules/next/dist/docs/01-app/`
