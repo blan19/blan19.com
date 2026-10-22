@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const repo = "blan19/blan19.com";
+const repo = "blan19/blan19.xyz";
 
 const Comment = () => {
   const ref = useRef<HTMLDivElement>(null);

@@ -39,7 +39,7 @@ reference: ["https://react.dev/blog/2024/04/25/react-19"]  # http(s) URL 배열.
 ### 이미지
 
 ```md
-![설명 {priority} {caption: 캡션} {768x432}](https://github.com/blan19/blan19.com/assets/66871265/<id>)
+![설명 {priority} {caption: 캡션} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/<id>)
 ```
 
 - 이미지는 단독 문단으로 둔다(앞뒤 빈 줄). 이미지로 시작하는 문단의 나머지 텍스트는 사라진다. 참조 형식(`![설명][ref]`)은 검사기가 확인하지 못하니 `![설명](URL)` 형식만 쓴다.
