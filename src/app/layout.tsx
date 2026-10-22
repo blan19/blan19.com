@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import Footer from "@/components/layouts/footer";
 import Script from "next/script";
 import Head from "next/head";
+import config from "@/lib/config";
 
 const pretendard = localFont({
   src: [
@@ -34,7 +35,7 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.blan19.com"),
+  metadataBase: new URL(config.url),
   title: {
     default: "Tech Blog by blan19",
     template: "%s | blan19",

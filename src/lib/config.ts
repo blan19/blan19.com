@@ -4,7 +4,7 @@ const author = {
   link: "https://github.com/blan19",
 };
 
-const url = "https://www.blan19.com/";
+const url = "https://www.blan19.xyz/";
 
 const config = {
   author,

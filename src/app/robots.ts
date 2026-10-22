@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import config from "@/lib/config";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
       },
     ],
-    sitemap: "https://www.blan19.com/sitemap.xml",
-    host: "https://www.blan19.com",
+    sitemap: `${config.url}sitemap.xml`,
+    host: new URL(config.url).origin,
   };
 }

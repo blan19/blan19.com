@@ -1,13 +1,14 @@
 import { getBlogPosts } from "@/app/db/blog";
+import config from "@/lib/config";
 
 export default async function sitemap() {
   let blogs = getBlogPosts("tech").map((post) => ({
-    url: `https://www.blan19.com/tech/${post.slug}`,
+    url: `${config.url}tech/${post.slug}`,
     lastModified: post.metadata.publishedAt,
   }));
 
-  let routes = ["", "/tech", "/log"].map((route) => ({
-    url: `https://www.blan19.com${route}`,
+  let routes = ["", "tech", "log"].map((route) => ({
+    url: `${config.url}${route}`,
     lastModified: new Date().toISOString().split("T")[0],
   }));
 

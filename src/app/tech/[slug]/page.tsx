@@ -9,6 +9,7 @@ import { increment } from "@/app/db/action";
 import { getViewCount } from "@/app/db/queries";
 import ViewCounter from "@/components/ui/view-counter";
 import type { Metadata } from "next";
+import config from "@/lib/config";
 
 export async function generateMetadata({
   params,
@@ -28,7 +29,7 @@ export async function generateMetadata({
     tags: keywords,
     publishedAt: publishedTime,
   } = post.metadata;
-  let ogImage = `https://www.blan19.com/og?title=${title}`;
+  let ogImage = `${config.url}og?title=${title}`;
 
   return {
     title,
@@ -39,7 +40,7 @@ export async function generateMetadata({
       description,
       publishedTime,
       type: "article",
-      url: `https://www.blan19.com/tech/${post.slug}`,
+      url: `${config.url}tech/${post.slug}`,
       images: [
         {
           url: ogImage,

@@ -4,7 +4,7 @@ const Footer = () => {
       <div className="responsive flex justify-between py-10">
         <div className="flex flex-col justify-between">
           <h2 className="text-xl font-medium tracking-tighter italic">
-            blan19.com
+            blan19.xyz
           </h2>
           <p className="text-xs italic">Copyright © 2023 — blan19</p>
         </div>
