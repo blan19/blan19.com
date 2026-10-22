@@ -1,6 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source("../");
+@plugin "@tailwindcss/typography";
+
+@custom-variant hover (&:hover);
+
+@theme {
+  --color-*: initial;
+  --color-greyscale-0: #f8f9fa;
+  --color-greyscale-1: #f1f3f5;
+  --color-greyscale-2: #e9ecef;
+  --color-greyscale-3: #dee2e6;
+  --color-greyscale-4: #ced4da;
+  --color-greyscale-5: #adb5bd;
+  --color-greyscale-6: #868e96;
+  --color-greyscale-7: #495057;
+  --color-greyscale-8: #343a40;
+  --color-greyscale-9: #212529;
+  --color-system-1: #c92a2a;
+  --color-system-2: #e03131;
+}
+
+@theme inline reference {
+  --font-pretendard: var(--font-pretendard);
+}
 
 @layer base {
   /* base style */
@@ -17,6 +38,17 @@
 
   main {
     flex: 1;
+  }
+
+  /* restore browser default tap highlight (v4 preflight sets it to transparent) */
+  html {
+    -webkit-tap-highlight-color: initial;
+  }
+
+  /* restore v3 button cursor (v4 preflight uses cursor: default) */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 
   /* mdx renderer style */
@@ -38,7 +70,7 @@
   }
 
   .mdx-renderer > p {
-    @apply leading-relaxed text-base md:text-lg dark:text-greyscale-4 my-4;
+    @apply leading-relaxed text-base md:text-lg md:leading-7 dark:text-greyscale-4 my-4;
   }
 
   .mdx-renderer > p > a {
@@ -46,7 +78,7 @@
   }
 
   .mdx-renderer > blockquote {
-    @apply leading-relaxed text-base md:text-lg italic border-l-4 border-l-greyscale-7 my-12 pl-5;
+    @apply leading-relaxed text-base md:text-lg md:leading-7 italic border-l-4 border-l-greyscale-7 my-12 pl-5;
   }
 
   .mdx-renderer > ul {
@@ -54,7 +86,7 @@
   }
 
   .mdx-renderer > ul > li {
-    @apply relative leading-relaxed text-base md:text-lg dark:text-greyscale-4 my-4 pl-4 ml-2;
+    @apply relative leading-relaxed text-base md:text-lg md:leading-7 dark:text-greyscale-4 my-4 pl-4 ml-2;
   }
 
   .mdx-renderer > ul > li > a {

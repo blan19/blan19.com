@@ -2,6 +2,8 @@ import { Feed } from "feed";
 import { getBlogPosts } from "../db/blog";
 import config from "@/lib/config";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   const feed = new Feed({
     title: "Tech Blog by blan19",
@@ -25,10 +27,6 @@ export async function GET() {
       author: [config.author],
       contributor: [config.author],
       date: new Date(post.metadata.publishedAt),
-      image: {
-        url: `${config.url}og?title=${post.metadata.title}`,
-        type: "image/png",
-      },
       category: post.metadata.tags.map((tag) => ({ name: tag })) || [],
     })
   );
