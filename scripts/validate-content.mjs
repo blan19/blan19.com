@@ -153,22 +153,23 @@ const checkImageMeta = (file, lineNo, alt) => {
     error(file, `${where}: alt 의 중괄호 { } 짝이 맞지 않음 ("${alt}")`);
     return;
   }
+  if (/\{[^}]*\{/.test(alt)) {
+    error(file, `${where}: alt 메타 안에 중괄호가 중첩됨. 렌더러가 alt 와 caption 을 잘못 자른다 ("${alt}")`);
+    return;
+  }
   for (const token of alt.match(META_TOKEN_RE) ?? []) {
     const ok = /^\{priority\}$/i.test(token) || /^\{caption: .+\}$/.test(token) || /^\{\d+x\d+\}$/.test(token);
-    if (!ok) warn(file, `${where}: 알 수 없는 alt 메타 ${token} (허용: {priority}, {caption: 설명}, {768x432})`);
+    if (ok) continue;
+    if (/^\{caption/i.test(token)) warn(file, `${where}: 캡션 형식이 틀려 빈 캡션이 렌더됨 ${token} (형식: {caption: 텍스트}, 소문자, 콜론 뒤 공백 하나)`);
+    else warn(file, `${where}: 알 수 없는 alt 메타 ${token} (허용: {priority}, {caption: 설명}, {768x432}. 그 외 토큰은 무시됨)`);
   }
-  if (alt.replace(/ *\{[^)]*\} */g, "").trim() === "") {
+  // 렌더러(src/components/ui/mdx)와 같은 정규식: alt 에서 {…} 토큰을 지우고, 크기는 첫 {<숫자>x<숫자>} 토큰만 읽는다.
+  if (alt.replace(/\s*\{[^}]*\}/g, "").trim() === "") {
     error(file, `${where}: alt 설명 텍스트가 없음 (예: ![설명 {768x432}](...))`);
   }
-  // 렌더러(src/components/ui/mdx)의 크기 파싱 정규식을 그대로 흉내 낸다.
-  const width = alt.match(/{([^}]+)x/)?.[1] ?? "768";
-  const height = alt.match(/x([^}]+)}/)?.[1] ?? "432";
-  if (!/^\d+$/.test(width) || !/^\d+$/.test(height)) {
-    error(
-      file,
-      `${where}: 렌더러가 크기를 width="${width}", height="${height}" 로 잘못 읽음 → next/image 런타임 에러. alt 설명과 {caption: ...} 에 소문자 x 를 쓰지 마세요`,
-    );
-  }
+  const sizes = alt.match(/\{\d+x\d+\}/g) ?? [];
+  if (sizes[0] && /^\{0+x|x0+\}$/.test(sizes[0])) error(file, `${where}: 크기 ${sizes[0]} 에 0 이 있음 → next/image 에 width/height 0 이 넘어감`);
+  if (sizes.length > 1) warn(file, `${where}: 크기 토큰이 ${sizes.length}개임. 렌더러는 첫 ${sizes[0]} 만 쓴다`);
 };
 
 const checkImageSrc = (file, lineNo, src) => {

@@ -2,11 +2,11 @@ import { getBlogPosts } from "@/app/db/blog";
 
 export default async function sitemap() {
   let blogs = getBlogPosts("tech").map((post) => ({
-    url: `https://www.blan19.com/blog/${post.slug}`,
+    url: `https://www.blan19.com/tech/${post.slug}`,
     lastModified: post.metadata.publishedAt,
   }));
 
-  let routes = ["", "/blog"].map((route) => ({
+  let routes = ["", "/tech", "/log"].map((route) => ({
     url: `https://www.blan19.com${route}`,
     lastModified: new Date().toISOString().split("T")[0],
   }));

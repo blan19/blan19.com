@@ -19,7 +19,7 @@ const Tags = ({ posts, seletedTag }: TagsProps) => {
           <Link
             key={tag}
             href={{
-              pathname: "/blog",
+              pathname: "/tech",
               query: {
                 tag: tag,
               },
