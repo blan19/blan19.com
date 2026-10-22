@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      # 운영 DB 에 절대 닿지 않도록 차단 주소를 넣는다 (scripts/with-blocked-db.mjs 와 같은 값).
+      POSTGRES_URL: postgres://blocked:blocked@127.0.0.1:1/blocked
+      POSTGRES_PRISMA_URL: postgres://blocked:blocked@127.0.0.1:1/blocked
+      POSTGRES_URL_NON_POOLING: postgres://blocked:blocked@127.0.0.1:1/blocked
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - name: typecheck
+        run: npx tsc --noEmit
+      - name: lint
+        run: npm run lint
+      - name: content check
+        run: npm run content:check
+      - name: hook tests
+        run: npm run test:hooks
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'contents/**', 'next.config.js') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - name: build (blocked DB)
+        run: node scripts/with-blocked-db.mjs next build
+      - name: smoke
+        run: npm run smoke

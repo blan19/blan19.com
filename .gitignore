@@ -38,3 +38,8 @@ next-env.d.ts
 
 # prisma generated client
 /src/generated/
+
+# local tool state (Claude Code personal settings, oh-my-claudecode, Playwright MCP screenshots)
+.claude/settings.local.json
+.omc/
+.playwright-mcp/

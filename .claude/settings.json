@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint *)",
+      "Bash(npm run typecheck *)",
+      "Bash(npm run content:check *)",
+      "Bash(npm run verify *)",
+      "Bash(npm run smoke *)",
+      "Bash(npm run dev:safe *)",
+      "Bash(npm run test:hooks *)",
+      "Bash(node .claude/hooks/guard-bash.test.mjs *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prisma generate *)",
+      "Bash(npx prisma validate *)",
+      "Bash(node scripts/validate-content.mjs *)",
+      "Bash(node scripts/smoke.mjs *)",
+      "Bash(node scripts/verify.mjs *)",
+      "Bash(node scripts/with-blocked-db.mjs next *)",
+      "Bash(node scripts/with-blocked-db.mjs --preview next *)",
+      "Bash(node scripts/with-blocked-db.mjs npx prisma migrate diff *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git fetch origin main *)",
+      "Bash(git branch --show-current)",
+      "Bash(git branch --list *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)"
+    ],
+    "ask": [
+      "mcp__plugin_github_github__push_files",
+      "mcp__plugin_github_github__create_or_update_file",
+      "mcp__plugin_github_github__delete_file",
+      "mcp__plugin_github_github__create_branch",
+      "mcp__plugin_github_github__create_pull_request",
+      "mcp__plugin_github_github__merge_pull_request",
+      "mcp__plugin_github_github__update_pull_request_branch"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(.env.production)",
+      "Read(.env.development)",
+      "Edit(.env)",
+      "Edit(.env.local)",
+      "Edit(.env.*.local)",
+      "Edit(.env.production)",
+      "Edit(.env.development)",
+      "Bash(prisma db push *)",
+      "Bash(prisma db execute *)",
+      "Bash(prisma db seed *)",
+      "Bash(prisma migrate *)",
+      "Bash(prisma studio *)",
+      "Bash(prisma db pull *)",
+      "Bash(npx prisma db push *)",
+      "Bash(npx prisma db execute *)",
+      "Bash(npx prisma db seed *)",
+      "Bash(npx prisma migrate *)",
+      "Bash(npx prisma studio *)",
+      "Bash(npx prisma db pull *)",
+      "Bash(npm run vercel-build *)",
+      "Bash(node --run vercel-build *)",
+      "Bash(node --run=vercel-build *)",
+      "Bash(vercel build *)",
+      "Bash(npx vercel build *)",
+      "Bash(vercel-build *)",
+      "Bash(vercel --prod *)",
+      "Bash(vercel deploy --prod *)",
+      "Bash(npx vercel --prod *)",
+      "Bash(npx vercel deploy --prod *)",
+      "Bash(vercel env rm *)",
+      "Bash(vercel env add *)",
+      "Bash(vercel promote *)",
+      "Bash(vercel rollback *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-check.mjs",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
