@@ -96,7 +96,13 @@ const Blogs = async ({
   if (type === "latest") blogs = await getLatestBlogPosts();
   else blogs = await getBestBlogPosts();
 
-  if (!blogs.length)
+  // DB 에만 남은 slug(삭제/이름 변경된 글)는 건너뛴다.
+  const matched = blogs.flatMap((blog) => {
+    const post = posts.find((post) => blog.slug === post.slug);
+    return post ? [post] : [];
+  });
+
+  if (!matched.length)
     return (
       <div className="card">
         <p>아직 블로그 게시글이 존재하지 않아요 😢</p>
@@ -105,21 +111,19 @@ const Blogs = async ({
 
   return (
     <ul className="flex flex-col gap-4">
-      {blogs
-        .map((blog) => posts.find((post) => blog.slug === post.slug))
-        .map((blog) => (
-          <li key={blog!.slug}>
-            <Link href={`/tech/${blog!.slug}`}>
-              <Card
-                title={blog!.metadata.title}
-                tags={blog!.metadata.tags}
-                date={blog!.metadata.publishedAt}
-              >
-                <View slug={blog!.slug} />
-              </Card>
-            </Link>
-          </li>
-        ))}
+      {matched.map((blog) => (
+        <li key={blog.slug}>
+          <Link href={`/tech/${blog.slug}`}>
+            <Card
+              title={blog.metadata.title}
+              tags={blog.metadata.tags}
+              date={blog.metadata.publishedAt}
+            >
+              <View slug={blog.slug} />
+            </Card>
+          </Link>
+        </li>
+      ))}
     </ul>
   );
 };
