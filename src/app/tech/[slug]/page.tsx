@@ -39,7 +39,7 @@ export async function generateMetadata({
       description,
       publishedTime,
       type: "article",
-      url: `https://www.blan19.com/blog/${post.slug}`,
+      url: `https://www.blan19.com/tech/${post.slug}`,
       images: [
         {
           url: ogImage,
