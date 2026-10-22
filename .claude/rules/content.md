@@ -11,7 +11,7 @@ paths:
 
 - `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`. 날짜 폴더 하나에 `.mdx` 는 정확히 1개다. 같은 날 두 번째 글은 다른 날짜 폴더에 둔다. 카테고리 폴더 바로 아래에는 날짜 폴더만 둔다(`.DS_Store` 같은 파일도 안 된다). 어기면 `src/app/db/blog.ts` 가 실패해 모든 페이지가 깨진다.
 - slug = 파일명 = URL(`/tech/<slug>`) = 조회수 DB 키. 영문 소문자, 숫자, `.`, `-` 만 쓴다(예: `why-using-next.js-14`). 카테고리와 무관하게 유일해야 한다(검사기가 error 로 막는다).
-- 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(홈 크래시 조건은 CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
+- 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 순서를 따른다. 새 글은 폴더 날짜와 `publishedAt` 을 같게 둔다. 다르면 검사기는 error 가 아니라 warn 을 낸다. 기존 글 하나(`2023-12-11/javascript-memory-management`, publishedAt 12-12)가 이미 다르고, 공개된 글의 폴더는 옮기지 않기 때문이다.
 
 ## frontmatter (5개 필드 모두 필수)
@@ -43,8 +43,8 @@ reference: ["https://react.dev/blog/2024/04/25/react-19"]  # http(s) URL 배열.
 ```
 
 - 이미지는 단독 문단으로 둔다(앞뒤 빈 줄). 이미지로 시작하는 문단의 나머지 텍스트는 사라진다. 참조 형식(`![설명][ref]`)은 검사기가 확인하지 못하니 `![설명](URL)` 형식만 쓴다.
-- alt 메타: `{priority}`(첫 화면 이미지), `{caption: 텍스트}`, `{가로x세로}`(기본 768x432). alt 설명 텍스트는 필수다.
-- alt 설명과 caption 에 소문자 `x` 를 쓰지 않는다. 렌더러의 크기 정규식이 첫 `x` 에 걸려 next/image 런타임 에러가 난다(예: `Next.js 예시`, `{caption: next.js docs}` 모두 위험).
+- alt 메타: `{priority}`(첫 화면 이미지), `{caption: 텍스트}`(콜론 뒤 공백 하나, 텍스트에 `{` `}` 불가), `{<숫자>x<숫자>}`(가로x세로, 공백 없이 소문자 `x`, 0 불가. 예: `{768x432}`. 없으면 768x432). alt 설명 텍스트는 필수다.
+- 렌더러는 alt 에서 `{…}` 토큰을 모두 지운 나머지를 alt 로 쓰고, 크기는 첫 `{<숫자>x<숫자>}` 토큰만 읽는다. 형식이 다른 토큰(`{768X432}`, `{768 x 432}`)은 무시되고 크기는 기본값이 된다(검사기가 warn).
 - 원격 이미지는 `next.config.js` 의 `images.remotePatterns` 호스트만 허용된다: `github.com`, `user-images.githubusercontent.com` (https). 기존 글은 GitHub 이슈/PR 에 올린 첨부 URL(`https://github.com/<owner>/<repo>/assets/...`, 이 저장소 외 다른 저장소 것도 있음)을 쓴다. Next 이미지 최적화기는 원래 URL 의 호스트만 remotePatterns 와 비교하고 리다이렉트(최대 3회)는 호스트 검사 없이 따라간다. 그래서 `github.com/user-attachments/...` 도 허용된다. 다만 리다이렉트 대상이 인증이 필요한 첨부(비공개 저장소)면 실패하니 미리보기로 이미지가 뜨는지 확인한다. 로컬 이미지는 `public/` 기준 절대경로(`/image/...`).
 - 그 외 호스트가 필요하면 `next.config.js` 변경이 먼저다(사용자 확인 후).
 
