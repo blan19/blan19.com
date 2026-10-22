@@ -1,5 +1,5 @@
 import { Feed } from "feed";
-import { getBlogPosts } from "../db/blog";
+import { getBlogPosts } from "@/lib/posts";
 import config from "@/lib/config";
 
 export const dynamic = "force-static";

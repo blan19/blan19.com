@@ -39,11 +39,9 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 verify 와 같은 단�
 
 ```
 contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 = slug = URL = 조회수 키)
-src/app/            라우트: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /sitemap.xml /robots.txt
-src/app/db/         blog.ts(fs 로더), action.ts(increment, 쓰기), queries.ts(조회). 라우트 아님
+src/app/            라우트와 메타데이터 파일만: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /sitemap.xml /robots.txt
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
-src/lib/            prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL)
-src/utils/          formatDate.ts, generateSlug.ts(미사용)
+src/lib/            posts.ts(contents/ fs 로더), db/(action.ts 쓰기, queries.ts 조회. "use server"), prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL), format-date.ts
 src/styles/         globals.css (Tailwind 4 테마와 MDX 스타일)
 src/generated/      Prisma 생성 코드 (gitignore)
 prisma/             schema.prisma (모델 View 하나)
@@ -53,8 +51,8 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 
 ## 아키텍처 요점
 
-- 글 → `getBlogPosts("tech"|"log")`(`src/app/db/blog.ts`)가 fs 로 읽고 gray-matter 로 frontmatter 를 파싱한다(검증 없음). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, sitemap 이 이 결과를 쓴다. `/og` 는 쿼리의 `title` 만 읽는다(URL 은 `tech/[slug]` 의 `generateMetadata` 가 만든다). `/log` 는 MDX 렌더 없이 원문을 출력하고 상세 페이지가 없다.
-- 목록 순서는 `publishedAt` 이 아니다. `blog.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 페이지가 `.reverse()` 한다.
+- 글 → `getBlogPosts("tech"|"log")`(`src/lib/posts.ts`)가 fs 로 읽고 gray-matter 로 frontmatter 를 파싱한다(검증 없음). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, sitemap 이 이 결과를 쓴다. `/og` 는 쿼리의 `title` 만 읽는다(URL 은 `tech/[slug]` 의 `generateMetadata` 가 만든다). `/log` 는 MDX 렌더 없이 원문을 출력하고 상세 페이지가 없다.
+- 목록 순서는 `publishedAt` 이 아니다. `posts.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 페이지가 `.reverse()` 한다.
 - DB 는 `View(slug, count)` 하나. `/tech/[slug]` 렌더 때마다 `increment` 가 upsert 한다. 홈의 최근/인기 목록은 `unstable_cache`(1시간)로 View 테이블을 읽는다.
 - `/`, `/tech`, `/tech/[slug]`, `/og` 는 dynamic, 나머지는 static.
 
@@ -71,14 +69,14 @@ scripts/            verify, smoke, validate-content, with-blocked-db
   4. DB 를 읽으면 `<Suspense>` 로 감싸고, 쿼리 전에 `await connection()`(`next/server`)을 호출해 dynamic 으로 둔다. `unstable_cache` 안에서 부르면 오류가 나니 그 바깥(컴포넌트)에서 부른다. 빠뜨리면 빌드가 prerender 하며 쿼리를 실행한다(기존 코드의 `unstable_noStore()` 도 같은 역할).
   5. `npm run verify` 를 실행한다.
 - `@/generated/prisma/client` 가 없다는 tsc 오류는 `npx prisma generate` 로 해결한다(DB 접속 없음). npm 11 에서도 자동 generate 는 없다.
-- 영역별 세부 규칙과 알려진 이슈는 해당 파일을 열 때 `.claude/rules/` 에서 자동 로드된다: content.md(글), frontend.md(Tailwind 4, Next 16, MDX 렌더러), database.md(Prisma, 스키마 변경).
+- 영역별 세부 규칙과 알려진 이슈는 해당 파일을 열 때 `.claude/rules/` 에서 자동 로드된다: content.md(글), frontend.md(Tailwind 4, Next 16, MDX 렌더러), database.md(Prisma, 스키마 변경), tooling.md(scripts, hooks, settings, CI 의 하드코딩 경로).
 
 ## 코드 컨벤션
 
 - 큰따옴표, 2칸 들여쓰기, 세미콜론, trailing comma (Prettier 설정 없음, 주변 코드에 맞춤).
 - 컴포넌트: `src/components/ui/<kebab>/index.tsx`, 화살표 함수 + 파일 끝 `export default X`, 타입은 `import type`. props 는 `interface XProps` 가 많다(예외 있음).
 - layout, error, robots, sitemap, 홈 page 는 `export default function`, 나머지 page 는 화살표 함수 + 파일 끝 `export default`. 둘 다 허용하며 같은 폴더의 기존 파일에 맞춘다. route handler 는 `export async function GET`, 데이터 모듈은 named export.
-- 새 코드의 import 는 `@/*` (→ `src/*`) 별칭을 쓴다(RSS route 두 곳에 상대경로가 남아 있다).
+- 새 코드의 import 는 `@/*` (→ `src/*`) 별칭을 쓴다.
 
 ## 커밋 / PR
 

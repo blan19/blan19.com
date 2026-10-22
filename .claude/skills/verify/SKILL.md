@@ -27,7 +27,7 @@ argument-hint: "[full|quick|content]"
   - Next 16 에서 `params` 타입 오류가 나면 `Promise<{…}>` 로 선언하고 `await` 한다.
 - **eslint**: `eslint-config-next/core-web-vitals` 규칙 위반이다. 고친 뒤 해당 파일만 `npx eslint <file>` 로 다시 확인한다.
 - **content:check**: 한 줄에 하나씩 `<path>: [error|warn] <메시지>` 형식이다. error 는 전부 고친다. 손대지 않은 기존 글의 warn 은 알려진 것이다. 바꾼 파일의 warn 만 보고한다(`npm run content:check <파일>` 로 범위를 좁힌다). `TODO:` warn(코드 블록 밖)은 커밋 전에 해소해야 한다. CI 에서는 error 다.
-- **next build**: 출력의 첫 `Error`/`⨯` 를 본다. 정적 라우트(`/log`, RSS, sitemap, robots)가 prerender 중 실패하면 fs 로더(`src/app/db/blog.ts`)나 frontmatter 문제일 가능성이 크다. `Could not find the Next.js package (next/package.json)` 는 `node_modules` 가 프로젝트 밖을 가리키는 심볼릭 링크일 때(worktree 끼리 공유 등) Turbopack 이 내는 오류다. 심볼릭 링크(`ls -ld node_modules`)면 그 위에서 `npm ci`/`npm install` 을 실행하지 않는다(링크된 다른 worktree 의 의존성이 바뀐다). 사용자에게 보고하고 처리 방법(예: 링크를 지우고 이 worktree 에 따로 설치)을 정하게 한다. 실제 디렉터리일 때만, 사용자에게 알린 뒤 `npm ci` 를 실행할 수 있다.
+- **next build**: 출력의 첫 `Error`/`⨯` 를 본다. 정적 라우트(`/log`, RSS, sitemap, robots)가 prerender 중 실패하면 fs 로더(`src/lib/posts.ts`)나 frontmatter 문제일 가능성이 크다. `Could not find the Next.js package (next/package.json)` 는 `node_modules` 가 프로젝트 밖을 가리키는 심볼릭 링크일 때(worktree 끼리 공유 등) Turbopack 이 내는 오류다. 심볼릭 링크(`ls -ld node_modules`)면 그 위에서 `npm ci`/`npm install` 을 실행하지 않는다(링크된 다른 worktree 의 의존성이 바뀐다). 사용자에게 보고하고 처리 방법(예: 링크를 지우고 이 worktree 에 따로 설치)을 정하게 한다. 실제 디렉터리일 때만, 사용자에게 알린 뒤 `npm ci` 를 실행할 수 있다.
 - **smoke**: `FAIL` 행의 path, 상태, 기대값을 본다.
   - "DB 와 무관한 서버 오류 N건"이 나오면 실패다. 전체 서버 로그는 출력에 나온 경로(`$TMPDIR/blan19-smoke-server.log`)에 있다.
   - `127.0.0.1:1` / `P1001` 로그는 DB 차단이 정상 동작한다는 뜻이다.

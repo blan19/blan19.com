@@ -3,7 +3,7 @@ paths:
   - "prisma/**"
   - "prisma.config.ts"
   - "src/lib/prisma.ts"
-  - "src/app/db/**"
+  - "src/lib/db/**"
 ---
 
 # DB / Prisma 7 규칙
@@ -21,8 +21,8 @@ paths:
 
 | 함수 | 파일 | 동작 | 캐시 |
 |---|---|---|---|
-| `increment(slug)` | `src/app/db/action.ts` | **쓰기**: upsert, count+1 | `unstable_noStore` |
-| `getViewCount(slug)` | `src/app/db/queries.ts` | findUnique. `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
+| `increment(slug)` | `src/lib/db/action.ts` | **쓰기**: upsert, count+1 | `unstable_noStore` |
+| `getViewCount(slug)` | `src/lib/db/queries.ts` | findUnique. `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
 | `getBestBlogPosts()` | 같은 파일 | count desc, 3개 | `unstable_cache`, 키 `blan19-best-posts`, 3600초, 태그 없음 |
 | `getLatestBlogPosts()` | 같은 파일 | createAt desc, 3개 | `unstable_cache`, 키 `blan19-latest-posts`, 3600초 |
 

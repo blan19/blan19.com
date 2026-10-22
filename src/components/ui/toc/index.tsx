@@ -1,8 +1,8 @@
-interface TableProps {
+interface TocProps {
   contents: string;
 }
 
-const Table = ({ contents }: TableProps) => {
+const Toc = ({ contents }: TocProps) => {
   const headings = contents
     .match(/###.*\n/g)
     ?.filter((heading) => heading.match(/#/g)?.length === 3);
@@ -56,4 +56,4 @@ const Table = ({ contents }: TableProps) => {
   );
 };
 
-export default Table;
+export default Toc;
