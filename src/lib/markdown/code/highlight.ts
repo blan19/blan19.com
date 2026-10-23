@@ -73,25 +73,36 @@ const plainHighlight = (source: string, degraded: boolean): HighlightResult => {
   };
 };
 
-// 하이라이트가 실패해도(Shiki 초기화, 언어 문법, 정규식 엔진 오류) 그 블록만 평문으로 그린다.
-// 글 전체가 error.tsx 로 가지 않는다.
-export const highlightCode = async (
+// 글 하나를 렌더할 때 한 번만 부른다. Shiki 초기화(문법 로드 포함)가 실패하면 undefined 를 돌려주고
+// 로그도 한 번만 남긴다(블록마다 초기화를 다시 시도하지 않는다).
+export const loadHighlighter = async (): Promise<HighlighterCore | undefined> => {
+  try {
+    return await getHighlighter();
+  } catch (error) {
+    console.error("[markdown] Shiki 를 불러오지 못해 코드 블록을 평문으로 렌더합니다", error);
+    return undefined;
+  }
+};
+
+// 하이라이트가 실패해도 그 블록만 대체 경로로 그린다. 글 전체가 error.tsx 로 가지 않는다.
+// 문법·정규식 엔진 오류는 Shiki text 로 다시 그려 notation 과 {n} 강조를 지키고, 그것도 실패하면 평문.
+export const highlightCode = (
+  highlighter: HighlighterCore | undefined,
   source: string,
   lang: CodeLanguage | "text",
   meta: string,
-): Promise<HighlightResult> => {
-  let highlighter: HighlighterCore;
-  try {
-    highlighter = await getHighlighter();
-  } catch (error) {
-    console.error("[markdown] Shiki 를 불러오지 못해 코드 블록을 평문으로 렌더합니다", error);
-    return plainHighlight(source, true);
-  }
+): HighlightResult => {
+  if (!highlighter) return plainHighlight(source, true);
   const prompt = lang === "bash" && !TREE_LINE.test(source);
   try {
     return shikiHighlight(highlighter, source, lang, meta, prompt);
   } catch (error) {
-    console.error(`[markdown] ${lang} 코드 블록 하이라이트 실패, 평문으로 렌더합니다`, error);
+    console.error(`[markdown] ${lang} 코드 블록 하이라이트 실패, text 로 렌더합니다`, error);
+  }
+  try {
+    return shikiHighlight(highlighter, source, "text", meta, false);
+  } catch (error) {
+    console.error("[markdown] text 하이라이트도 실패, 평문으로 렌더합니다", error);
     return plainHighlight(source, false);
   }
 };
