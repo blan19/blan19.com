@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import config from "@/lib/config";
 
 export default function robots(): MetadataRoute.Robots {
@@ -6,9 +6,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
+        allow: "/",
       },
     ],
     sitemap: `${config.url}sitemap.xml`,
-    host: new URL(config.url).origin,
   };
 }

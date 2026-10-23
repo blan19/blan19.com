@@ -3,12 +3,13 @@ import type { Metadata } from "next";
 import config from "@/lib/config";
 import { getAdjacentPosts, getPost } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
-import { alternates, postJsonLd } from "@/lib/seo";
+import { alternates, openGraph, postJsonLd } from "@/lib/seo";
 import PostHeader from "@/components/ui/post-header";
 import TocRail, { TocDetails } from "@/components/ui/toc";
 import TocSpy from "@/components/ui/toc-spy";
 import PostBody from "@/components/ui/post-body";
 import PostReferences from "@/components/ui/post-references";
+import RelatedPosts from "@/components/ui/related-posts";
 import PrevNext from "@/components/ui/prev-next";
 import Comment from "@/components/ui/comment";
 import JsonLd from "@/components/ui/json-ld";
@@ -25,39 +26,27 @@ export async function generateMetadata({
     return;
   }
 
-  const {
-    title,
-    description,
-    tags: keywords,
-    publishedAt: publishedTime,
-  } = post.metadata;
-  // 알려진 이슈: title 을 인코딩하지 않는다.
-  const ogImage = `${config.url}og?title=${title}`;
+  const { title, description, tags, publishedAt, updatedAt } = post.metadata;
 
   return {
     title,
     description,
-    keywords: keywords,
+    keywords: tags,
     authors: [{ name: config.author.name, url: config.author.link }],
     alternates: alternates(`/tech/${post.slug}`),
+    // twitter 는 layout 의 card 를 쓰고 제목·설명·이미지는 Next 가 openGraph 에서 채운다.
     openGraph: {
-      title,
-      description,
-      publishedTime,
-      authors: [config.author.link],
+      ...openGraph({
+        title,
+        description,
+        path: `/tech/${post.slug}`,
+        imageTitle: title,
+      }),
       type: "article",
-      url: `${config.url}tech/${post.slug}`,
-      images: [
-        {
-          url: ogImage,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImage],
+      publishedTime: publishedAt,
+      ...(updatedAt && { modifiedTime: updatedAt }),
+      authors: [config.author.link],
+      tags,
     },
   };
 }
@@ -83,6 +72,7 @@ const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
           <PostBody hast={hast} />
           <footer className="post-end">
             <PostReferences urls={post.metadata.reference} />
+            <RelatedPosts post={post} />
             <PrevNext prev={prev} next={next} />
             <Comment key={post.slug} />
           </footer>

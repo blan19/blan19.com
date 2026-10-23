@@ -39,13 +39,13 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 verify 와 같은 단�
 
 ```
 contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 = slug = URL = 조회수 키)
-src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /sitemap.xml /robots.txt, error.tsx, not-found.tsx
+src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /llms.txt /sitemap.xml /robots.txt, error.tsx, not-found.tsx
                     fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 이전 히어로였던 정적 점묘 매듭. 지금 히어로(노트북)와 무관), og/Pretendard-Bold.woff(OG 이미지 폰트)
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더), markdown/(글 렌더 파이프라인, 서버 전용), db/(action.ts 쓰기, queries.ts 조회. "use server"),
                     views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), laptop.ts(홈/404 점묘 노트북 기하, 서버·클라이언트 공용),
-                    prisma.ts(클라이언트), config.ts(작성자, 사이트 URL, 사이트 이름·설명), seo.ts(canonical·RSS alternates, JSON-LD), format-date.ts
-src/fonts/          PretendardVariable.woff2 + 라이선스(OFL)
+                    prisma.ts(클라이언트), config.ts(작성자, 사이트 URL, 사이트 이름·설명), seo.ts(canonical·RSS alternates, openGraph 공통값, OG 이미지 URL, JSON-LD), format-date.ts
+src/fonts/          PretendardVariable.subset.woff2(서브셋, 코드포인트 목록 PretendardVariable.subset.unicodes.txt) + 라이선스(OFL)
 src/styles/         globals.css(토큰, Tailwind 4 매핑, 공용 클래스, 크롬), markdown.css(글 본문), pages.css(페이지). 뒤의 둘은 globals.css 가 import
 src/generated/      Prisma 생성 코드 (gitignore)
 prisma/             schema.prisma (모델 View 하나)
@@ -55,7 +55,7 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 
 ## 아키텍처 요점
 
-- 글 → `getBlogPosts("tech"|"log")`(`src/lib/posts.ts`)가 fs 로 읽고 gray-matter 로 frontmatter 를 파싱한다(검증 없음). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, sitemap 이 이 결과를 쓴다. `/og` 는 쿼리의 `title` 만 읽는다(URL 은 `tech/[slug]` 의 `generateMetadata` 가 만든다). `/log` 는 마크다운 렌더 없이 원문 문단을 출력하고 상세 페이지가 없다.
+- 글 → `getBlogPosts("tech"|"log")`(`src/lib/posts.ts`)가 fs 로 읽고 gray-matter 로 frontmatter 를 파싱한다(검증 없음). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, `/llms.txt`, sitemap 이 이 결과를 쓴다. `/og`(1200×630)는 쿼리의 `title` 이 tech 글 제목이나 사이트 이름과 정확히 같을 때만 그 제목을, 아니면 사이트 이름을 그린다. URL 은 `seo.ts` 의 `ogImageUrl`(title 을 `encodeURIComponent`)이 만든다. 수정일은 frontmatter `updatedAt`(선택) ?? `publishedAt`(`getModifiedAt`)이다. `/log` 는 마크다운 렌더 없이 원문 문단을 출력하고 상세 페이지가 없다.
 - 글 본문 → `renderMarkdown(slug, content)`(`src/lib/markdown/index.ts`)가 HAST 를 한 번 만들어 모듈 캐시(키 `slug:sha1(본문)`, 50개)에 두고, 목차를 같은 트리에서 뽑는다. `ui/post-body` 가 `hast-util-to-jsx-runtime` 으로 렌더한다. 세부는 frontend.md.
 - 목록 순서는 `publishedAt` 이 아니다. `posts.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 `getPostsNewestFirst` 가 뒤집어 최신순으로 쓴다.
 - 홈의 최근 글과 /tech 목록은 파일시스템만으로 그린다. DB 는 조회수(글 머리 `ArticleViews`, 목록 행 `RowViews`)와 홈 "많이 읽힌 글"(`MostRead`, `unstable_cache` 1시간)에만 쓴다.

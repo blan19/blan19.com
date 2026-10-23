@@ -14,7 +14,7 @@ paths:
 - 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 순서를 따른다. 새 글은 폴더 날짜와 `publishedAt` 을 같게 둔다. 다르면 검사기는 error 가 아니라 warn 을 낸다. 기존 글 하나(`2023-12-11/javascript-memory-management`, publishedAt 12-12)가 이미 다르고, 공개된 글의 폴더는 옮기지 않기 때문이다.
 
-## frontmatter (5개 필드 모두 필수)
+## frontmatter (5개 필드 필수 + `updatedAt` 선택)
 
 ```yaml
 ---
@@ -23,18 +23,20 @@ title: "React Server Components(RSC) 차근차근 이해하기"
 tags: ["react.js", "rsc"]        # 비어 있지 않은 문자열 배열. 소문자, 라이브러리는 점 표기(next.js, three.js)
 description: "리액트 서버 컴포넌트를 차근차근 이해해보자"   # 다른 글과 겹치지 않게
 reference: ["https://react.dev/blog/2024/04/25/react-19"]  # http(s) URL 배열. 없으면 []
+updatedAt: "2026-10-24"          # 선택. 반드시 따옴표. 내용이 실질적으로 바뀐 경우에만
 ---
 ```
 
 - 기존 태그: `javascript`, `next.js`, `webgl`, `journal`, `three.js`, `r3f`, `react.js`, `rsc`, `tracking`, `habit`. 태그는 카테고리 구분 없이 공용이며 새 태그를 만들기 전에 기존 태그를 우선 쓴다. tech 태그는 /tech 태그 필터(`/tech?tag=<태그>`)와 글 머리 메타 줄의 `#태그` 링크에 쓰인다. log 태그는 `/log` 항목 아래 `#태그` 로만 보이니 고민하지 말고 맞는 것을 고른다(회고·일기형이면 `journal`).
 - `reference` 는 본문 끝 "참고 자료" 목록(호스트와 경로)으로 자동 렌더된다. 본문에 따로 쓰지 않는다.
 - description 은 OG/트위터 메타와 RSS 에 쓰인다.
+- `updatedAt`(선택)은 본문 내용이 실질적으로 바뀌었을 때만(내용 보강·정정, 섹션 추가) 그날 날짜로 넣거나 고친다. 오탈자나 서식만 고친 경우에는 넣지 않는다. 글 머리 메타 줄의 "수정 YYYY.MM.DD", JSON-LD `dateModified`, og `article:modified_time`, sitemap 의 글 `lastmod`(그리고 `/tech` 의 lastmod, `/` 는 tech 와 log 중 최신 날짜)에 쓰이고, 없으면 `publishedAt` 이 수정일을 대신한다. 검사기가 형식("YYYY-MM-DD" 따옴표 문자열), `publishedAt` 이상, 오늘(한국 시간) 이하를 error 로 본다. 목록 순서와 폴더는 바꾸지 않는다.
 
 ## tech 본문 (unified: remark-parse + remark-gfm → rehype. JSX/MDX 컴포넌트와 raw HTML 은 렌더되지 않고 글자 그대로 보인다)
 
 렌더러는 `src/lib/markdown/`(세부는 `.claude/rules/frontend.md`)다.
 
-- 제목은 `###`(h2, 목차에 나오는 섹션)와 `####`(h3, 목차의 하위 항목)를 쓴다. 렌더러가 한 단계씩 내리므로 `#`/`##` 는 `###` 와 같은 h2 가 되고(검사기 warn), `#####`(h4)·`######`(h5)는 목차에 나오지 않는다(검사기 warn). 목차와 앵커 id 는 같은 트리에서 나오므로 제목에 굵게, 코드, 링크 서식을 넣어도 되고 같은 제목이 반복돼도 된다(id 에 `-1` 이 붙는다). 다만 제목 id 가 페이지의 고정 id(`main`, `post-head`, `post-body`, `footnote-label`, `ref-label`, `cm-label`)와 같아지는 제목(예: `### Main`, `### Post Body`)은 링크가 다른 요소로 가므로 검사기가 warn 한다. 문구를 바꾼다.
+- 제목은 `###`(h2, 목차에 나오는 섹션)와 `####`(h3, 목차의 하위 항목)를 쓴다. 렌더러가 한 단계씩 내리므로 `#`/`##` 는 `###` 와 같은 h2 가 되고(검사기 warn), `#####`(h4)·`######`(h5)는 목차에 나오지 않는다(검사기 warn). 목차와 앵커 id 는 같은 트리에서 나오므로 제목에 굵게, 코드, 링크 서식을 넣어도 되고 같은 제목이 반복돼도 된다(id 에 `-1` 이 붙는다). 다만 제목 id 가 페이지의 고정 id(`main`, `post-head`, `post-body`, `footnote-label`, `ref-label`, `rel-label`, `cm-label`)와 같아지는 제목(예: `### Main`, `### Post Body`)은 링크가 다른 요소로 가므로 검사기가 warn 한다. 문구를 바꾼다.
 - 코드 블록에는 언어를 붙인다. 하이라이트되는 언어와 별칭은 `src/lib/markdown/languages.ts` 의 `CODE_LANGUAGES`·`LANGUAGE_ALIASES` 다(bash, css, dart, diff, glsl, html, javascript, json, jsx, rust, tsx, typescript, yaml / js, ts, sh, shell, zsh, yml). `text`/`plaintext`/`txt` 는 색 없는 코드, `mermaid` 는 다이어그램이다. 그 밖의 언어나 언어가 없는 펜스는 색 없이 text 로 나오고 검사기가 warn 한다. 대소문자는 구분하지 않는다.
 - 코드 블록 info string 문법(언어 뒤에 공백으로 이어 쓴다):
   - ```` ```tsx title="app/page.tsx" ```` : 헤더에 파일명. 따옴표가 없으면 검사기가 warn. 없으면 헤더에 언어 이름(bash 는 "터미널")이 나온다.

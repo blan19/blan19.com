@@ -16,7 +16,9 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const CATEGORIES = ["tech", "log"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
-const KNOWN_KEYS = ["publishedAt", "title", "tags", "description", "reference"];
+const KNOWN_KEYS = ["publishedAt", "title", "tags", "description", "reference", "updatedAt"];
+// updatedAt 의 "미래" 판정 기준. 글 날짜는 한국 시간 달력 날짜라 CI(UTC)에서도 같은 날로 본다.
+const TODAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
 
 // ---------- 인자 ----------
 const argv = process.argv.slice(2);
@@ -88,7 +90,7 @@ const isPlainTextAfterMarker = (line) => {
 // 글 페이지(/tech/<slug>)에 고정으로 있는 id. rehype-slug 가 만든 제목 id 와 겹치면 앵커·목차·건너뛰기 링크가 엉뚱한 곳으로 간다.
 // main: src/app/layout.tsx, post-head: ui/post-header, post-body: ui/post-body, footnote-label: remark-rehype 각주 제목,
 // ref-label: ui/post-references, cm-label: ui/comment. 새 고정 id 를 넣으면 여기도 넣는다.
-const FIXED_PAGE_IDS = ["main", "post-head", "post-body", "footnote-label", "ref-label", "cm-label"];
+const FIXED_PAGE_IDS = ["main", "post-head", "post-body", "footnote-label", "ref-label", "rel-label", "cm-label"];
 // rehype-slug 에 넘어가는 제목 텍스트(hast toString)를 마크다운 원문에서 근사한다: 닫는 #, 이미지, 링크/코드/강조 표시를 걷어 낸다.
 const headingText = (raw) =>
   stripInlineCodeMarks(raw.replace(/[ \t]+#+[ \t]*$/, ""))
@@ -144,6 +146,21 @@ const checkFrontmatter = (file, data, folderDate) => {
     error(file, `publishedAt "${publishedAt}" 이 올바른 "YYYY-MM-DD" 날짜가 아님`);
   } else if (folderDate && publishedAt !== folderDate) {
     warn(file, `publishedAt(${publishedAt}) 과 폴더 날짜(${folderDate}) 가 다름. 목록 순서는 폴더 이름(readdirSync 순서)을 따름`);
+  }
+
+  // 선택 필드(없으면 publishedAt 을 수정일로 쓴다). 내용이 실질적으로 바뀐 경우에만 쓴다.
+  // JSON-LD dateModified, og modifiedTime, sitemap lastmod, 글 머리 "수정" 날짜에 쓰인다.
+  const { updatedAt } = data;
+  if (updatedAt === undefined) {
+    // 선택 필드
+  } else if (updatedAt instanceof Date) {
+    error(file, 'updatedAt 이 따옴표 없이 쓰여 Date 로 파싱됨 → 화면 렌더 시 크래시. "YYYY-MM-DD" 처럼 따옴표로 감싸세요');
+  } else if (typeof updatedAt !== "string" || !isRealDate(updatedAt)) {
+    error(file, `updatedAt "${updatedAt}" 이 올바른 "YYYY-MM-DD" 날짜가 아님`);
+  } else if (typeof publishedAt === "string" && isRealDate(publishedAt) && updatedAt < publishedAt) {
+    error(file, `updatedAt(${updatedAt}) 이 publishedAt(${publishedAt}) 보다 이름`);
+  } else if (updatedAt > TODAY) {
+    error(file, `updatedAt(${updatedAt}) 이 오늘(${TODAY}, 한국 시간) 이후의 날짜임`);
   }
 
   const { tags } = data;
