@@ -38,9 +38,6 @@ export default function Home() {
               <a className="u-link" href={`mailto:${config.author.email}`}>
                 메일
               </a>
-              <a className="u-link" href="/rss.xml">
-                RSS
-              </a>
             </p>
           </div>
           <HeroObject mode="knot" seed="blan19" animate />
