@@ -57,8 +57,10 @@ const isEnvPath = (arg) => {
 };
 // 인자 앞에 붙은 dd 의 if=, curl 의 @(파일 내용 전송)를 떼고 본다.
 // curl -F/--form 의 name=@파일, name=<파일은 이름과 뒤의 ;type= 같은 수식자도 뗀다.
+// curl 은 폼 값의 따옴표, 백슬래시, 쉼표(여러 파일)를 따로 해석하므로 그런 값과 .env 가 보이는 값은 막는다(fail closed).
 const isEnvArg = (arg) => {
   const form = arg.match(/^[^=@<]*=[@<]([^;]*)/);
+  if (form && (/["\\,]/.test(arg) || /\.env/i.test(arg.replace(/\.env\.example\b/gi, "")))) return true;
   return isEnvPath(form ? form[1] : arg.replace(/^if=/, "").replace(/^@/, ""));
 };
 
