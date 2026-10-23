@@ -36,8 +36,8 @@ const MostRead = async () => {
   try {
     matched = await getMostRead(MOST_READ_COUNT);
   } catch (error) {
+    // 원래 오류는 getTopViews 가 로그한다(여기 오는 오류는 'use cache' 경계를 넘으며 메시지가 가려진다).
     unstable_rethrow(error);
-    console.error("[most-read] 많이 읽힌 글을 불러오지 못했습니다", error);
     return null;
   }
 
