@@ -3,7 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { getViewMap, recordView } from "@/lib/views";
 import { formatViews } from "@/lib/format";
 
-// DB 를 읽는 표시 컴포넌트. 모두 <Suspense> 안에서만 쓴다.
+// DB 를 읽거나(RowViews) 조회수를 기록하는(ArticleViews) 표시 컴포넌트. 모두 <Suspense> 안에서만 쓴다.
 // connection() 은 try 밖(prerender 중단 신호를 삼키지 않게), 쿼리만 try/catch 하고 실패하면 null.
 
 interface ViewsProps {

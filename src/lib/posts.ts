@@ -151,11 +151,24 @@ interface PostIndex {
 
 const readIndex = (kind: PostKind): PostIndex => {
   const root = path.join(process.cwd(), "contents", kind);
-  const list = Object.freeze(listPostFiles(root).map((file) => readPost(root, file)));
+  const files = listPostFiles(root);
+  const list = Object.freeze(files.map((file) => readPost(root, file)));
+  // slug 는 URL 이자 조회수 키라 같은 종류 안에서 겹치면 멈춘다(content:check 를 거치지 않는 build 대비)
+  const bySlug = new Map<string, Post>();
+  const fileOf = new Map<string, string>();
+  list.forEach((post, i) => {
+    const prev = fileOf.get(post.slug);
+    if (prev) {
+      const name = (file: string) => path.relative(process.cwd(), path.join(root, file));
+      throw new Error(`${name(files[i])}: slug "${post.slug}" 가 ${name(prev)} 와 겹칩니다`);
+    }
+    bySlug.set(post.slug, post);
+    fileOf.set(post.slug, files[i]);
+  });
   return {
     list,
     newestFirst: Object.freeze([...list].reverse()),
-    bySlug: new Map(list.map((post) => [post.slug, post])),
+    bySlug,
   };
 };
 
