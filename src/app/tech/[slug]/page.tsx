@@ -47,7 +47,7 @@ export async function generateMetadata({
     keywords: [...keywords],
     alternates: alternates(path),
     openGraph: {
-      ...openGraph(path, title, description, { ownImage: true }),
+      ...openGraph(path, title, description),
       type: "article",
       publishedTime,
     },

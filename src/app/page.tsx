@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { author } from "@/lib/config";
+import { author, site } from "@/lib/config";
 import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
 import { formatDotDate } from "@/lib/format";
 import HeroObject from "@/components/ui/hero-object";
 import PostList from "@/components/ui/post-list";
 import MostRead, { MostReadPending } from "@/components/ui/most-read";
-import { alternates } from "@/lib/metadata";
+import { alternates, openGraph } from "@/lib/metadata";
 
-// 제목, 설명, openGraph 는 layout 기본값(사이트)을 그대로 쓴다.
+// 제목, 설명은 layout 기본값(사이트)을 그대로 쓴다. og:url 때문에 openGraph 만 둔다.
 export const metadata: Metadata = {
   alternates: alternates("/"),
+  openGraph: openGraph("/", site.title, site.description),
 };
 
 const RECENT_COUNT = 5;

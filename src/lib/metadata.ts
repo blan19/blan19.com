@@ -14,29 +14,19 @@ const FEED_TYPES = {
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
-// app/opengraph-image.tsx(사이트 기본 카드). 파일 규칙의 이미지는 그 파일이 있는 세그먼트에만 붙고,
-// 자기 openGraph 를 정의한 하위 페이지(/tech, /log)에서는 사라지므로 그 페이지들이 직접 넣는다.
-const SITE_OG_IMAGE = { url: "/opengraph-image", ...OG_SIZE, type: OG_CONTENT_TYPE, alt: site.title };
-
 // canonical 에는 쿼리를 넣지 않는다(/tech?tag=… 도 /tech 로 모은다).
 export const alternates = (path?: string): Metadata["alternates"] => ({
   ...(path && { canonical: path }),
   types: FEED_TYPES,
 });
 
-// 기본은 사이트 카드(SITE_OG_IMAGE)를 넣는다. 자기 opengraph-image 가 있는 세그먼트(글)는 ownImage 로 뺀다.
+// og:image 는 넣지 않는다. 각 세그먼트의 opengraph-image 파일(/, /tech, /log 는 사이트 카드, 글은 글 카드)이 채운다.
 // images 키가 있으면(undefined 라도) Next 가 그 세그먼트의 파일 이미지를 쓰지 않으므로 키 자체를 넣지 않는다.
-export const openGraph = (
-  path: string,
-  title: string,
-  description: string,
-  { ownImage = false }: { ownImage?: boolean } = {},
-) => ({
+export const openGraph = (path: string, title: string, description: string) => ({
   type: "website" as const,
   siteName: site.name,
   locale: "ko_KR",
   url: path,
   title,
   description,
-  ...(!ownImage && { images: [SITE_OG_IMAGE] }),
 });

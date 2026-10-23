@@ -39,9 +39,15 @@ export const metadata: Metadata = {
   },
   // canonical 은 페이지마다 둔다(여기 두면 404 같은 페이지도 물려받는다).
   alternates: alternates(),
-  // 자기 openGraph 가 없는 페이지의 기본값. og:image 는 app/opengraph-image.tsx,
-  // twitter 의 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
-  openGraph: openGraph("/", site.title, site.description, { ownImage: true }),
+  // 자기 openGraph 가 없는 페이지(404 등)의 기본값. og:url 은 페이지마다 둔다(여기 두면 404 가 홈 URL 을 물려받는다).
+  // og:image 는 app/opengraph-image.tsx, twitter 의 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    locale: "ko_KR",
+    title: site.title,
+    description: site.description,
+  },
   twitter: { card: "summary_large_image" },
 };
 
