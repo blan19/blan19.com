@@ -13,7 +13,7 @@ interface TocSpyProps {
 // 스크롤 위치에 따라 목차의 현재 섹션과 모바일 pill 을 갱신한다.
 // 활성 링크와 pill 표시는 DOM 에 직접 쓰고, React 상태는 pill 의 현재 섹션 이름 하나뿐이다.
 // 프레임마다 읽기(rect, 레일 위치)를 먼저 끝내고, 직전 값과 달라진 것만 쓴다.
-// scroll 은 pill 표시를, IntersectionObserver 는 스크롤 없이 헤딩이 움직일 때(mermaid, 이미지, 글꼴 로드)를 잡는다.
+// scroll 과 resize 외에, 스크롤 없이 헤딩이 밀릴 때(mermaid, 이미지, 글꼴, 조회수 로드)는 본문과 글 머리의 ResizeObserver 가 잡는다.
 const TocSpy = ({ items }: TocSpyProps) => {
   const [current, setCurrent] = useState("");
   const pillRef = useRef<HTMLButtonElement>(null);
@@ -117,10 +117,9 @@ const TocSpy = ({ items }: TocSpyProps) => {
       schedule();
     };
 
-    const observer = new IntersectionObserver(schedule, {
-      rootMargin: "0px 0px -70% 0px",
-    });
-    for (const heading of headings) observer.observe(heading);
+    const observer = new ResizeObserver(schedule);
+    observer.observe(body);
+    if (head) observer.observe(head);
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", onResize);
     frame = requestAnimationFrame(update);
