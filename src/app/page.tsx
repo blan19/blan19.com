@@ -41,7 +41,7 @@ export default function Home() {
               </a>
             </p>
           </div>
-          <HeroObject mode="knot" seed="blan19" animate />
+          <HeroObject mode="laptop" seed="blan19" animate />
         </div>
       </section>
 

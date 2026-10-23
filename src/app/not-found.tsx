@@ -1,7 +1,7 @@
 import Link from "next/link";
 import HeroObject from "@/components/ui/hero-object";
 
-// 흩어진 매듭은 서버 SVG 하나(캔버스 없음, JS 없음).
+// 흩어진(분해도) 노트북은 서버 SVG 하나(캔버스 없음, JS 없음).
 export default function NotFound() {
   return (
     <div className="site-wrap">

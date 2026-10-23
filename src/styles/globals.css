@@ -129,7 +129,7 @@
   --col-gap: 56px;
   --main: 688px;
   --gutter: 16px;
-  --obj: 184px;
+  --obj-w: 324px; /* 히어로 오브젝트 상자 너비(3:2) */
   --radius: 6px;
   --radius-sm: 4px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -138,13 +138,19 @@
 @media (max-width: 767px) {
   :root {
     --fs-display: 26px;
-    --obj: 92px;
+    --obj-w: min(100%, 312px);
   }
 }
 
 @media (min-width: 768px) {
   :root {
     --gutter: 32px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --obj-w: 252px;
   }
 }
 

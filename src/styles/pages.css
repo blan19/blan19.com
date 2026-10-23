@@ -1,4 +1,4 @@
-/* pages.css — 홈, /tech, /log, 404, hero 매듭 (grey-g3-spec §5.4–5.5, Track 3 소유)
+/* pages.css — 홈, /tech, /log, 404, hero 노트북 (grey-g3-spec §5.4–5.5, Track 3 소유)
    모든 규칙은 이 파일의 루트 클래스로 시작한다:
    .home-intro .home-sec .more-link .now-line .log-line .idx-list .idx-row .tag-filter .tech-list
    .list-year .log-entry .nf .hero-obj .empty-note
@@ -11,11 +11,10 @@
     padding-top: 40px;
   }
 
+  /* <768: 글 → 링크 → 오브젝트 순서로 쌓는다. ≥768: [글 | 오브젝트 상자], 상자 오른쪽 끝 = 본문 열 오른쪽 끝 */
   .home-intro .intro-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--obj);
-    gap: 12px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .home-intro .intro-h1 {
@@ -28,18 +27,30 @@
     margin-top: 16px;
   }
 
+  .home-intro .hero-obj {
+    margin-top: 24px;
+    justify-self: start;
+  }
+
   @media (min-width: 768px) {
     .home-intro {
       padding-top: 72px;
     }
 
     .home-intro .intro-body {
+      grid-template-columns: minmax(0, 1fr) var(--obj-w);
       gap: 40px;
       align-items: center;
     }
 
     .home-intro .intro-h1 {
+      max-width: 15em;
       font-size: var(--fs-title);
+      text-wrap: pretty;
+    }
+
+    .home-intro .hero-obj {
+      margin-top: 0;
     }
   }
 
@@ -385,36 +396,44 @@
   /* ───────────────────────── 404 ───────────────────────── */
   .nf {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--obj);
-    gap: 32px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 32px;
   }
 
   .nf .nf-links {
     margin-top: 22px;
   }
 
-  @media (max-width: 767px) {
+  @media (min-width: 768px) {
     .nf {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .nf .hero-obj {
-      --obj: 140px;
+      grid-template-columns: minmax(0, 1fr) var(--obj-w);
+      column-gap: 32px;
+      align-items: center;
     }
   }
 
-  /* ───────────────────────── hero 매듭 ───────────────────────── */
-  /* 고정 상자(--obj, 1:1)라 SVG → 캔버스 교차 때 레이아웃 이동이 없다. JS 가 없으면 SVG 가 최종 이미지 */
+  /* ───────────────────────── hero 노트북 ───────────────────────── */
+  /* 고정 상자(--obj-w, 3:2)라 SVG → 캔버스 교차 때 레이아웃 이동이 없다. JS 가 없으면 SVG 가 최종 이미지 */
   .hero-obj {
     position: relative;
-    width: var(--obj);
-    aspect-ratio: 1;
+    width: var(--obj-w);
+    aspect-ratio: 3 / 2;
     margin: 0;
     color: var(--object);
+    /* 맞춤이 높이로 정해져 잉크 좌우에 빈 폭이 남는다(--obj-slack-l/r, ui/hero-object 가 넣는다).
+       <768 은 잉크 왼쪽을 글 왼쪽 끝에, ≥768 은 잉크 오른쪽을 본문 열 오른쪽 끝에 맞춘다.
+       상자만 그 빈 폭(≤34px)만큼 밖으로 나가고 잉크는 열 안에 남는다. 왼쪽으로는 스크롤이 생기지 않고,
+       오른쪽은 ≥768 의 열 바깥 여백(40px 이상)보다 작다. */
+    translate: calc(var(--obj-slack-l, 0) * -100%) 0;
     /* 캔버스에서 시작한 마우스 드래그가 옆 소개 글을 선택하지 않게 */
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  @media (min-width: 768px) {
+    .hero-obj {
+      translate: calc(var(--obj-slack-r, 0) * 100%) 0;
+    }
   }
 
   .hero-obj svg,

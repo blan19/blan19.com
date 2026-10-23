@@ -2,33 +2,48 @@
 
 import { useEffect, useRef } from "react";
 import {
-  buildKnot,
+  buildLaptop,
   hashSeed,
-  KNOT_SPIN,
-  KNOT_TILT,
-  projectKnot,
-} from "@/lib/knot";
-import type { KnotMode } from "@/lib/knot";
+  LAPTOP_BUCKETS,
+  LAPTOP_DRAG_PITCH,
+  LAPTOP_DRAG_YAW,
+  LAPTOP_PARALLAX_PITCH,
+  LAPTOP_PARALLAX_YAW,
+  LAPTOP_VIEW_H,
+  LAPTOP_VIEW_W,
+  laptopBucket,
+  laptopBucketAlpha,
+  laptopBucketRadius,
+  laptopDotCount,
+  laptopFit,
+  laptopPose,
+  laptopScrubAt,
+  laptopYawAt,
+  projectLaptop,
+} from "@/lib/laptop";
+import type { LaptopMode } from "@/lib/laptop";
 import { subscribeResolvedTheme } from "@/lib/theme";
 
 interface HeroCanvasProps {
-  mode: KnotMode;
+  mode: LaptopMode;
   seed: string;
 }
 
 const FRAME_MS = 1000 / 30; // 30fps 상한
-const SPEED = 0.04; // rad/s (약 157초에 한 바퀴)
 const IDLE_MS = 40_000; // 입력 없이 이만큼 지나면 마지막 프레임에서 멈춘다
-const PARALLAX = 0.08; // rad
-const DRAG = 0.008; // rad/px
+const DRAG = 0.006; // rad/px
 const TAU = Math.PI * 2;
 
-// 홈 hero 매듭의 캔버스 섬. React 상태 없이 effect 하나가 모든 것을 명령형으로 다루고 전부 정리한다.
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// 홈 hero 노트북의 캔버스 섬. React 상태 없이 effect 하나가 모든 것을 명령형으로 다루고 전부 정리한다.
 // - 화면 안 + 탭이 보일 때만 그린다(IntersectionObserver, visibilitychange)
-// - prefers-reduced-motion: 정지 프레임 하나(드래그로만 돌릴 수 있다)
+// - 첫 프레임(t = 0)은 서버 SVG 와 같은 자세, 같은 맞춤(viewBox 360×240), 같은 불투명도 칸이다
+// - prefers-reduced-motion: SVG 와 같은 t = 0 정지 프레임 하나(정밀 포인터 드래그로만 돌릴 수 있다)
 // - 포인터 시차와 드래그는 정밀 포인터(pointer: fine)에서만. 터치는 핸들러가 아무것도 하지 않아 스크롤을 잡지 않는다
+// - 드래그는 yaw ±0.35, pitch 는 기본 ±0.12 안에서만(덮개 뒷면이 보이지 않게)
 // - DPR 상한 2(바뀌면 matchMedia 로 다시 그림), 색과 최대 불투명도는 CSS(--object, --object-alpha)에서 읽고 테마가 바뀌면 다시 읽는다
-// - 점마다 불투명도를 따로 줘서(구간 없음) 깊이 감쇠에 띠가 생기지 않는다
+// - 점은 불투명도 칸마다 path 하나 + fill 하나로 그린다
 const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -40,23 +55,27 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const fine = window.matchMedia("(pointer: fine)");
-    const seedNum = hashSeed(seed);
+    const pts = buildLaptop(mode, hashSeed(seed));
+    const baseFit = laptopFit(mode, pts); // viewBox 단위
+    const pose = laptopPose(mode);
+    const bucketOf = new Int8Array(laptopDotCount(pts));
 
-    let pts: Float32Array | null = null;
     let proj: Float32Array | undefined;
-    let rings = 0;
-    let size = 0;
+    let w = 0;
+    let h = 0;
     let dpr = 0;
+    let k = 1; // viewBox → CSS px
+    let fit = baseFit;
     let color = ""; // readStyle() 가 첫 draw 전에 채운다
     let amax = 0.7;
 
-    let spin = KNOT_SPIN;
-    let tilt = KNOT_TILT;
     let t = 0;
     let px = 0;
     let py = 0;
     let targetX = 0;
     let targetY = 0;
+    let dragYaw = 0;
+    let dragPitch = 0;
 
     let running = false;
     let visible = false;
@@ -70,20 +89,24 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
     let ly = 0;
 
     const ensure = () => {
-      const w = fig.clientWidth;
-      if (!w) return false;
+      const cw = fig.clientWidth;
+      const ch = fig.clientHeight;
+      if (!cw || !ch) return false;
       const d = Math.min(2, window.devicePixelRatio || 1);
-      if (w !== size || d !== dpr) {
-        size = w;
+      if (cw !== w || ch !== h || d !== dpr) {
+        w = cw;
+        h = ch;
         dpr = d;
         canvas.width = Math.round(w * d);
-        canvas.height = canvas.width;
-        const n = w >= 140 ? 150 : 110;
-        if (n !== rings) {
-          rings = n;
-          pts = buildKnot(n, n === 150 ? 6 : 5, mode, seedNum);
-          proj = undefined;
-        }
+        canvas.height = Math.round(h * d);
+        // SVG 의 preserveAspectRatio(xMidYMid meet)와 같은 맞춤
+        k = Math.min(w / LAPTOP_VIEW_W, h / LAPTOP_VIEW_H);
+        fit = {
+          ...baseFit,
+          s: baseFit.s * k,
+          cx: baseFit.cx * k + (w - LAPTOP_VIEW_W * k) / 2,
+          cy: baseFit.cy * k + (h - LAPTOP_VIEW_H * k) / 2,
+        };
       }
       return true;
     };
@@ -95,23 +118,33 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
     };
 
     const draw = () => {
-      if (!ensure() || !pts) return;
-      proj = projectKnot(
-        pts,
-        size,
-        spin + px,
-        tilt + py + 0.05 * Math.sin(0.12 * t),
-        proj,
+      if (!ensure()) return;
+      const { progress, fade } = laptopScrubAt(t);
+      const yaw = (mode === "scatter" ? pose.yaw : laptopYawAt(t)) + px + dragYaw;
+      const pitch = clamp(
+        pose.pitch + py + dragPitch,
+        pose.pitch - LAPTOP_DRAG_PITCH,
+        pose.pitch + LAPTOP_DRAG_PITCH,
       );
+      proj = projectLaptop(pts, fit, yaw, pitch, progress, fade, proj);
+      for (let i = 0, o = 0; o < proj.length; i++, o += 3) {
+        bucketOf[i] = laptopBucket(proj[o + 2]);
+      }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, size, size);
+      ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = color;
-      const r0 = size >= 140 ? 0.62 : 0.55;
-      for (let o = 0; o < proj.length; o += 3) {
-        const a = proj[o + 2];
-        ctx.globalAlpha = amax * a;
+      for (let b = 0; b < LAPTOP_BUCKETS; b++) {
+        const r = laptopBucketRadius(b) * k;
+        let any = false;
         ctx.beginPath();
-        ctx.arc(proj[o], proj[o + 1], r0 * (0.8 + 0.7 * a), 0, TAU);
+        for (let i = 0, o = 0; o < proj.length; i++, o += 3) {
+          if (bucketOf[i] !== b) continue;
+          ctx.moveTo(proj[o] + r, proj[o + 1]);
+          ctx.arc(proj[o], proj[o + 1], r, 0, TAU);
+          any = true;
+        }
+        if (!any) continue;
+        ctx.globalAlpha = Math.min(1, amax * laptopBucketAlpha(b));
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -136,10 +169,7 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
         const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0;
         last = ts;
         drawn = ts;
-        if (!dragging) {
-          spin += SPEED * dt;
-          t += dt;
-        }
+        if (!dragging) t += dt;
         px += (targetX - px) * 0.1;
         py += (targetY - py) * 0.1;
         draw();
@@ -172,8 +202,8 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
       if (!usable(e) || reduce.matches || e.buttons) return;
       const rect = fig.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      targetX = PARALLAX * ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-      targetY = PARALLAX * ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+      targetX = LAPTOP_PARALLAX_YAW * ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+      targetY = LAPTOP_PARALLAX_PITCH * ((e.clientY - rect.top) / rect.height - 0.5) * 2;
       wake();
     };
 
@@ -193,8 +223,12 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
 
     const onDrag = (e: PointerEvent) => {
       if (!dragging) return;
-      spin += (e.clientX - lx) * DRAG;
-      tilt = Math.max(-1.1, Math.min(1.1, tilt + (e.clientY - ly) * DRAG));
+      dragYaw = clamp(dragYaw + (e.clientX - lx) * DRAG, -LAPTOP_DRAG_YAW, LAPTOP_DRAG_YAW);
+      dragPitch = clamp(
+        dragPitch + (e.clientY - ly) * DRAG,
+        -LAPTOP_DRAG_PITCH,
+        LAPTOP_DRAG_PITCH,
+      );
       lx = e.clientX;
       ly = e.clientY;
       lastInput = performance.now();
@@ -215,11 +249,9 @@ const HeroCanvas = ({ mode, seed }: HeroCanvasProps) => {
     const onMotion = () => {
       stop();
       if (reduce.matches) {
-        // 정지 프레임은 SVG 와 같은 기본 각도로 그린다
-        spin = KNOT_SPIN;
-        tilt = KNOT_TILT;
+        // 정지 프레임은 SVG 와 같은 t = 0 자세로 그린다
         t = 0;
-        px = py = targetX = targetY = 0;
+        px = py = targetX = targetY = dragYaw = dragPitch = 0;
         if (visible) draw();
       } else {
         wake();
