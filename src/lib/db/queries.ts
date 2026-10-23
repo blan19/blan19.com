@@ -20,6 +20,21 @@ const getViewCount = async (slug: string) => {
   return view;
 };
 
+const getAllViewCounts = async () => {
+  if (!process.env.POSTGRES_URL) {
+    return null;
+  }
+
+  noStore();
+
+  return prisma.view.findMany({
+    select: {
+      slug: true,
+      count: true,
+    },
+  });
+};
+
 const getBestBlogPosts = cache(
   async () => {
     const posts = await prisma.view.findMany({
@@ -37,21 +52,4 @@ const getBestBlogPosts = cache(
   }
 );
 
-const getLatestBlogPosts = cache(
-  async () => {
-    const posts = await prisma.view.findMany({
-      orderBy: {
-        createAt: "desc",
-      },
-      take: 3,
-    });
-
-    return posts;
-  },
-  ["blan19-latest-posts"],
-  {
-    revalidate: 3600,
-  }
-);
-
-export { getViewCount, getBestBlogPosts, getLatestBlogPosts };
+export { getViewCount, getAllViewCounts, getBestBlogPosts };

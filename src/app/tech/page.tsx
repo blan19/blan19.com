@@ -1,11 +1,8 @@
-import Card from "@/components/ui/card";
-// import Tags from "@/components/ui/tags";
-import Link from "next/link";
-import ViewCounter from "@/components/ui/view-counter";
-import { getBlogPosts } from "@/lib/posts";
-import { getViewCount } from "@/lib/db/queries";
-import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getPostsNewestFirst, getTagCounts } from "@/lib/posts";
+import { formatYearMonth } from "@/lib/format-date";
+import PostList from "@/components/ui/post-list";
+import TagFilter from "@/components/ui/tag-filter";
 
 export const metadata: Metadata = {
   title: "Tech Posts",
@@ -13,49 +10,65 @@ export const metadata: Metadata = {
     "Read my thoughts on the Frontend ecosystem and everyday my life",
 };
 
-const View = async ({ slug }: { slug: string }) => {
-  const view = await getViewCount(slug);
+const Tech = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string | string[] }>;
+}) => {
+  const { tag: tagParam } = await searchParams;
+  const posts = getPostsNewestFirst("tech");
+  const tags = getTagCounts(posts);
+
+  // 문자열 하나만 인정(배열이면 첫 값). 없는 태그면 전체 목록으로 돌아간다.
+  const requested = Array.isArray(tagParam) ? tagParam[0] : tagParam;
+  const selected = tags.some(([tag]) => tag === requested)
+    ? requested
+    : undefined;
+  const visible = selected
+    ? posts.filter((post) => post.metadata.tags.includes(selected))
+    : posts;
+
+  const oldest = posts[posts.length - 1];
+  const newest = posts[0];
 
   return (
-    <ViewCounter
-      className="text-xs md:text-sm text-greyscale-7 dark:text-greyscale-2"
-      view={view?.count ?? 0}
-    />
+    <div className="site-wrap">
+      <header className="site-col tech-head">
+        <p className="kicker">tech / 전체 목차</p>
+        <h1 className="page-title">글</h1>
+        <p className="page-lede">
+          렌더링, 그래픽스, 그리고 일하는 방식에 대해 차근차근 풀어 쓴
+          글입니다.
+        </p>
+        <p className="count-line">
+          <span>{String(posts.length).padStart(2, "0")}편</span>
+          {newest && oldest && (
+            <span>
+              {formatYearMonth(oldest.metadata.publishedAt)} –{" "}
+              {formatYearMonth(newest.metadata.publishedAt)}
+            </span>
+          )}
+          <span>읽는 시간은 추정치</span>
+        </p>
+        <div className="double-rule" />
+      </header>
+      <section className="site-col tech-list" aria-label="글 목록">
+        {posts.length > 0 ? (
+          <>
+            <TagFilter tags={tags} total={posts.length} selected={selected} />
+            <PostList
+              posts={visible}
+              variant="full"
+              newestSlug={newest.slug}
+              yearHeading="h2"
+            />
+          </>
+        ) : (
+          <p className="empty-note">아직 글이 없어요.</p>
+        )}
+      </section>
+    </div>
   );
 };
 
-const Blog = () => {
-  const posts = getBlogPosts("tech");
-
-  return (
-    <section>
-      <h1 className="font-medium text-2xl mb-4 tracking-tighter">Tech.</h1>
-      <p className="w-full prose prose-neutral dark:prose-invert whitespace-pre-line">
-        a record of what I studied, learned, and felt
-      </p>
-      <div className="w-full h-[0.5px] rounded bg-greyscale-3 my-7" />
-      {/* <Tags posts={posts} seletedTag={tag} /> */}
-      <ul className="flex flex-col gap-8 pt-7">
-        {posts.reverse().map(({ metadata, slug }) => (
-          <li key={slug}>
-            <Link href={`/tech/${slug}`}>
-              <Card
-                title={metadata.title}
-                tags={metadata.tags}
-                date={metadata.publishedAt}
-              >
-                <Suspense
-                  fallback={<p className="text-xs md:text-sm">......</p>}
-                >
-                  <View slug={slug} />
-                </Suspense>
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-};
-
-export default Blog;
+export default Tech;

@@ -30,8 +30,8 @@ argument-hint: "[full|quick|content]"
 - **next build**: 출력의 첫 `Error`/`⨯` 를 본다. 정적 라우트(`/log`, RSS, sitemap, robots)가 prerender 중 실패하면 fs 로더(`src/lib/posts.ts`)나 frontmatter 문제일 가능성이 크다. `Could not find the Next.js package (next/package.json)` 는 `node_modules` 가 프로젝트 밖을 가리키는 심볼릭 링크일 때(worktree 끼리 공유 등) Turbopack 이 내는 오류다. 심볼릭 링크(`ls -ld node_modules`)면 그 위에서 `npm ci`/`npm install` 을 실행하지 않는다(링크된 다른 worktree 의 의존성이 바뀐다). 사용자에게 보고하고 처리 방법(예: 링크를 지우고 이 worktree 에 따로 설치)을 정하게 한다. 실제 디렉터리일 때만, 사용자에게 알린 뒤 `npm ci` 를 실행할 수 있다.
 - **smoke**: `FAIL` 행의 path, 상태, 기대값을 본다.
   - "DB 와 무관한 서버 오류 N건"이 나오면 실패다. 전체 서버 로그는 출력에 나온 경로(`$TMPDIR/blan19-smoke-server.log`)에 있다.
-  - `127.0.0.1:1` / `P1001` 로그는 DB 차단이 정상 동작한다는 뜻이다.
-  - 한계: smoke 는 `scripts/smoke.mjs` 의 `checks` 에 있는 경로(+ 모든 tech 글)만 요청하고, HTTP 상태와 content-type 만 본다. 새 라우트는 `checks` 에 넣어야 검사된다. DB 를 쓰는 페이지(`/`, `/tech`, `/tech/<slug>`)는 차단 env 에서 브라우저가 에러 화면(`error.tsx`)으로 바꿔도 200 이다. UI 를 바꿨다면 `/run-app` 으로 화면을 직접 확인한다.
+  - `127.0.0.1:1` / `P1001` 로그는 DB 차단이 정상 동작한다는 뜻이다. DB 컴포넌트가 오류를 삼키고 `console.error` 로 남기므로(`⨯` 블록이 아님) "DB 접속 실패 로그 0건"도 정상이다.
+  - 한계: smoke 는 `scripts/smoke.mjs` 의 `checks` 에 있는 경로(+ 모든 tech 글)만 요청하고, HTTP 상태와 content-type 만 본다. 새 라우트는 `checks` 에 넣어야 검사된다. DB 를 쓰는 페이지(`/`, `/tech`, `/tech/<slug>`)는 차단 env 에서 DB 섹션이 빠져도 200 이다. UI 를 바꿨다면 `/run-app` 으로 화면을 직접 확인한다.
 
 같은 실패를 두 번 고쳐도 계속되면 멈추고 원인 가설과 함께 사용자에게 보고한다. 검사를 끄거나 건너뛰어(eslint-disable, `@ts-ignore`, 검사기 수정) 통과시키지 않는다.
 

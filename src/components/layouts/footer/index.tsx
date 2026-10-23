@@ -1,30 +1,25 @@
+import Wordmark from "@/components/ui/wordmark";
+import config from "@/lib/config";
+
 const Footer = () => {
   return (
-    <footer className="bg-greyscale-1 dark:bg-greyscale-8  mt-20">
-      <div className="responsive flex justify-between py-10">
-        <div className="flex flex-col justify-between">
-          <h2 className="text-xl font-medium tracking-tighter italic">
-            blan19.xyz
-          </h2>
-          <p className="text-xs italic">Copyright © 2023 — blan19</p>
-        </div>
-        <div>
-          <p className="font-medium">POWERED BY</p>
-          <div className="w-full h-[1px] bg-greyscale-5 my-3" />
-          <ul className="flex flex-col gap-3 text-sm">
-            <li>
-              <span>Next.js</span>
-            </li>
-            <li>
-              <span>Tailwind</span>
-            </li>
-            <li>
-              <span>Prisma</span>
-            </li>
-            <li>
-              <span>Vercel</span>
-            </li>
-          </ul>
+    <footer className="site-footer">
+      <div className="site-wrap">
+        <div className="site-col">
+          <div className="double-rule" />
+          <div className="foot">
+            <Wordmark size="footer" />
+            <nav className="foot-links" aria-label="연락">
+              <a href={config.author.link} target="_blank" rel="noopener noreferrer">
+                GitHub ↗
+              </a>
+              <a href={`mailto:${config.author.email}`}>Email</a>
+              <a href="/rss.xml">RSS</a>
+            </nav>
+            <div className="foot-meta">
+              <span>© 2023–{new Date().getFullYear()} blan19</span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

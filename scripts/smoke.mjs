@@ -44,6 +44,8 @@ const XML = /xml/;
 const checks = [
   { path: "/", type: HTML },
   { path: "/tech", type: HTML },
+  { path: "/tech?tag=react.js", type: HTML },
+  { path: "/tech?tag=__none__", type: HTML },
   { path: "/log", type: HTML },
   ...techSlugs().map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}`, type: HTML })),
   { path: "/rss.xml", type: XML },

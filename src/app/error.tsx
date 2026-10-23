@@ -1,32 +1,34 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function Error({
   error,
-  reset,
+  retry,
 }: {
-  error: Error;
-  reset: () => void;
+  error: Error & { digest?: string };
+  retry: () => void;
 }) {
   useEffect(() => {
     console.error(error);
   }, [error]);
 
   return (
-    <div className="h-full flex flex-col justify-center items-center">
-      <h1 className="font-medium text-2xl mb-2 tracking-tighter">
-        에러가 발생했어요..!
-      </h1>
-      <p className="text-xs text-greyscale-6 dark:text-greyscale-3 mb-7">
-        버튼을 클릭해 다시 시도해보세요
-      </p>
-      <button
-        onClick={reset}
-        className="py-2 px-3 bg-system-2 rounded text-greyscale-0 hover:bg-system-1"
-      >
-        리셋
-      </button>
+    <div className="site-wrap">
+      <div className="site-col">
+        <p className="kicker">error</p>
+        <h1 className="page-title mt-3">문제가 생겼어요</h1>
+        <p className="page-lede">잠시 후 다시 시도해 주세요.</p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button type="button" className="btn-outline" onClick={() => retry()}>
+            다시 시도
+          </button>
+          <Link href="/" className="btn-outline">
+            홈으로
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

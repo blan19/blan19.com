@@ -1,209 +1,150 @@
-import { Suspense, type ReactNode } from "react";
-import { unstable_noStore as noStore } from "next/cache";
-import {
-  getBestBlogPosts,
-  getLatestBlogPosts,
-  getViewCount,
-} from "@/lib/db/queries";
-import { getBlogPosts } from "@/lib/posts";
-import Card from "@/components/ui/card";
 import Link from "next/link";
-import ViewCounter from "@/components/ui/view-counter";
+import { Suspense } from "react";
+import config from "@/lib/config";
+import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
+import type { Post } from "@/lib/posts";
+import { formatDotDate, formatYearMonth } from "@/lib/format-date";
+import Seal from "@/components/ui/seal";
+import PostList from "@/components/ui/post-list";
+import MostRead, { MostReadPending } from "@/components/ui/most-read";
 
-const ArrowIcon = () => {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2.07102 11.3494L0.963068 10.2415L9.2017 1.98864H2.83807L2.85227 0.454545H11.8438V9.46023H10.2955L10.3097 3.09659L2.07102 11.3494Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-};
+const RECENT_COUNT = 5;
 
-const Skeleton = () => {
-  return (
-    <div className="border border-greyscale-5 dark:border-greyscale-7 shadow rounded-md p-4 w-full">
-      <div className="animate-pulse flex space-x-4">
-        <div className="w-[50%] space-y-6 py-1">
-          <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded"></div>
-          <div className="w-[50%] space-y-3">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded col-span-2"></div>
-              <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded col-span-1"></div>
-            </div>
-            <div className="h-2 bg-greyscale-5 dark:bg-greyscale-7 rounded"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+const pad2 = (n: number) => String(n).padStart(2, "0");
 
-const FindMeLink = ({
-  children,
-  link,
-  name,
-}: {
-  children: ReactNode;
-  link: string;
-  name: string;
-}) => {
-  return (
-    <a
-      className="group card flex gap-5"
-      rel="noopener noreferrer"
-      target="_blank"
-      href={link}
-    >
-      <div className="flex gap-1">
-        {children}
-        <p>{name}</p>
-      </div>
-      <div className="transform transition-transform duration-300 group-hover:-rotate-12">
-        <ArrowIcon />
-      </div>
-    </a>
-  );
-};
-
-const View = async ({ slug }: { slug: string }) => {
-  const view = await getViewCount(slug);
-
-  return (
-    <ViewCounter
-      className="text-xs md:text-sm text-greyscale-7 dark:text-greyscale-2"
-      view={view?.count ?? 0}
-    />
-  );
-};
-
-const Blogs = async ({
-  type,
-  posts,
-}: {
-  type: "latest" | "best";
-  posts: ReturnType<typeof getBlogPosts>;
-}) => {
-  noStore();
-  let blogs: Awaited<ReturnType<typeof getLatestBlogPosts>>;
-  if (type === "latest") blogs = await getLatestBlogPosts();
-  else blogs = await getBestBlogPosts();
-
-  // DB 에만 남은 slug(삭제/이름 변경된 글)는 건너뛴다.
-  const matched = blogs.flatMap((blog) => {
-    const post = posts.find((post) => blog.slug === post.slug);
-    return post ? [post] : [];
-  });
-
-  if (!matched.length)
-    return (
-      <div className="card">
-        <p>아직 블로그 게시글이 존재하지 않아요 😢</p>
-      </div>
+// "글 07편 · 기록 01편 · 2023.12 – 2024.05". 글이 하나도 없으면 기간은 생략한다.
+const countLine = (tech: Post[], log: Post[]) => {
+  const dates = [...tech, ...log]
+    .map((post) => post.metadata.publishedAt)
+    .sort();
+  const items = [`글 ${pad2(tech.length)}편`, `기록 ${pad2(log.length)}편`];
+  if (dates.length > 0) {
+    items.push(
+      `${formatYearMonth(dates[0])} – ${formatYearMonth(dates[dates.length - 1])}`,
     );
-
-  return (
-    <ul className="flex flex-col gap-4">
-      {matched.map((blog) => (
-        <li key={blog.slug}>
-          <Link href={`/tech/${blog.slug}`}>
-            <Card
-              title={blog.metadata.title}
-              tags={blog.metadata.tags}
-              date={blog.metadata.publishedAt}
-            >
-              <View slug={blog.slug} />
-            </Card>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
+  }
+  return items;
 };
 
 export default function Home() {
-  const posts = getBlogPosts("tech");
+  const tech = getPostsNewestFirst("tech");
+  const log = getPostsNewestFirst("log");
+  const recent = tech.slice(0, RECENT_COUNT);
+  const latestLog = log[0];
+  const latestLogQuote = latestLog
+    ? getLogParagraphs(latestLog.content)[0]
+    : undefined;
 
   return (
-    <section className="grid gap-12">
-      <div>
-        <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          Welcome to My Blog 👋
+    <div className="site-wrap">
+      <section className="site-col letter" aria-labelledby="home-h1">
+        <p className="kicker eyebrow">blan19 · 프론트엔드 엔지니어</p>
+        <h1 id="home-h1" className="letter-lead">
+          안녕하세요, 화면 뒤의 구조를 글로 정리하는 프론트엔드 엔지니어
+          blan19입니다.
         </h1>
-        <p className="w-full prose prose-neutral dark:prose-invert whitespace-pre-line">{`안녕하세요!\n블로그를 통해 제가 관심 있어 하거나 새롭게 배운 내용을 많은 분과 공유하고 소통하는 것이 제 목표입니다!\n글에서 부족한 부분이 보인다면 편하게 댓글로 부족한 부분을 짚어주세요\n함께 성장하고 발전하는 공간이 되었으면 합니다 😀`}</p>
-      </div>
-      <div>
-        <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          최근 블로그 포스팅
-        </h1>
-        <Suspense fallback={<Skeleton />}>
-          <Blogs type="latest" posts={posts} />
+        <p className="letter-body">
+          TypeScript와 Next.js로 웹을 만들고, WebGL과 three.js, Rust,
+          Flutter처럼 화면 너머의 것들을 공부합니다.
+        </p>
+        <p className="letter-body">
+          이해한 것을 차근차근 풀어 쓴 글과, 글이 되기 전의 짧은 기록을 이곳에
+          모읍니다.
+        </p>
+        <p className="letter-links">
+          <a
+            className="pen ext"
+            href={config.author.link}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
+          <a className="pen" href={`mailto:${config.author.email}`}>
+            메일 보내기
+          </a>
+          <a className="pen" href="/rss.xml">
+            RSS 구독
+          </a>
+        </p>
+        <p className="count-line">
+          {countLine(tech, log).map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </p>
+        <div className="signoff" aria-hidden="true">
+          <span className="rule" />
+          blan19 드림 <Seal size="lg" />
+        </div>
+      </section>
+
+      <section
+        className="site-col home-section home-toc"
+        aria-labelledby="h-toc"
+      >
+        <div className="sec-head">
+          <h2 id="h-toc" className="sec-title">
+            최근 글
+          </h2>
+          <Link className="text-link" href="/tech">
+            전체 글 보기 →
+          </Link>
+        </div>
+        {recent.length > 0 ? (
+          <PostList
+            posts={recent}
+            variant="compact"
+            newestSlug={recent[0].slug}
+            yearHeading="h3"
+          />
+        ) : (
+          <p className="empty-note">아직 글이 없어요.</p>
+        )}
+        <Suspense fallback={<MostReadPending />}>
+          <MostRead />
         </Suspense>
-      </div>
-      <div>
-        <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          조회수가 가장 높은 블로그 포스팅
-        </h1>
-        <Suspense fallback={<Skeleton />}>
-          <Blogs type="best" posts={posts} />
-        </Suspense>
-      </div>
-      <div className="flex justify-center">
-        <Link href="/tech" className="animate-bounce relative flex flex-col">
-          <div className="flex items-center gap-2">
-            <p>전체 게시글 보기</p>
-            <ArrowIcon />
+      </section>
+
+      <section className="site-col home-section now" aria-labelledby="h-now">
+        <div className="sec-head">
+          <h2 id="h-now" className="sec-title">
+            요즘
+          </h2>
+        </div>
+        <p>
+          주로 <mark>TypeScript</mark>와 <mark>Next.js</mark>로 화면을 만들며,
+          프레임워크가 내부에서 어떻게 렌더링하는지 들여다보는 일에 관심이
+          많습니다.
+        </p>
+        <p>
+          WebGL과 three.js로 그래픽스 파이프라인을, Rust와 Flutter로 웹 바깥의
+          도구를 익히고 있습니다. 오픈소스 코드를 읽으며 배운 것도 이곳에
+          정리할 생각입니다.
+        </p>
+      </section>
+
+      {latestLog && (
+        <section className="site-col home-section" aria-labelledby="h-log">
+          <div className="sec-head">
+            <h2 id="h-log" className="sec-title">
+              최근 기록
+            </h2>
+            <Link className="text-link" href="/log">
+              기록 전체 →
+            </Link>
           </div>
-          <div className="absolute w-full h-[1px] top-6 inset-0 bg-greyscale-5 dark:bg-greyscale-7" />
-        </Link>
-      </div>
-      <div>
-        <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          저를 이곳에서 찾을 수 있어요 🙋‍♂️
-        </h1>
-        <ul className="flex gap-3">
-          <li>
-            <FindMeLink
-              link="mailto:oponize@naver.com"
-              name="oponize@naver.com"
-            >
-              <div />
-            </FindMeLink>
-          </li>
-          <li>
-            <FindMeLink link="https://github.com/blan19" name="깃허브">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
-            </FindMeLink>
-          </li>
-        </ul>
-      </div>
-      <div>
-        <h1 className="font-medium text-2xl mb-4 tracking-tighter">
-          현재 내가 빠져있는 것들 💘
-        </h1>
-        <ul className="flex gap-3 whitespace-pre-wrap flex-wrap">
-          <li className="card">Typescript</li>
-          <li className="card">Rust</li>
-          <li className="card">WebGL</li>
-          <li className="card">Next.js</li>
-          <li className="card">Flutter</li>
-          <li className="card">Opensource</li>
-        </ul>
-      </div>
-    </section>
+          <Link className="log-card" href="/log">
+            {latestLogQuote && <blockquote>{latestLogQuote}</blockquote>}
+            <div className="lc-meta">
+              <span className="mono tnum">
+                {formatDotDate(latestLog.metadata.publishedAt)}
+              </span>
+              <span>{latestLog.metadata.title}</span>
+              <span className="lc-go">읽기 →</span>
+            </div>
+          </Link>
+        </section>
+      )}
+    </div>
   );
 }

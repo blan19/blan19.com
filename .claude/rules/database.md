@@ -23,13 +23,22 @@ paths:
 |---|---|---|---|
 | `increment(slug)` | `src/lib/db/action.ts` | **쓰기**: upsert, count+1 | `unstable_noStore` |
 | `getViewCount(slug)` | `src/lib/db/queries.ts` | findUnique. `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
+| `getAllViewCounts()` | 같은 파일 | findMany(slug, count). `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
 | `getBestBlogPosts()` | 같은 파일 | count desc, 3개 | `unstable_cache`, 키 `blan19-best-posts`, 3600초, 태그 없음 |
-| `getLatestBlogPosts()` | 같은 파일 | createAt desc, 3개 | `unstable_cache`, 키 `blan19-latest-posts`, 3600초 |
 
-- DB 쓰기는 `/tech/[slug]` 렌더 중 `cache(increment)` 호출 하나뿐이다(await 없음). 실제 DB 로 띄운 서버에 이 경로를 요청하면 운영 조회수가 오른다.
+사용처:
+
+| 함수 | 부르는 곳 |
+|---|---|
+| `getViewCount`, `increment` | `ui/view-count` 의 `ArticleViews`(글 머리 조회수) |
+| `getAllViewCounts` | `src/lib/views.ts` 의 `getViewMap`(React `cache`, 요청당 쿼리 1번) → `ui/view-count` 의 `RowViews`(홈, /tech 목록 행) |
+| `getBestBlogPosts` | `ui/most-read`(홈 "많이 읽힌 글") |
+
+- DB 쓰기는 `/tech/[slug]` 렌더 중 `ArticleViews` 의 `cache(increment)` 호출 하나뿐이다(await 없음). 실제 DB 로 띄운 서버에 이 경로를 요청하면 운영 조회수가 오른다.
+- 오류 격리: DB 를 읽는 컴포넌트는 `<Suspense>` 안에서만 쓰고, `await connection()` 을 try 밖에서 부른 뒤 쿼리만 try/catch 한다. catch 첫 줄에서 `unstable_rethrow(error)`(Next 내부 신호는 다시 던짐) 후 `console.error` 하고 `null` 을 렌더한다. 그래서 DB 가 실패해도 조회수 칸이나 "많이 읽힌 글" 섹션만 사라지고 페이지는 그대로다. 새 DB 표시 컴포넌트도 이 패턴을 따른다.
 - 두 파일은 `"use server"` 라 모든 export 가 Server Function 이다. 내부용 헬퍼를 여기에 export 하지 않는다.
 - 캐시 키를 바꾸면 기존 캐시와 분리된다. 태그 기반 무효화(`revalidateTag`)는 현재 없다.
-- 알려진 이슈(요청 없이 고치지 말 것): 홈 "최근 블로그 포스팅"은 `View.createAt` 순, 즉 처음 조회된 순이라 새 글은 한 번 조회되기 전까지 나오지 않는다. `POSTGRES_URL` 검사는 `getViewCount` 에만 있고(연결에는 `POSTGRES_PRISMA_URL` 사용), `getBest/LatestBlogPosts` 는 검사 없이 쿼리한다. `increment` 는 await 없이 호출된다.
+- 알려진 이슈(요청 없이 고치지 말 것): `POSTGRES_URL` 검사는 `getViewCount`·`getAllViewCounts` 에만 있고(연결에는 `POSTGRES_PRISMA_URL` 사용), `getBestBlogPosts` 는 검사 없이 쿼리한다(실패는 `MostRead` 의 try/catch 가 삼킨다). `increment` 는 await 없이 호출된다.
 
 ## 스키마 변경 절차
 
