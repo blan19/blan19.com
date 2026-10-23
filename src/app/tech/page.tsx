@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getPostsNewestFirst, getTagCounts } from "@/lib/posts";
-import { formatYearMonth } from "@/lib/format-date";
 import PostList from "@/components/ui/post-list";
 import TagFilter from "@/components/ui/tag-filter";
 
@@ -28,45 +27,28 @@ const Tech = async ({
     ? posts.filter((post) => post.metadata.tags.includes(selected))
     : posts;
 
-  const oldest = posts[posts.length - 1];
-  const newest = posts[0];
-
   return (
     <div className="site-wrap">
-      <header className="site-col tech-head">
-        <p className="kicker">tech / 전체 목차</p>
-        <h1 className="page-title">글</h1>
-        <p className="page-lede">
-          렌더링, 그래픽스, 그리고 일하는 방식에 대해 차근차근 풀어 쓴
-          글입니다.
-        </p>
-        <p className="count-line">
-          <span>{String(posts.length).padStart(2, "0")}편</span>
-          {newest && oldest && (
-            <span>
-              {formatYearMonth(oldest.metadata.publishedAt)} –{" "}
-              {formatYearMonth(newest.metadata.publishedAt)}
-            </span>
-          )}
-          <span>읽는 시간은 추정치</span>
-        </p>
-        <div className="double-rule" />
-      </header>
-      <section className="site-col tech-list" aria-label="글 목록">
-        {posts.length > 0 ? (
-          <>
+      <header className="rail-grid page-head">
+        <div className="rail-main">
+          <h1 className="page-h1">글</h1>
+          <p className="page-lede">
+            렌더링, 그래픽스, 그리고 일하는 방식에 대해 풀어 쓴 글.
+          </p>
+          {posts.length > 0 && (
             <TagFilter tags={tags} total={posts.length} selected={selected} />
-            <PostList
-              posts={visible}
-              variant="full"
-              newestSlug={newest.slug}
-              yearHeading="h2"
-            />
-          </>
-        ) : (
-          <p className="empty-note">아직 글이 없어요.</p>
-        )}
-      </section>
+          )}
+        </div>
+      </header>
+      {posts.length > 0 ? (
+        <div className="tech-list">
+          <PostList posts={visible} variant="archive" />
+        </div>
+      ) : (
+        <div className="rail-grid">
+          <p className="rail-main empty-note">아직 글이 없어요.</p>
+        </div>
+      )}
     </div>
   );
 };

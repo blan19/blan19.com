@@ -24,6 +24,7 @@ paths:
 | `prisma/schema.prisma` | `guard-bash.mjs`(push/PR 확인 조건) | 스키마 변경 push 확인이 사라짐 |
 | `src/generated/prisma` | `session-start.mjs`, `post-edit-check.mjs`(SKIP_DIRS), eslint ignore, `.gitignore`, schema.prisma output | 상태 표시와 lint 대상이 틀어짐 |
 | `src/app/og/Pretendard-Bold.woff` | `src/app/og/route.tsx`(`process.cwd()` 기준 `readFile`) | smoke 의 `/og` 실패. 경로를 고쳐도 새 위치가 Vercel 파일 트레이싱에 안 잡히면 운영에서만 실패 |
+| `src/app/icon.svg` | `scripts/smoke.mjs`(`/icon.svg` 를 `image/svg+xml` 로 요청) | smoke 실패 |
 | `src/fonts/PretendardVariable.woff2` | `src/app/fonts.ts`(`localFont` 의 상대경로 `../fonts/…`) | 빌드 실패 |
 
 - 차단 DB 주소 `postgres://blocked:blocked@127.0.0.1:1/blocked` 는 `with-blocked-db.mjs`, ci.yml, `guard-bash.test.mjs` 에 따로 적혀 있고, `smoke.mjs` 의 로그 분류 정규식(`127\.0\.0\.1:1`)이 이 주소를 전제한다. 문서(CLAUDE.md, database.md, verify 스킬)에도 있다. 바꾸면 모두 바꾼다.

@@ -9,7 +9,7 @@ export const THEME_STORAGE_KEY = "theme";
 export const THEME_EVENT = "blan19:themechange";
 
 // --bg 와 같은 값. layout.tsx 의 viewport.themeColor 와 공유한다.
-export const THEME_COLORS = { light: "#FBF8F3", dark: "#161412" } as const;
+export const THEME_COLORS = { light: "#F8F9FA", dark: "#16181B" } as const;
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 

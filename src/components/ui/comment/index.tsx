@@ -70,10 +70,6 @@ const Comment = () => {
       </h2>
       {!loaded && (
         <div className="skel" aria-hidden="true">
-          <div className="who">
-            <span className="av" />
-            <span className="bar bar-name" />
-          </div>
           <span className="bar bar-long" />
           <span className="bar bar-mid" />
           <p className="note">

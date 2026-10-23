@@ -15,7 +15,6 @@ interface HighlightResult {
   pre: Element;
   lines: number;
   diff: boolean;
-  wide: boolean;
 }
 
 const CACHE_LIMIT = 500;
@@ -74,8 +73,6 @@ const transformerGutter = (prompt: boolean): ShikiTransformer => ({
   },
 });
 
-const lineLength = (text: string) => text.replace(/\t/g, "  ").length;
-
 const highlight = async (
   source: string,
   lang: string,
@@ -122,7 +119,6 @@ const highlight = async (
     pre,
     lines: lineNodes.length,
     diff: hasClass(pre, "has-diff"),
-    wide: lineNodes.some((line) => lineLength(toString(line)) > 72),
   };
 
   if (highlightCache.size >= CACHE_LIMIT) {
@@ -205,7 +201,6 @@ const rehypeCodeBlocks = () => async (tree: Root) => {
       if (result.diff) properties.dataDiff = "";
       if (prompt && !lineNumbers && !result.diff) properties.dataPrompt = "";
       if (result.lines > 30) properties.dataCollapsible = "";
-      if (result.wide) properties.dataWide = "";
       replacement = {
         type: "element",
         tagName: "figure",

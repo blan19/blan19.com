@@ -1,21 +1,30 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { unstable_rethrow } from "next/navigation";
+import type { ReactNode } from "react";
 import { getBestBlogPosts } from "@/lib/db/queries";
 import { getBlogPosts } from "@/lib/posts";
 
 // 홈 "많이 읽힌 글". <Suspense fallback={<MostReadPending />}> 안에서만 쓴다.
-// DB 가 실패하거나 맞는 글이 없으면 섹션째 숨긴다(null).
+// 섹션 전체를 렌더하므로 DB 가 실패하거나 맞는 글이 없으면 섹션째 사라진다(null).
 
-const MostReadHead = () => (
-  <>
-    <div className="ab-head">
-      <h2 id="h-mr" className="ab-title">
-        많이 읽힌 글
-      </h2>
-    </div>
-    <div className="double-rule double-rule-thin" />
-  </>
+const MostReadSection = ({
+  busy,
+  children,
+}: {
+  busy?: boolean;
+  children: ReactNode;
+}) => (
+  <section
+    className="rail-grid home-sec"
+    aria-labelledby="h-mr"
+    aria-busy={busy || undefined}
+  >
+    <h2 className="rail-side rail-label" id="h-mr">
+      많이 읽힌 글
+    </h2>
+    <div className="rail-main">{children}</div>
+  </section>
 );
 
 const MostRead = async () => {
@@ -40,39 +49,35 @@ const MostRead = async () => {
   if (!matched.length) return null;
 
   return (
-    <aside className="most-read" aria-labelledby="h-mr">
-      <MostReadHead />
-      <ol className="mr-list">
+    <MostReadSection>
+      <ol className="idx-list is-ranked">
         {matched.map(({ post, count }, i) => (
           <li key={post.slug}>
-            <Link className="mr-link" href={`/tech/${post.slug}`}>
-              <span className="mr-rank tnum">{i + 1}</span>
-              <span className="mr-title">
-                <span className="title-hl">{post.metadata.title}</span>
+            <Link className="idx-row" href={`/tech/${post.slug}`}>
+              <span className="idx-date">{i + 1}</span>
+              <span className="idx-main">
+                <span className="idx-title">{post.metadata.title}</span>
               </span>
-              <span className="mr-views tnum">
-                {count.toLocaleString("ko-KR")}회 · {post.readingMinutes}분
-              </span>
+              <span className="idx-read">{count.toLocaleString("ko-KR")}회</span>
             </Link>
           </li>
         ))}
       </ol>
-    </aside>
+    </MostReadSection>
   );
 };
 
+// 로딩 중 자리 표시: 실제 행과 같은 높이의 막대 3줄(레이아웃 이동 없음)
 const MostReadPending = () => (
-  <aside className="most-read" aria-labelledby="h-mr" aria-busy="true">
-    <MostReadHead />
-    <ol className="mr-list mr-pending" aria-hidden="true">
+  <MostReadSection busy>
+    <ol className="idx-list is-pending" aria-hidden="true">
       {[0, 1, 2].map((i) => (
-        <li key={i} className="mr-skel">
-          <span className="mr-bar" />
-          <span className="mr-bar mr-bar-short" />
+        <li key={i} className="idx-skel">
+          <span className="skel-bar" />
         </li>
       ))}
     </ol>
-  </aside>
+  </MostReadSection>
 );
 
 export { MostReadPending };

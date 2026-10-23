@@ -13,7 +13,6 @@ import rehypeHeadingAnchors from "@/lib/markdown/rehype-heading-anchors";
 import rehypeImageFigures from "@/lib/markdown/rehype-image-figures";
 import rehypeRawToText from "@/lib/markdown/rehype-raw-to-text";
 import rehypeSafeUrls from "@/lib/markdown/rehype-safe-urls";
-import rehypeSidenotes from "@/lib/markdown/rehype-sidenotes";
 import rehypeTables from "@/lib/markdown/rehype-tables";
 import remarkAlerts from "@/lib/markdown/remark-alerts";
 import remarkShiftHeadings from "@/lib/markdown/remark-shift-headings";
@@ -46,7 +45,6 @@ const processor = unified()
   .use(rehypeSlug)
   .use(rehypeCollectToc)
   .use(rehypeHeadingAnchors)
-  .use(rehypeSidenotes)
   .use(rehypeFootnoteSection)
   .freeze();
 

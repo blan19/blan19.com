@@ -6,52 +6,39 @@ import { RowViews } from "@/components/ui/view-count";
 
 interface PostRowProps {
   post: Post;
-  variant: "compact" | "full";
-  isNewest: boolean;
+  // full: "2024.03.26"(홈), month-day: "03.26"(/tech, 연도 라벨 아래)
+  date: "full" | "month-day";
+  // desktop: 한 줄 말줄임, <768 에서 숨김(홈) / always: 줄바꿈해서 항상 보임(/tech)
+  desc: "desktop" | "always";
+  views: boolean;
 }
 
-// 행은 파일시스템 데이터로 완결된다. 조회수 칸만 DB(RowViews)라 실패하거나 느리면 비어 있다.
-const PostRow = ({ post, variant, isNewest }: PostRowProps) => {
-  const { slug, index, readingMinutes, metadata } = post;
-  const { title, description, publishedAt, tags } = metadata;
+// 색인 행: 날짜 · 제목(+설명) · 읽는 시간. 조회수 칸만 DB(RowViews)라 실패하거나 느리면 비어 있다.
+const PostRow = ({ post, date, desc, views }: PostRowProps) => {
+  const { slug, readingMinutes, metadata } = post;
+  const { title, description, publishedAt } = metadata;
 
   return (
     <li>
-      <Link className="post-row" href={`/tech/${slug}`}>
-        <span className="row-num" aria-hidden="true">
-          {String(index).padStart(2, "0")}
-        </span>
-        <span className="row-line">
-          <span className="row-title">
-            {isNewest && <span className="badge-new">새 글</span>}
-            <span className="title-hl">{title}</span>
-          </span>
-          <span className="leader" aria-hidden="true" />
-          {/* full(/tech)은 날짜를 메타 줄에 전체 형식으로 두므로 읽는 시간만(B 목업 rowHTML) */}
-          <span className="row-read">
-            {variant === "compact" && (
-              <>
-                <time dateTime={publishedAt}>{formatMonthDay(publishedAt)}</time> ·{" "}
-              </>
-            )}
-            {readingMinutes}분
-          </span>
-        </span>
-        <span className="row-desc">{description}</span>
-        <span className="row-meta">
-          {variant === "full" && (
-            <time dateTime={publishedAt}>{formatDotDate(publishedAt)}</time>
-          )}
-          {tags.length > 0 && (
-            <span className="row-tags">
-              {tags.map((tag) => (
-                <span key={tag}>#{tag}</span>
-              ))}
+      <Link className="idx-row" href={`/tech/${slug}`}>
+        <time className="idx-date" dateTime={publishedAt}>
+          {date === "full" ? formatDotDate(publishedAt) : formatMonthDay(publishedAt)}
+        </time>
+        <span className="idx-main">
+          <span className="idx-title">{title}</span>
+          {description && (
+            <span className={desc === "desktop" ? "idx-desc is-desktop" : "idx-desc"}>
+              {description}
             </span>
           )}
-          <Suspense fallback={null}>
-            <RowViews slug={slug} />
-          </Suspense>
+        </span>
+        <span className="idx-read">
+          {readingMinutes}분
+          {views && (
+            <Suspense fallback={null}>
+              <RowViews slug={slug} />
+            </Suspense>
+          )}
         </span>
       </Link>
     </li>

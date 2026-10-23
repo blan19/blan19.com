@@ -12,7 +12,6 @@ interface CodeBlockProps {
   diff: boolean;
   prompt: boolean;
   collapsible: boolean;
-  wide: boolean;
   children: ReactNode;
 }
 
@@ -29,7 +28,6 @@ const CodeBlock = ({
   diff,
   prompt,
   collapsible,
-  wide,
   children,
 }: CodeBlockProps) => {
   const terminal = isTerminal(lang);
@@ -41,7 +39,6 @@ const CodeBlock = ({
       data-ln={lineNumbers ? "" : undefined}
       data-diff={diff ? "" : undefined}
       data-prompt={prompt ? "" : undefined}
-      data-wide={wide ? "" : undefined}
       data-collapsible={collapsible ? "" : undefined}
       data-collapsed={collapsible ? "" : undefined}
     >
