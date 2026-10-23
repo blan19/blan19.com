@@ -114,7 +114,7 @@ const TocSpy = ({ items }: TocSpyProps) => {
         className="toc-pill"
         ref={pillRef}
         aria-haspopup="dialog"
-        aria-label={current ? `목차 열기, 현재 섹션 ${current}` : "목차 열기"}
+        aria-label={current ? `목차 열기. 지금 읽는 곳 ${current}` : "목차 열기"}
         inert
         onClick={openSheet}
       >

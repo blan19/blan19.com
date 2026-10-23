@@ -12,7 +12,7 @@ const Log = () => {
         <div className="rail-main">
           <h1 className="page-h1">기록</h1>
           <p className="page-lede">
-            글이 되기 전의 생각과, 매일 쌓아 가는 습관.
+            짧은 생각이나 일상을 적어요.
           </p>
         </div>
       </header>

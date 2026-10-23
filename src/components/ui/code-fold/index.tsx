@@ -29,9 +29,9 @@ const CodeFold = ({ lines }: CodeFoldProps) => {
         {expanded ? (
           "접기"
         ) : (
-          <>
-            전체 보기 <span className="mono">({lines}줄)</span>
-          </>
+          <span>
+            <span className="mono">{lines}</span>줄 모두 보기
+          </span>
         )}
         <Icon name="chev" />
       </button>

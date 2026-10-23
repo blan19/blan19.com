@@ -64,7 +64,7 @@ const CopyButton = ({ label }: CopyButtonProps) => {
       <Icon name={copied ? "check" : "copy"} />
       <span aria-hidden="true">{copied ? "복사됨" : "복사"}</span>
       <span className="sr-only" aria-live="polite">
-        {copied ? "복사했습니다" : ""}
+        {copied ? "복사했어요" : ""}
       </span>
     </button>
   );

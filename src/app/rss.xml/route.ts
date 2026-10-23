@@ -6,8 +6,8 @@ export const dynamic = "force-static";
 
 export async function GET() {
   const feed = new Feed({
-    title: "Tech Blog by blan19",
-    description: "Tech Blog by blan19",
+    title: "blan19 기술 블로그",
+    description: "프론트엔드 엔지니어 blan19의 블로그예요. 개발 글과 짧은 기록을 올려요.",
     id: config.url,
     link: config.url,
     language: "ko",

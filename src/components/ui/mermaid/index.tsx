@@ -127,7 +127,7 @@ const Mermaid = ({ code, caption }: MermaidProps) => {
         <div className="diagram-scroll" ref={scrollRef} />
         {state === "error" && (
           <p className="diagram-status">
-            다이어그램을 불러오지 못해 소스를 보여 드려요.
+            다이어그램을 그리지 못해서 코드로 보여 드려요.
           </p>
         )}
         {state !== "ready" && <pre className="diagram-src">{code}</pre>}

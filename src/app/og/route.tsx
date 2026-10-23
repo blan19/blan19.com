@@ -7,7 +7,7 @@ import type { NextRequest } from "next/server";
 // 경로는 process.cwd() 기준이라 파일을 옮기면 Vercel 파일 트레이싱도 확인한다(.claude/rules/tooling.md).
 const pretendardBold = readFile(join(process.cwd(), "src/app/og/Pretendard-Bold.woff"));
 
-const DEFAULT_TITLE = "blan19 · 프론트엔드 엔지니어의 기록";
+const DEFAULT_TITLE = "프론트엔드 개발 블로그";
 const MAX_TITLE_CHARS = 70;
 const TITLE_LINE_HEIGHT = 135; // 104px × 1.3
 
