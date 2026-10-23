@@ -16,6 +16,12 @@ import { checkImageMeta, isAllowedRemote } from "./images.mjs";
 import { ROOT } from "../lib/paths.mjs";
 
 const ctx = await loadContext();
+// 로컬 이미지 케이스는 저장소 public/ 대신 임시 public/ 픽스처(image/sample.png 하나)를 본다.
+const fixturePublic = mkdtempSync(path.join(os.tmpdir(), "validate-content-public-"));
+mkdirSync(path.join(fixturePublic, "image"));
+writeFileSync(path.join(fixturePublic, "image/sample.png"), "");
+after(() => rmSync(fixturePublic, { recursive: true, force: true }));
+const bodyCtx = { ...ctx, publicDir: fixturePublic };
 const VALID = { title: "t", description: "d", publishedAt: "2024-01-01", tags: ["a"], reference: [] };
 // 결과를 "level: 메시지 일부" 로 비교한다. expected 는 [level, 메시지에 들어 있어야 할 문자열] 목록.
 const assertProblems = (got, expected) => {
@@ -98,9 +104,9 @@ describe("checkTechBody", () => {
     ["각주 정의 없음", "본문[^1]\n", [["warn", "각주 [^1] 의 정의"]]],
     ["각주 참조 없음", "본문\n\n[^a]: 설명\n", [["warn", "각주 정의 [^a] 를 참조하는 곳이 없음"]]],
     ["각주 대소문자 무시, 인라인 코드 안은 무시", "본문[^A] `[^b]`\n\n[^a]: 설명\n", []],
-    ["문단 중간 이미지", "글 ![설명](/image/memoji.png)\n", [["warn", "문단 중간의 이미지"]]],
-    ["이미지 뒤 텍스트", "![설명](/image/memoji.png) 뒤\n", [["error", "나머지 텍스트는 렌더되지 않고"]]],
-    ["로컬 이미지 있음", "![설명 {768x432}](/image/memoji.png)\n", []],
+    ["문단 중간 이미지", "글 ![설명](/image/sample.png)\n", [["warn", "문단 중간의 이미지"]]],
+    ["이미지 뒤 텍스트", "![설명](/image/sample.png) 뒤\n", [["error", "나머지 텍스트는 렌더되지 않고"]]],
+    ["로컬 이미지 있음", "![설명 {768x432}](/image/sample.png)\n", []],
     ["로컬 이미지 없음", "![설명](/image/none.png)\n", [["error", "public/image/none.png 파일이 없음"]]],
     ["허용 원격 이미지", "![설명](https://github.com/blan19/blan19.xyz/assets/1/x.png)\n", []],
     ["새 GitHub 첨부 이미지", "![설명](https://github.com/user-attachments/assets/abc)\n", []],
@@ -111,7 +117,7 @@ describe("checkTechBody", () => {
     ["참조 형식 이미지", "![설명][ref]\n", [["warn", "참조 형식 이미지"]]],
   ];
   for (const [name, body, expected] of cases) {
-    test(name, () => assertProblems(checkTechBody(body, 1, ctx), expected));
+    test(name, () => assertProblems(checkTechBody(body, 1, bodyCtx), expected));
   }
   test("bodyStartLine 만큼 행 번호를 민다", () => {
     assertProblems(checkTechBody("x\n```\n```\n", 10, ctx), [["warn", "11행:"]]);
