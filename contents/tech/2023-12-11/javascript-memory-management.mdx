@@ -2,7 +2,7 @@
 publishedAt: "2023-12-12"
 title: "자바스크립트 메모리 관리"
 tags: ["javascript"]
-description: "자바스크립트의 가비지 컬렉션과 메모리 누수를 막는 방법을 알아보자"
+description: "스택과 힙, Reference-counting과 Mark-and-sweep 가비지 컬렉션, 전역 변수·타이머·DOM 참조로 인한 메모리 누수와 해결법을 알아보자"
 reference:
   [
     "https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_management#%EA%B0%92_%EC%82%AC%EC%9A%A9",
@@ -11,6 +11,8 @@ reference:
     "https://auth0.com/blog/four-types-of-leaks-in-your-javascript-code-and-how-to-get-rid-of-them/",
   ]
 ---
+
+자바스크립트는 가비지 컬렉터가 메모리를 자동으로 해제하지만, 메모리 관리에 신경 쓰지 않아도 되는 것은 아닙니다. 이 글에서는 스택과 힙 메모리, Reference-counting과 Mark-and-sweep 가비지 컬렉션을 살펴보고, 전역 변수, 타이머, DOM 외부 참조로 생기는 메모리 누수와 해결법을 정리합니다.
 
 ### 배경
 
