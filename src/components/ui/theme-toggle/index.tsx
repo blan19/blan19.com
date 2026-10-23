@@ -13,7 +13,7 @@ import {
 import type { ThemePref } from "@/lib/theme";
 
 const options: { pref: ThemePref; label: string; icon: IconName }[] = [
-  { pref: "system", label: "시스템 설정", icon: "system" },
+  { pref: "system", label: "시스템", icon: "system" },
   { pref: "light", label: "라이트", icon: "sun" },
   { pref: "dark", label: "다크", icon: "moon" },
 ];

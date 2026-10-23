@@ -40,10 +40,10 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 verify 와 같은 단�
 ```
 contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 = slug = URL = 조회수 키)
 src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /sitemap.xml /robots.txt, error.tsx, not-found.tsx
-                    fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 정적 점묘 매듭), og/Pretendard-Bold.woff(OG 이미지 폰트)
+                    fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 이전 히어로였던 정적 점묘 매듭. 지금 히어로(노트북)와 무관), og/Pretendard-Bold.woff(OG 이미지 폰트)
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더), markdown/(글 렌더 파이프라인, 서버 전용), db/(action.ts 쓰기, queries.ts 조회. "use server"),
-                    views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), knot.ts(홈/404 매듭 기하, 서버·클라이언트 공용),
+                    views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), laptop.ts(홈/404 점묘 노트북 기하, 서버·클라이언트 공용),
                     prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL), format-date.ts
 src/fonts/          PretendardVariable.woff2 + 라이선스(OFL)
 src/styles/         globals.css(토큰, Tailwind 4 매핑, 공용 클래스, 크롬), markdown.css(글 본문), pages.css(페이지). 뒤의 둘은 globals.css 가 import
@@ -59,7 +59,7 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 - 글 본문 → `renderMarkdown(slug, content)`(`src/lib/markdown/index.ts`)가 HAST 를 한 번 만들어 모듈 캐시(키 `slug:sha1(본문)`, 50개)에 두고, 목차를 같은 트리에서 뽑는다. `ui/post-body` 가 `hast-util-to-jsx-runtime` 으로 렌더한다. 세부는 frontend.md.
 - 목록 순서는 `publishedAt` 이 아니다. `posts.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 `getPostsNewestFirst` 가 뒤집어 최신순으로 쓴다.
 - 홈의 최근 글과 /tech 목록은 파일시스템만으로 그린다. DB 는 조회수(글 머리 `ArticleViews`, 목록 행 `RowViews`)와 홈 "많이 읽힌 글"(`MostRead`, `unstable_cache` 1시간)에만 쓴다.
-- 홈 소개 옆과 404 의 점묘 매듭(`ui/hero-object`)은 서버가 SVG 로 그리고, 홈만 클라이언트 섬 `ui/hero-canvas` 가 캔버스로 회전시킨다. 세부와 규칙은 frontend.md.
+- 홈 소개 옆과 404 의 점묘 노트북(`ui/hero-object`, 404 는 흩어진 분해도)은 서버가 SVG 로 그리고, 홈만 클라이언트 섬 `ui/hero-canvas` 가 캔버스로 천천히 흔들고 재생 막대를 움직인다. 세부와 규칙은 frontend.md.
 - DB 는 `View(slug, count)` 하나. `/tech/[slug]` 렌더 때마다 `increment` 가 upsert 한다.
 - DB 실패는 컴포넌트가 삼킨다: DB 를 읽는 컴포넌트(`ui/view-count`, `ui/most-read`)는 쿼리만 try/catch 하고 실패하면 `null` 을 렌더해 그 칸이나 섹션만 사라진다. `app/error.tsx` 로 번지지 않는다.
 - `/`, `/tech`, `/tech/[slug]`, `/og` 는 dynamic, 나머지는 static.

@@ -63,7 +63,7 @@ const PostImage = ({
         <div className="img-fallback" role="img" aria-label={alt}>
           <Icon name="img-off" />
           <span className="img-fallback-alt">{alt}</span>
-          <span className="img-fallback-why">이미지를 불러오지 못했어요.</span>
+          <span className="img-fallback-why">이미지를 불러오지 못했습니다.</span>
         </div>
       ) : (
         <button

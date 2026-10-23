@@ -12,14 +12,14 @@ const Log = () => {
         <div className="rail-main">
           <h1 className="page-h1">기록</h1>
           <p className="page-lede">
-            짧은 생각이나 일상을 적어요.
+            짧은 생각과 일상을 적습니다.
           </p>
         </div>
       </header>
 
       {posts.length === 0 && (
         <div className="rail-grid">
-          <p className="rail-main empty-note">아직 기록이 없어요.</p>
+          <p className="rail-main empty-note">아직 기록이 없습니다.</p>
         </div>
       )}
 
