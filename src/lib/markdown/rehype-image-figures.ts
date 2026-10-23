@@ -5,7 +5,7 @@ import { isElement } from "@/lib/markdown/hast-utils";
 import { parseImageMeta } from "@/lib/markdown/image-meta";
 
 // 루트 직계 문단 중 첫 자식이 img 인 것을 figure.img-fig 로 바꾼다(나머지 자식은 버린다).
-// alt 메타 문법은 image-meta.ts(scripts/validate-content.mjs 의 checkImageMeta 가 같은 규칙을 검사한다).
+// alt 메타 문법은 image-meta.ts(scripts/content/images.mjs 의 checkImageMeta 도 같은 parseImageMeta 로 검사한다).
 // priority 는 글의 첫 번째 이미지에만 적용한다.
 const rehypeImageFigures = () => (tree: Root) => {
   let firstImage: Element | undefined;

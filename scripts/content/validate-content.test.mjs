@@ -9,7 +9,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, describe, test } from "node:test";
-import { checkLogBody, checkTechBody, checkTodo } from "./body.mjs";
+import { FIXED_PAGE_IDS, checkLogBody, checkTechBody, checkTodo } from "./body.mjs";
 import { loadContext } from "./context.mjs";
 import { checkFrontmatter, parseFrontmatter } from "./frontmatter.mjs";
 import { checkImageMeta, isAllowedRemote } from "./images.mjs";
@@ -37,6 +37,9 @@ describe("ctx", () => {
     assert.deepEqual(ctx.setupProblems, []);
     assert.ok(ctx.langs.CODE_LANGUAGES.includes("typescript"));
     assert.ok(ctx.remotePatterns.length > 0);
+  });
+  test("고정 id 는 src/lib/page-ids.ts 에서 읽는다", () => {
+    assert.deepEqual(FIXED_PAGE_IDS, ["main", "post-head", "post-body", "footnote-label", "ref-label", "cm-label"]);
   });
 });
 
@@ -138,6 +141,8 @@ describe("checkImageMeta", () => {
     ["모르는 토큰", "설명 {big}", [["warn", "알 수 없는 alt 메타 {big}"]]],
     ["설명 없음", "{768x432}", [["error", "alt 설명 텍스트가 없음"]]],
     ["크기 0", "설명 {0x432}", [["error", "0 이 있음"]]],
+    ["높이 0", "설명 {768x00}", [["error", "크기 {768x00} 에 0 이 있음"]]],
+    ["두 번째 크기의 0 은 렌더러가 읽지 않는다", "설명 {1x2} {0x0}", [["warn", "크기 토큰이 2개"]]],
     ["크기 두 개", "설명 {1x2} {3x4}", [["warn", "크기 토큰이 2개"]]],
   ];
   for (const [name, alt, expected] of cases) {
@@ -199,6 +204,10 @@ describe("validate-content.mjs --root", () => {
   write("contents/tech/stray.txt", "x");
   write("contents/log/2024-01-03/good.mdx", post({ description: "log", body: "할 일\nTODO: 채우기\n" }));
   write("contents/tech/2024-01-04/Bad_Slug.mdx", post({ description: "good" }));
+  // 점 파일은 로더(src/lib/posts.ts)처럼 건너뛴다(카테고리 폴더, 날짜 폴더 모두).
+  write("contents/tech/.DS_Store", "x");
+  write("contents/tech/2024-01-01/.DS_Store", "x");
+  write("contents/tech/2024-01-01/.draft.mdx", "x");
 
   const run = (...args) => {
     const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/validate-content.mjs"), "--root", tmp, ...args], { encoding: "utf8" });
@@ -222,6 +231,7 @@ describe("validate-content.mjs --root", () => {
       ["contents/tech/2024-01-04/Bad_Slug.mdx: [warn]", "폴더 날짜(2024-01-04)"],
     ];
     for (const [prefix, text] of expected) assert.ok(has(lines, prefix, text), `없음: ${prefix} ${text}\n${lines.join("\n")}`);
+    assert.ok(!lines.some((l) => l.split(": ")[0].includes("/.")), `점 파일이 보고됨\n${lines.join("\n")}`);
     assert.match(lines.at(-1), /^콘텐츠 검사 \(글 6개\): error 7개, warn \d+개 → 실패$/);
   });
 

@@ -1,5 +1,5 @@
 // 이미지 alt 메타 문법: `![설명 {768x432} {priority} {caption: 출처}](src)`.
-// import 를 두지 않는다(타입 import 도 없음): scripts/validate-content.mjs 가 Node 타입 제거로 바로 읽을 수 있게.
+// import 를 두지 않는다(타입 import 도 없음): 콘텐츠 검사기(scripts/content/images.mjs)가 Node 타입 제거로 바로 읽는다.
 
 export const DEFAULT_IMAGE_SIZE = { width: 768, height: 432 };
 

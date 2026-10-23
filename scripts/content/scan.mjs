@@ -75,6 +75,8 @@ export const scan = (ctx, { strict = false } = {}) => {
     if (!fs.existsSync(categoryDir)) continue;
 
     for (const entry of listDir(categoryDir)) {
+      // 점 파일(.DS_Store 등)은 로더(src/lib/posts.ts)도 건너뛴다.
+      if (entry.name.startsWith(".")) continue;
       const entryPath = path.join(categoryDir, entry.name);
       if (!entry.isDirectory()) {
         add(entryPath, [error(`contents/${category}/ 바로 아래에는 날짜 폴더만 둘 수 있음 (파일이 있으면 모든 페이지가 ENOTDIR 로 깨짐). 형식: contents/${category}/YYYY-MM-DD/<slug>.mdx`)]);
@@ -84,10 +86,10 @@ export const scan = (ctx, { strict = false } = {}) => {
         add(entryPath, [error(`폴더 이름 "${entry.name}" 이 올바른 YYYY-MM-DD 날짜가 아님`)]);
       }
 
-      const children = listDir(entryPath);
+      const children = listDir(entryPath).filter((c) => !c.name.startsWith("."));
       const mdx = children.filter((c) => c.isFile() && c.name.endsWith(".mdx"));
       for (const c of children) {
-        if (c.name === ".DS_Store" || (c.isFile() && c.name.endsWith(".mdx"))) continue;
+        if (c.isFile() && c.name.endsWith(".mdx")) continue;
         add(path.join(entryPath, c.name), [warn(c.isDirectory() ? "날짜 폴더 안의 하위 폴더는 읽히지 않음" : "날짜 폴더 안의 .mdx 가 아닌 파일은 무시됨")]);
       }
       if (mdx.length === 0) {

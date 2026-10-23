@@ -1,7 +1,11 @@
 // 본문 이미지(![alt](src)) 검사. ctx: { remotePatterns, remoteError, publicDir }.
 import fs from "node:fs";
 import path from "node:path";
+import { importTs } from "../lib/import-ts.mjs";
 import { error, warn } from "./problem.mjs";
+
+// alt 메타 해석은 렌더러(rehype-image-figures)와 같은 parseImageMeta 를 쓴다.
+const { parseImageMeta } = await importTs("src/lib/markdown/image-meta.ts");
 
 // ![alt](url "title") / ![alt](<url with space>)
 export const IMAGE_RE = /!\[([^\]]*)\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)/g;
@@ -46,12 +50,14 @@ export const checkImageMeta = (lineNo, alt) => {
     if (/^\{caption/i.test(token)) out.push(warn(`${where}: 캡션 형식이 틀려 빈 캡션이 렌더됨 ${token} (형식: {caption: 텍스트}, 소문자, 콜론 뒤 공백 하나)`));
     else out.push(warn(`${where}: 알 수 없는 alt 메타 ${token} (허용: {priority}, {caption: 설명}, {768x432}. 그 외 토큰은 무시됨)`));
   }
-  // 렌더러(src/lib/markdown/rehype-image-figures.ts)와 같은 정규식: alt 에서 {…} 토큰을 지우고, 크기는 첫 {<숫자>x<숫자>} 토큰만 읽는다.
-  if (alt.replace(/\s*\{[^}]*\}/g, "").trim() === "") {
+  // 렌더러가 읽는 값: alt 에서 {…} 토큰을 지운 설명, 첫 {<숫자>x<숫자>} 토큰의 크기.
+  const meta = parseImageMeta(alt);
+  if (meta.alt === "") {
     out.push(error(`${where}: alt 설명 텍스트가 없음 (예: ![설명 {768x432}](...))`));
   }
+  // 크기 토큰 개수는 렌더러가 쓰지 않는 검사기 전용 정보다.
   const sizes = alt.match(/\{\d+x\d+\}/g) ?? [];
-  if (sizes[0] && /^\{0+x|x0+\}$/.test(sizes[0])) out.push(error(`${where}: 크기 ${sizes[0]} 에 0 이 있음 → next/image 에 width/height 0 이 넘어감`));
+  if (meta.width === 0 || meta.height === 0) out.push(error(`${where}: 크기 ${sizes[0]} 에 0 이 있음 → next/image 에 width/height 0 이 넘어감`));
   if (sizes.length > 1) out.push(warn(`${where}: 크기 토큰이 ${sizes.length}개임. 렌더러는 첫 ${sizes[0]} 만 쓴다`));
   return out;
 };
