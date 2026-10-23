@@ -27,6 +27,21 @@
     margin-top: 16px;
   }
 
+  /* 누르는 영역(보이지 않음): 높이 44px, 좌우는 .link-row 간격(20px)의 절반. 위(h1)와 아래(장식 오브젝트)는 링크가 아니다 */
+  .home-intro .intro-links a {
+    position: relative;
+  }
+
+  .home-intro .intro-links a::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    right: -10px;
+    height: max(100%, 44px);
+    translate: 0 -50%;
+  }
+
   .home-intro .hero-obj {
     margin-top: 24px;
     justify-self: start;
@@ -71,8 +86,21 @@
     color: var(--text-3);
   }
 
+  /* inline-block 이어도 한 줄이라 줄 상자가 그대로다. 누르는 영역은 높이 44px(위 목록과의 간격 14px 안) */
   .more-link a {
+    position: relative;
+    display: inline-block;
     transition: color 0.2s var(--ease);
+  }
+
+  .more-link a::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: max(100%, 44px);
+    translate: 0 -50%;
   }
 
   .more-link a:hover {
@@ -301,8 +329,17 @@
     color: var(--text-3);
   }
 
+  /* 누르는 영역(보이지 않음): 여러 줄로 감기므로 간격(6px 16px)의 절반까지만 넓혀 위아래, 좌우 이웃과 겹치지 않는다.
+     높이는 줄 간격(약 28px)이 한계다 */
   .tag-filter a {
+    position: relative;
     transition: color 0.2s var(--ease);
+  }
+
+  .tag-filter a::before {
+    content: "";
+    position: absolute;
+    inset: -3px -8px;
   }
 
   .tag-filter a:hover,
@@ -402,6 +439,21 @@
 
   .nf .nf-links {
     margin-top: 22px;
+  }
+
+  /* 홈 소개 링크와 같은 누르는 영역(높이 44px, 좌우 .link-row 간격의 절반) */
+  .nf .nf-links a {
+    position: relative;
+  }
+
+  .nf .nf-links a::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    right: -10px;
+    height: max(100%, 44px);
+    translate: 0 -50%;
   }
 
   @media (min-width: 768px) {

@@ -33,6 +33,8 @@ const TocSpy = ({ items }: TocSpyProps) => {
       document.querySelectorAll<HTMLElement>(".toc-rail nav"),
     );
     let frame = 0;
+    let lastY = window.scrollY;
+    let scrollingDown = false;
 
     const update = () => {
       frame = 0;
@@ -62,11 +64,21 @@ const TocSpy = ({ items }: TocSpyProps) => {
         }
       }
 
+      // 아래로 읽어 내려가는 동안은 pill 을 숨겨 화면 아래쪽 본문을 가리지 않는다. 위로 스크롤하면 다시 보인다.
+      // 8px 미만의 움직임(주소창 접힘, 관성 끝 흔들림)은 방향으로 보지 않는다.
+      const y = window.scrollY;
+      if (Math.abs(y - lastY) >= 8) {
+        scrollingDown = y > lastY;
+        lastY = y;
+      }
+
       const pill = pillRef.current;
       if (pill) {
         const rect = body.getBoundingClientRect();
         const pastHead = head ? head.getBoundingClientRect().bottom < 0 : true;
-        const show = pastHead && rect.bottom > viewport * 0.6;
+        const focused = pill === document.activeElement;
+        const show =
+          pastHead && rect.bottom > viewport * 0.6 && (!scrollingDown || focused);
         pill.classList.toggle("show", show);
         pill.inert = !show;
       }
