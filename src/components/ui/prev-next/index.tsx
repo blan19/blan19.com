@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Post } from "@/lib/posts";
-import { formatDotDate } from "@/lib/format-date";
+import { formatDotDate } from "@/lib/format";
 
 interface PrevNextProps {
   prev?: Post;

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
-import { getBestBlogPosts } from "@/lib/db/queries";
-import { getBlogPosts } from "@/lib/posts";
+import { getMostRead } from "@/lib/views";
+import { formatViews } from "@/lib/format";
 
 // 홈 "많이 읽힌 글". <Suspense fallback={<MostReadPending />}> 안에서만 쓴다.
 // 섹션 전체를 렌더하므로 DB 가 실패하거나 맞는 글이 없으면 섹션째 사라진다(null).
@@ -27,24 +27,19 @@ const MostReadSection = ({
   </section>
 );
 
+const MOST_READ_COUNT = 3;
+
 const MostRead = async () => {
   await connection();
 
-  let best: Awaited<ReturnType<typeof getBestBlogPosts>>;
+  let matched: Awaited<ReturnType<typeof getMostRead>>;
   try {
-    best = await getBestBlogPosts();
+    matched = await getMostRead(MOST_READ_COUNT);
   } catch (error) {
     unstable_rethrow(error);
     console.error("[most-read] 많이 읽힌 글을 불러오지 못했습니다", error);
     return null;
   }
-
-  // DB 에만 남은 slug(삭제/이름 변경된 글)는 건너뛴다.
-  const posts = getBlogPosts("tech");
-  const matched = best.flatMap((view) => {
-    const post = posts.find((p) => p.slug === view.slug);
-    return post ? [{ post, count: view.count }] : [];
-  });
 
   if (!matched.length) return null;
 
@@ -58,7 +53,7 @@ const MostRead = async () => {
               <span className="idx-main">
                 <span className="idx-title">{post.metadata.title}</span>
               </span>
-              <span className="idx-read">{count.toLocaleString("ko-KR")}회</span>
+              <span className="idx-read">{formatViews(count)}</span>
             </Link>
           </li>
         ))}

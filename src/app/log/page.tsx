@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
 import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
-import { formatDotDate } from "@/lib/format-date";
-import { alternates, openGraph } from "@/lib/seo";
-
-const TITLE = "기록";
-// 메타 전용(화면의 page-lede 와 따로 둔다).
-const DESCRIPTION =
-  "소프트웨어 엔지니어 blan19의 짧은 기록입니다. 데이터를 트래킹하며 습관을 들이는 이야기처럼 짧은 생각과 일상을 평문으로 적습니다.";
-
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: alternates("/log"),
-  openGraph: openGraph({ title: TITLE, description: DESCRIPTION, path: "/log" }),
-};
+import { formatDotDate } from "@/lib/format";
 
 // 마크다운 렌더 없이 원문 문단을 그대로 보여 준다. DB 를 쓰지 않는 정적 페이지다.
 // 날짜는 레일(≥1280)에, 그 아래에서는 제목 위에 온다.

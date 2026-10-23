@@ -1,35 +1,29 @@
-import { cache } from "react";
 import { connection } from "next/server";
 import { unstable_rethrow } from "next/navigation";
-import { increment } from "@/lib/db/action";
-import { getViewCount } from "@/lib/db/queries";
-import { getViewMap } from "@/lib/views";
+import { getViewMap, recordView } from "@/lib/views";
+import { formatViews } from "@/lib/format";
 
 // DB 를 읽는 표시 컴포넌트. 모두 <Suspense> 안에서만 쓴다.
 // connection() 은 try 밖(prerender 중단 신호를 삼키지 않게), 쿼리만 try/catch 하고 실패하면 null.
-
-const incrementView = cache(increment);
 
 interface ViewsProps {
   slug: string;
 }
 
-const formatViews = (count: number) => `${count.toLocaleString("ko-KR")}회`;
-
+// 조회수를 올리고(await, 서버리스에서 응답 뒤 유실되지 않게) 올린 값을 보여 준다.
 const ArticleViews = async ({ slug }: ViewsProps) => {
   await connection();
 
-  let count: number;
+  let count: number | null;
   try {
-    const view = await getViewCount(slug);
-    // 알려진 이슈: await 없이 호출한다(기존 동작 유지).
-    incrementView(slug);
-    count = view?.count ?? 0;
+    count = await recordView(slug);
   } catch (error) {
     unstable_rethrow(error);
-    console.error("[views] 조회수를 불러오지 못했습니다", error);
+    console.error("[views] 조회수를 기록하지 못했습니다", error);
     return null;
   }
+
+  if (count === null) return null;
 
   return <span className="views tnum">{formatViews(count)}</span>;
 };

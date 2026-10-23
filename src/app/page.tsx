@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import config from "@/lib/config";
+import { author } from "@/lib/config";
 import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
-import { formatDotDate } from "@/lib/format-date";
-import { alternates, openGraph, siteJsonLd } from "@/lib/seo";
+import { formatDotDate } from "@/lib/format";
 import HeroObject from "@/components/ui/hero-object";
 import PostList from "@/components/ui/post-list";
 import MostRead, { MostReadPending } from "@/components/ui/most-read";
@@ -43,13 +42,13 @@ export default function Home() {
             <p className="link-row intro-links">
               <a
                 className="u-link"
-                href={config.author.link}
+                href={author.link}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 GitHub
               </a>
-              <a className="u-link" href={`mailto:${config.author.email}`}>
+              <a className="u-link" href={`mailto:${author.email}`}>
                 메일
               </a>
             </p>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Post } from "@/lib/posts";
-import { formatDotDate } from "@/lib/format-date";
+import { formatDotDate } from "@/lib/format";
 import ArticleViews, { ViewsPending } from "@/components/ui/view-count";
 
 interface PostHeaderProps {
