@@ -98,8 +98,20 @@ const Comment = () => {
       load();
     }
 
+    // iframe 이 utteranc.es 문서를 띄우기 전(about:blank)에는 postMessage 가 origin 불일치로 버려진다.
+    // 첫 메시지를 받은 뒤부터 보내고, 그 사이에 바뀐 테마는 그때 한 번 맞춘다.
+    let ready = false;
+    const postTheme = (theme: ResolvedTheme) => {
+      if (!ready) return;
+      frame.contentWindow?.postMessage({ type: "set-theme", theme: uttTheme(theme) }, ORIGIN);
+    };
+
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== ORIGIN || event.source !== frame.contentWindow) return;
+      if (!ready) {
+        ready = true;
+        postTheme(resolveTheme());
+      }
       const data = event.data as { type?: string; height?: number } | null;
       if (data?.type !== "resize" || !data.height) return;
       frame.style.height = `${data.height}px`;
@@ -107,12 +119,7 @@ const Comment = () => {
     };
     window.addEventListener("message", onMessage);
 
-    const unsubscribe = subscribeResolvedTheme((theme) => {
-      frame.contentWindow?.postMessage(
-        { type: "set-theme", theme: uttTheme(theme) },
-        ORIGIN,
-      );
-    });
+    const unsubscribe = subscribeResolvedTheme(postTheme);
 
     return () => {
       io?.disconnect();
