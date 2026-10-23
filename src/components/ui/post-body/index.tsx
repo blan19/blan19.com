@@ -21,6 +21,7 @@ import {
   isFootnoteBackref,
   isFootnoteRef,
 } from "@/lib/markdown/hast-utils";
+import { PAGE_IDS } from "@/lib/page-ids";
 
 interface PostBodyProps {
   hast: Root;
@@ -128,7 +129,7 @@ const components: Partial<Components> = {
 
 const PostBody = ({ hast }: PostBodyProps) => {
   return (
-    <div className="post-body" id="post-body">
+    <div className="post-body" id={PAGE_IDS.postBody}>
       {toJsxRuntime(hast, {
         Fragment,
         jsx,

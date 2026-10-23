@@ -5,6 +5,7 @@ import Header from "@/components/layouts/header";
 import Footer from "@/components/layouts/footer";
 import { plexMono, pretendard } from "@/app/fonts";
 import { analytics, site } from "@/lib/config";
+import { PAGE_IDS } from "@/lib/page-ids";
 import { alternates, openGraph } from "@/lib/metadata";
 import { THEME_COLORS, THEME_STORAGE_KEY } from "@/lib/theme";
 
@@ -75,13 +76,13 @@ export default function RootLayout({
       </head>
       <body>
         <a
-          href="#main"
+          href={`#${PAGE_IDS.main}`}
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-box focus:bg-text focus:px-4 focus:py-2 focus:text-bg"
         >
           본문으로 건너뛰기
         </a>
         <Header />
-        <main id="main" className="site-main" tabIndex={-1}>
+        <main id={PAGE_IDS.main} className="site-main" tabIndex={-1}>
           {children}
         </main>
         <Footer />

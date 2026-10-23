@@ -1,13 +1,14 @@
 // 본문 검사(tech 는 렌더러 규칙, log 는 원문 출력, 공통 TODO). ctx: { langs, remotePatterns, remoteError, publicDir }.
 import GithubSlugger from "github-slugger";
 import { error, warn } from "./problem.mjs";
+import { importTs } from "../lib/import-ts.mjs";
 import { IMAGE_RE, IMAGE_REF_RE, checkImageMeta, checkImageSrc } from "./images.mjs";
 
 export const CALLOUT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"];
 // 글 페이지(/tech/<slug>)에 고정으로 있는 id. rehype-slug 가 만든 제목 id 와 겹치면 앵커·목차·건너뛰기 링크가 엉뚱한 곳으로 간다.
-// main: src/app/layout.tsx, post-head: ui/post-header, post-body: ui/post-body, footnote-label: remark-rehype 각주 제목,
-// ref-label: ui/post-references, cm-label: ui/comment. 새 고정 id 를 넣으면 여기도 넣는다.
-export const FIXED_PAGE_IDS = ["main", "post-head", "post-body", "footnote-label", "ref-label", "cm-label"];
+// 원본은 src/lib/page-ids.ts(레이아웃과 컴포넌트가 같은 값을 쓴다).
+const { PAGE_IDS } = await importTs("src/lib/page-ids.ts");
+export const FIXED_PAGE_IDS = Object.values(PAGE_IDS);
 
 const FENCE_RE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const closesFence = (m, fence) => m && m[1][0] === fence.char && m[1].length >= fence.len && m[2].trim() === "";

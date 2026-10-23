@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { comments } from "@/lib/config";
+import { PAGE_IDS } from "@/lib/page-ids";
 import { resolveTheme, subscribeResolvedTheme } from "@/lib/theme";
 import type { ResolvedTheme } from "@/lib/theme";
 
@@ -123,10 +124,10 @@ const Comment = () => {
   return (
     <section
       className="end-sec comments"
-      aria-labelledby="cm-label"
+      aria-labelledby={PAGE_IDS.commentLabel}
       ref={sectionRef}
     >
-      <h2 className="end-label" id="cm-label">
+      <h2 className="end-label" id={PAGE_IDS.commentLabel}>
         댓글
       </h2>
       {!loaded && (

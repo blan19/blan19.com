@@ -5,6 +5,7 @@ import type { MouseEvent } from "react";
 import Icon from "@/components/ui/icon";
 import { TocList } from "@/components/ui/toc";
 import type { TocItem } from "@/lib/markdown/types";
+import { PAGE_IDS } from "@/lib/page-ids";
 
 interface TocSpyProps {
   items: TocItem[];
@@ -22,9 +23,9 @@ const TocSpy = ({ items }: TocSpyProps) => {
   useEffect(() => {
     // Cache Components 는 떠난 글을 <Activity> 로 숨겨 DOM 에 남기므로(id 가 겹친다) 이 글의 .site-wrap 안에서만 찾는다.
     const root = pillRef.current?.closest(".site-wrap");
-    const body = root?.querySelector<HTMLElement>("#post-body");
+    const body = root?.querySelector<HTMLElement>(`#${PAGE_IDS.postBody}`);
     if (!root || !body || items.length === 0) return;
-    const head = root.querySelector<HTMLElement>("#post-head");
+    const head = root.querySelector<HTMLElement>(`#${PAGE_IDS.postHead}`);
     const headings = Array.from(
       body.querySelectorAll<HTMLElement>("h2[id], h3[id]"),
     ).filter((heading) => !heading.closest(".footnotes"));

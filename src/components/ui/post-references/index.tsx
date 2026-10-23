@@ -1,3 +1,5 @@
+import { PAGE_IDS } from "@/lib/page-ids";
+
 interface PostReferencesProps {
   urls: readonly string[];
 }
@@ -28,8 +30,8 @@ const PostReferences = ({ urls }: PostReferencesProps) => {
   if (!list.length) return null;
 
   return (
-    <section className="end-sec refs" aria-labelledby="ref-label">
-      <h2 className="end-label" id="ref-label">
+    <section className="end-sec refs" aria-labelledby={PAGE_IDS.refLabel}>
+      <h2 className="end-label" id={PAGE_IDS.refLabel}>
         참고 자료
       </h2>
       <ol>
