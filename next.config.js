@@ -14,10 +14,11 @@ const securityHeaders = [
 const nextConfig = {
   // Claude Code 전용 프로젝트: next dev 가 AGENTS.md 를 만들지 않게 한다(기존 블록도 dev 시작 때 제거).
   agentRules: false,
-  poweredByHeader: false,
-  async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
-  },
+  // 정적 셸 + Suspense 구멍(조회수, 많이 읽힌 글, /tech 태그 필터)으로 렌더한다. 'use cache' 를 쓸 수 있다.
+  cacheComponents: true,
+  // Partial Prefetching 은 끈다(명시해야 경고가 없다). 켜면 목록에 없는 /tech/<slug> 에 App Shell 을 먼저 보내
+  // notFound() 가 200 + noindex 로 바뀌고, 모든 페이지 HTML 이 크게 늘었다(글 약 180KB → 285KB).
+  partialPrefetching: false,
   images: {
     remotePatterns: [
       {

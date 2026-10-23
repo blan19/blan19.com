@@ -197,6 +197,15 @@ export const getPostsNewestFirst = (kind: PostKind): readonly Post[] =>
 export const getPost = (kind: PostKind, slug: string): Post | undefined =>
   loadIndex(kind).bySlug.get(slug);
 
+// 주어진 종류에서 가장 최근 publishedAt("YYYY-MM-DD"). 글이 없으면 undefined.
+// 현재 시각 대신 쓰는 결정적인 "마지막 갱신일"이다(sitemap lastModified, 푸터 연도).
+export const getLatestPublishedAt = (...kinds: PostKind[]): string | undefined =>
+  kinds
+    .map((kind) => getPostsNewestFirst(kind)[0]?.metadata.publishedAt)
+    .filter((date): date is string => Boolean(date))
+    .sort()
+    .at(-1);
+
 // prev = 폴더 순서상 바로 이전(더 오래된 글), next = 바로 다음(더 새 글)
 export const getAdjacentPosts = (
   kind: PostKind,

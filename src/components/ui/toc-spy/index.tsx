@@ -20,20 +20,22 @@ const TocSpy = ({ items }: TocSpyProps) => {
   const sheetRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    const body = document.getElementById("post-body");
-    if (!body || items.length === 0) return;
-    const head = document.getElementById("post-head");
+    // Cache Components 는 떠난 글을 <Activity> 로 숨겨 DOM 에 남기므로(id 가 겹친다) 이 글의 .site-wrap 안에서만 찾는다.
+    const root = pillRef.current?.closest(".site-wrap");
+    const body = root?.querySelector<HTMLElement>("#post-body");
+    if (!root || !body || items.length === 0) return;
+    const head = root.querySelector<HTMLElement>("#post-head");
     const headings = Array.from(
       body.querySelectorAll<HTMLElement>("h2[id], h3[id]"),
     ).filter((heading) => !heading.closest(".footnotes"));
     const names = new Map(items.map((item) => [item.id, item.text]));
     const order = new Map(headings.map((heading, index) => [heading.id, index]));
     const links = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>("[data-toc] a"),
+      root.querySelectorAll<HTMLAnchorElement>("[data-toc] a"),
     ).map((link) => ({ link, index: order.get(link.dataset.id ?? "") ?? -1 }));
     // 레일 nav 마다 헤딩 순번 → 링크
     const rails = Array.from(
-      document.querySelectorAll<HTMLElement>(".toc-rail nav"),
+      root.querySelectorAll<HTMLElement>(".toc-rail nav"),
     ).map((nav) => ({
       nav,
       byIndex: new Map(

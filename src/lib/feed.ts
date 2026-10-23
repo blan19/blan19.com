@@ -4,7 +4,8 @@ import { Feed } from "feed";
 import { author, site } from "@/lib/config";
 import { getPostsNewestFirst } from "@/lib/posts";
 
-// /rss.xml(RSS 2.0)과 /rss-atom.xml(Atom 1.0)이 같이 쓴다. 두 라우트는 force-static 이라 빌드 때 한 번 만든다.
+// /rss.xml(RSS 2.0)과 /rss-atom.xml(Atom 1.0)이 같이 쓴다. 파일 읽기(동기)와 글 날짜만 쓰므로
+// 두 GET 핸들러는 빌드 때 prerender 된다(Cache Components). new Date() 같은 현재 시각을 넣으면 요청 시점으로 바뀐다.
 // 항목 본문(content)은 넣지 않고 description 만 쓴다. 마크다운 원문은 리더에서 깨지고,
 // 렌더된 HTML 은 커스텀 figure, Shiki 색(CSS 변수), 상대 URL 을 따로 바꿔야 한다.
 export const buildFeed = (): Feed => {

@@ -7,9 +7,11 @@ interface PostListProps {
   // home: 연도 묶음 없는 한 목록(설명은 데스크톱만, 조회수 없음)
   // archive(/tech): 연도별 섹션, 연도 라벨은 레일(≥1280)에. 헤딩 순서 h1 → h2(연도)
   variant: "home" | "archive";
+  // archive 의 조회수 칸(RowViews). Suspense fallback 으로 그릴 때는 끈다(DB 를 읽지 않는 정적 셸).
+  views?: boolean;
 }
 
-const PostList = ({ posts, variant }: PostListProps) => {
+const PostList = ({ posts, variant, views = true }: PostListProps) => {
   if (variant === "home") {
     return (
       <ol className="idx-list">
@@ -45,7 +47,7 @@ const PostList = ({ posts, variant }: PostListProps) => {
                   post={post}
                   date="month-day"
                   desc="always"
-                  views
+                  views={views}
                 />
               ))}
             </ol>
