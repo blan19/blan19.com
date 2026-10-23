@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import Icon from "@/components/ui/icon";
 import { captionHost, isUrlCaption } from "@/lib/markdown/image-meta";
@@ -44,7 +44,19 @@ const PostImage = ({
   const [failed, setFailed] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const open = () => dialogRef.current?.showModal();
+  // Cache Components 의 <Activity> 가 떠난 글을 숨기면 열린 dialog 가 모달이 아닌 채 열려 남는다.
+  // 숨길 때 실행되는 layout effect 정리에서 닫는다.
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    return () => dialog?.close();
+  }, []);
+
+  const open = () => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (dialog.open && !dialog.matches(":modal")) dialog.close();
+    if (!dialog.open) dialog.showModal();
+  };
   const close = () => dialogRef.current?.close();
   const handleDialogClick = (event: MouseEvent<HTMLDialogElement>) => {
     if (event.target === event.currentTarget) close();

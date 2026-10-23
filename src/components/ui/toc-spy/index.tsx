@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import Icon from "@/components/ui/icon";
 import { TocList } from "@/components/ui/toc";
@@ -169,9 +169,20 @@ const TocSpy = ({ items }: TocSpyProps) => {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
+  // <Activity> 가 이 글을 숨기면 열린 시트가 모달이 아닌 채 열려 남는다. 숨길 때 실행되는 layout effect 정리에서 닫는다.
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    return () => sheet?.close();
+  }, []);
+
   if (items.length === 0) return null;
 
-  const openSheet = () => sheetRef.current?.showModal();
+  const openSheet = () => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    if (sheet.open && !sheet.matches(":modal")) sheet.close();
+    if (!sheet.open) sheet.showModal();
+  };
   const closeSheet = () => sheetRef.current?.close();
   const handleSheetClick = (event: MouseEvent<HTMLDialogElement>) => {
     if (event.target === event.currentTarget) {
