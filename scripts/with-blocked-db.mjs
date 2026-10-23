@@ -2,7 +2,8 @@
 // 운영 DB 접속을 막은 환경에서 명령을 실행한다. 차단 주소와 env 는 scripts/lib/blocked-db.mjs 에 있다.
 // 사용법: node scripts/with-blocked-db.mjs [--preview] <command> [...args]
 //   예) node scripts/with-blocked-db.mjs next build
-//   --preview: POSTGRES_URL 만 빈 값으로 둔다 → getViewCount 가 DB 에 접속하지 않아 글 화면이 정상으로 보인다(/run-app preview).
+//   --preview: POSTGRES_URL 만 빈 값으로 둔다 → src/lib/views.ts 의 hasDatabase() 가 false 라 DB 에 접속하지 않고,
+//              조회수 칸과 홈 "많이 읽힌 글"만 사라진 채 글 화면이 정상으로 보인다(/run-app preview).
 // 이 경로(scripts/with-blocked-db.mjs)는 guard-bash 가 DB 차단 실행으로 인정하는 기준이라 옮기지 않는다.
 import { spawn } from "node:child_process";
 import { blockedEnv } from "./lib/blocked-db.mjs";

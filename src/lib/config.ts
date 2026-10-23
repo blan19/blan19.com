@@ -34,11 +34,3 @@ export const comments = {
 export const analytics = {
   gaId: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || undefined,
 };
-
-// 이전 기본 export. 모든 import 가 named export 로 옮겨지면 지운다.
-const config = {
-  author,
-  url: site.url,
-};
-
-export default config;

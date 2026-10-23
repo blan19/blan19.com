@@ -556,10 +556,6 @@
     color: var(--text-3);
   }
 
-  .comments .utt-host .utterances {
-    max-width: none;
-  }
-
   /* ───────────────────────── 코드 블록 ───────────────────────── */
   /* 1행 = 헤더(figcaption .code-head + 복사 버튼), 2행 = 코드(.code-body, 두 칸 차지) */
   .code-block {
