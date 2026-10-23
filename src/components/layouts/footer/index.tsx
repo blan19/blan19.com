@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="rail-grid">
           <div className="rail-main foot">
             <span>© 2023–{new Date().getFullYear()} blan19</span>
-            <nav aria-label="연락">
+            <nav aria-label="연락처와 RSS">
               <a href={config.author.link} target="_blank" rel="noopener noreferrer">
                 GitHub
               </a>

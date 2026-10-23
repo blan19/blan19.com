@@ -9,7 +9,6 @@ export type IconName =
   | "caution"
   | "copy"
   | "check"
-  | "rss"
   | "sun"
   | "moon"
   | "system"
@@ -70,13 +69,6 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
-  rss: (
-    <>
-      <path d="M5 11a8 8 0 0 1 8 8" />
-      <path d="M5 5a14 14 0 0 1 14 14" />
-      <circle cx="6" cy="18" r="1.2" fill="currentColor" />
-    </>
-  ),
   sun: (
     <>
       <circle cx="12" cy="12" r="4" />

@@ -1,4 +1,3 @@
-import Icon from "@/components/ui/icon";
 import NavLinks from "@/components/ui/nav-links";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import Wordmark from "@/components/ui/wordmark";
@@ -13,9 +12,6 @@ const Header = () => {
           </div>
           <nav aria-label="주 메뉴" className="rail-main site-nav">
             <NavLinks />
-            <a className="icon-btn" href="/rss.xml" aria-label="RSS 피드">
-              <Icon name="rss" />
-            </a>
             <ThemeToggle />
           </nav>
         </div>

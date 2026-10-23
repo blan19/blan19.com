@@ -10,7 +10,7 @@ export default function NotFound() {
           <div>
             <p className="code-label">404</p>
             <h1 className="page-h1">페이지를 찾을 수 없어요</h1>
-            <p className="page-lede">주소가 바뀌었거나 없는 글이에요.</p>
+            <p className="page-lede">주소가 잘못됐거나 글이 지워졌을 수 있어요.</p>
             <p className="link-row nf-links">
               <Link href="/" className="u-link">
                 홈으로

@@ -24,7 +24,7 @@ export default function Home() {
         <div className="rail-main intro-body">
           <div>
             <h1 id="home-h1" className="intro-h1">
-              화면 뒤의 구조를 글로 정리하는 프론트엔드 엔지니어, blan19입니다.
+              프론트엔드 엔지니어 blan19예요. 새로 배운 걸 글로 정리해요.
             </h1>
             <p className="link-row intro-links">
               <a
@@ -37,9 +37,6 @@ export default function Home() {
               </a>
               <a className="u-link" href={`mailto:${config.author.email}`}>
                 메일
-              </a>
-              <a className="u-link" href="/rss.xml">
-                RSS
               </a>
             </p>
           </div>
@@ -58,7 +55,7 @@ export default function Home() {
             <p className="empty-note">아직 글이 없어요.</p>
           )}
           <p className="more-link">
-            <Link href="/tech">전체 {tech.length}편 →</Link>
+            <Link href="/tech">글 {tech.length}편 모두 보기 →</Link>
           </p>
         </div>
       </section>
@@ -72,8 +69,8 @@ export default function Home() {
           요즘
         </h2>
         <p className="rail-main now-line">
-          TypeScript와 Next.js로 화면을 만들며 렌더링의 내부를 들여다보고,
-          WebGL·three.js와 Rust·Flutter를 익히고 있습니다.
+          TypeScript와 Next.js로 웹을 만들어요. WebGL, three.js, Rust, Flutter도
+          공부하고 있어요.
         </p>
       </section>
 

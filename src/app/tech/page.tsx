@@ -4,9 +4,9 @@ import PostList from "@/components/ui/post-list";
 import TagFilter from "@/components/ui/tag-filter";
 
 export const metadata: Metadata = {
-  title: "Tech Posts",
+  title: "글 목록",
   description:
-    "Read my thoughts on the Frontend ecosystem and everyday my life",
+    "React, Next.js, WebGL처럼 공부한 기술과 일하면서 고민한 걸 적은 글을 모았어요.",
 };
 
 const Tech = async ({
@@ -33,7 +33,7 @@ const Tech = async ({
         <div className="rail-main">
           <h1 className="page-h1">글</h1>
           <p className="page-lede">
-            렌더링, 그래픽스, 그리고 일하는 방식에 대해 풀어 쓴 글.
+            개발하면서 공부하고 고민한 걸 적어요.
           </p>
           {posts.length > 0 && (
             <TagFilter tags={tags} total={posts.length} selected={selected} />
