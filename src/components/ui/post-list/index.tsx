@@ -3,7 +3,7 @@ import type { Post } from "@/lib/posts";
 import PostRow from "@/components/ui/post-row";
 
 interface PostListProps {
-  posts: Post[];
+  posts: readonly Post[];
   // home: 연도 묶음 없는 한 목록(설명은 데스크톱만, 조회수 없음)
   // archive(/tech): 연도별 섹션, 연도 라벨은 레일(≥1280)에. 헤딩 순서 h1 → h2(연도)
   variant: "home" | "archive";

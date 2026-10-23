@@ -1,5 +1,5 @@
 interface PostReferencesProps {
-  urls: string[];
+  urls: readonly string[];
 }
 
 const safeDecode = (value: string) => {

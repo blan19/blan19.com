@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import config from "@/lib/config";
+import { site } from "@/lib/config";
 import { getAdjacentPosts, getPost } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
 import { alternates, openGraph, postJsonLd } from "@/lib/seo";
@@ -26,15 +26,19 @@ export async function generateMetadata({
     return;
   }
 
-  const { title, description, tags, publishedAt, updatedAt } = post.metadata;
+  const {
+    title,
+    description,
+    tags: keywords,
+    publishedAt: publishedTime,
+  } = post.metadata;
+  // 알려진 이슈: title 을 인코딩하지 않는다.
+  const ogImage = `${site.url}og?title=${title}`;
 
   return {
     title,
     description,
-    keywords: tags,
-    authors: [{ name: config.author.name, url: config.author.link }],
-    alternates: alternates(`/tech/${post.slug}`),
-    // twitter 는 layout 의 card 를 쓰고 제목·설명·이미지는 Next 가 openGraph 에서 채운다.
+    keywords: [...keywords],
     openGraph: {
       ...openGraph({
         title,
@@ -43,10 +47,18 @@ export async function generateMetadata({
         imageTitle: title,
       }),
       type: "article",
-      publishedTime: publishedAt,
-      ...(updatedAt && { modifiedTime: updatedAt }),
-      authors: [config.author.link],
-      tags,
+      url: `${site.url}tech/${post.slug}`,
+      images: [
+        {
+          url: ogImage,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
     },
   };
 }
