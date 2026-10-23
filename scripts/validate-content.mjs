@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import GithubSlugger from "github-slugger";
 import matter from "gray-matter";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -51,24 +52,55 @@ const loadRemotePatterns = () => {
 };
 const REMOTE_PATTERNS = loadRemotePatterns();
 
-// MDX 렌더러에 registerLanguage 된 언어만 하이라이트된다.
-const loadHighlightLangs = () => {
+// 글 렌더러(src/lib/markdown)가 아는 코드 블록 언어. languages.ts 의 배열과 별칭을 정규식으로 읽는다.
+const LANGUAGES_FILE = path.join(REPO_ROOT, "src/lib/markdown/languages.ts");
+const loadCodeLangs = () => {
+  const langs = new Set();
   try {
-    const src = fs.readFileSync(path.join(REPO_ROOT, "src/components/ui/mdx/index.tsx"), "utf8");
-    const langs = [...src.matchAll(/registerLanguage\(\s*["']([^"']+)["']/g)].map((m) => m[1]);
-    if (langs.length) return new Set(langs);
+    const src = fs.readFileSync(LANGUAGES_FILE, "utf8");
+    for (const m of src.matchAll(/export const (CODE_LANGUAGES|PLAIN_LANGUAGES|DIAGRAM_LANGUAGES) = \[([\s\S]*?)\]/g)) {
+      for (const name of m[2].matchAll(/"([^"]+)"/g)) langs.add(name[1].toLowerCase());
+    }
+    const aliases = src.match(/export const LANGUAGE_ALIASES[^=]*= \{([\s\S]*?)\}/);
+    if (aliases) {
+      for (const name of aliases[1].matchAll(/^\s*"([^"]+)"\s*:/gm)) langs.add(name[1].toLowerCase());
+    }
   } catch {
-    // fall through
+    // 아래에서 error 로 보고한다
   }
-  return new Set(["javascript", "jsx", "typescript", "tsx", "bash"]);
+  return langs;
 };
-const HIGHLIGHT_LANGS = loadHighlightLangs();
+const CODE_LANGS = loadCodeLangs();
 
 // ---------- 문제 수집 ----------
 const problems = [];
 const rel = (p) => path.relative(root, p).split(path.sep).join("/");
 const error = (p, message) => problems.push({ path: rel(p), level: "error", message });
 const warn = (p, message) => problems.push({ path: rel(p), level: "warn", message });
+
+const CALLOUT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"];
+// `> [!NOTE] 제목` 처럼 마커 뒤 같은 줄이 평문이면 마커와 한 텍스트 노드가 되어 일반 인용으로 렌더된다.
+// `**굵게**`, `코드`, 링크처럼 별도 노드로 시작하면 텍스트 노드가 마커에서 끝나 콜아웃이 된다.
+const isPlainTextAfterMarker = (line) => {
+  const rest = line.replace(/^ {0,3}>\s*\[![A-Za-z]+\][ \t]*/, "");
+  return rest.trim() !== "" && !/^(\*{1,2}[^\s*]|_{1,2}[^\s_]|`|!?\[|<|~{1,2}[^\s~])/.test(rest);
+};
+// 글 페이지(/tech/<slug>)에 고정으로 있는 id. rehype-slug 가 만든 제목 id 와 겹치면 앵커·목차·건너뛰기 링크가 엉뚱한 곳으로 간다.
+// main: src/app/layout.tsx, post-head: ui/post-header, post-body: ui/post-body, footnote-label: remark-rehype 각주 제목,
+// ref-label: ui/post-references, cm-label: ui/comment. 새 고정 id 를 넣으면 여기도 넣는다.
+const FIXED_PAGE_IDS = ["main", "post-head", "post-body", "footnote-label", "ref-label", "cm-label"];
+// rehype-slug 에 넘어가는 제목 텍스트(hast toString)를 마크다운 원문에서 근사한다: 닫는 #, 이미지, 링크/코드/강조 표시를 걷어 낸다.
+const headingText = (raw) =>
+  stripInlineCodeMarks(raw.replace(/[ \t]+#+[ \t]*$/, ""))
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[\^([^\]\s]+)\]/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/(\*{1,3}|~{1,2})/g, "")
+    .replace(/\\(.)/g, "$1")
+    .trim();
+// 인라인 코드 안의 [^x] 는 각주가 아니다.
+const stripInlineCode = (line) => line.replace(/(`+)[\s\S]*?\1/g, "");
+const stripInlineCodeMarks = (line) => line.replace(/(`+)([\s\S]*?)\1/g, "$2");
 
 const isRealDate = (s) => {
   if (!DATE_RE.test(s)) return false;
@@ -163,7 +195,7 @@ const checkImageMeta = (file, lineNo, alt) => {
     if (/^\{caption/i.test(token)) warn(file, `${where}: 캡션 형식이 틀려 빈 캡션이 렌더됨 ${token} (형식: {caption: 텍스트}, 소문자, 콜론 뒤 공백 하나)`);
     else warn(file, `${where}: 알 수 없는 alt 메타 ${token} (허용: {priority}, {caption: 설명}, {768x432}. 그 외 토큰은 무시됨)`);
   }
-  // 렌더러(src/components/ui/mdx)와 같은 정규식: alt 에서 {…} 토큰을 지우고, 크기는 첫 {<숫자>x<숫자>} 토큰만 읽는다.
+  // 렌더러(src/lib/markdown/rehype-image-figures.ts)와 같은 정규식: alt 에서 {…} 토큰을 지우고, 크기는 첫 {<숫자>x<숫자>} 토큰만 읽는다.
   if (alt.replace(/\s*\{[^}]*\}/g, "").trim() === "") {
     error(file, `${where}: alt 설명 텍스트가 없음 (예: ![설명 {768x432}](...))`);
   }
@@ -197,7 +229,9 @@ const checkImageSrc = (file, lineNo, src) => {
 const checkTechBody = (file, body, bodyStartLine) => {
   const lines = body.split("\n");
   let fence = null; // { char, len }
-  const h3Seen = new Map();
+  const footnoteRefs = new Map(); // id → 첫 참조 행
+  const footnoteDefs = new Map(); // id → 정의 행
+  const slugger = new GithubSlugger(); // 렌더러의 rehype-slug 와 같은 순서로 제목 id 를 만든다(중복이면 -1, -2)
 
   // 이전 줄이 빈 줄, 제목, 닫는 코드 펜스, 수평선이면 이 줄에서 새 문단이 시작된다(remark 와 같은 기준).
   let prevEndsBlock = true;
@@ -212,19 +246,21 @@ const checkTechBody = (file, body, bodyStartLine) => {
       if (fenceMatch && fenceMatch[1][0] === fence.char && fenceMatch[1].length >= fence.len && fenceMatch[2].trim() === "") {
         fence = null;
         prevEndsBlock = true;
-      } else if (line.includes("###")) {
-        warn(file, `${lineNo}행: 코드 블록 안의 "###" 가 목차(TOC)에 제목으로 잘못 잡힘`);
       }
       return;
     }
 
     if (fenceMatch) {
       fence = { char: fenceMatch[1][0], len: fenceMatch[1].length };
-      const lang = fenceMatch[2].trim().split(/\s+/)[0];
+      const info = fenceMatch[2].trim();
+      const lang = info.split(/\s+/)[0].toLowerCase();
       if (!lang) {
-        warn(file, `${lineNo}행: 언어가 지정되지 않은 코드 블록 → 하이라이트 없이 인라인 코드처럼 렌더됨`);
-      } else if (!HIGHLIGHT_LANGS.has(lang)) {
-        warn(file, `${lineNo}행: 코드 블록 언어 "${lang}" 은 MDX 렌더러에 등록되지 않아 하이라이트되지 않음 (등록: ${[...HIGHLIGHT_LANGS].join(", ")})`);
+        warn(file, `${lineNo}행: 언어가 지정되지 않은 코드 블록 → 하이라이트 없이 text 로 렌더됨`);
+      } else if (!CODE_LANGS.has(lang)) {
+        warn(file, `${lineNo}행: 코드 블록 언어 "${lang}" 는 하이라이트되지 않음 (지원: ${[...CODE_LANGS].join(", ")})`);
+      }
+      if (/\btitle=/.test(info) && !/\btitle="[^"]*"/.test(info)) {
+        warn(file, `${lineNo}행: 코드 블록 title 은 title="파일명" 형식이어야 함 (현재: ${info})`);
       }
       return;
     }
@@ -233,17 +269,35 @@ const checkTechBody = (file, body, bodyStartLine) => {
     if (heading) {
       prevEndsBlock = true;
       const level = heading[1].length;
-      const text = heading[2].trim();
-      if (level !== 3 && level !== 4) {
-        warn(file, `${lineNo}행: h${level} 제목은 스타일이 없음. 본문 제목은 ### (목차에 표시) 또는 #### 를 쓰세요`);
+      const id = slugger.slug(headingText(heading[2]));
+      if (FIXED_PAGE_IDS.includes(id)) {
+        warn(file, `${lineNo}행: 제목의 앵커 id "${id}" 가 페이지 고정 id 와 겹침 → 링크·목차가 다른 요소로 감. 제목 문구를 바꾸세요 (고정 id: ${FIXED_PAGE_IDS.join(", ")})`);
       }
-      if (level === 3) {
-        if (text.includes("#")) warn(file, `${lineNo}행: ### 제목에 "#" 이 있으면 목차에서 빠짐`);
-        if (/[*_`[\]]/.test(text)) warn(file, `${lineNo}행: ### 제목의 마크다운 서식(굵게/코드/링크) 때문에 목차 링크와 앵커가 어긋날 수 있음`);
-        if (h3Seen.has(text)) warn(file, `${lineNo}행: ### 제목 "${text}" 이 ${h3Seen.get(text)}행과 중복 → 앵커 id 충돌`);
-        else h3Seen.set(text, lineNo);
+      if (level <= 2) {
+        warn(file, `${lineNo}행: \`#\`/\`##\` 는 \`###\`(h2)와 같게 렌더됨. 섹션은 \`###\`, 하위는 \`####\` 를 쓰세요`);
+      } else if (level >= 5) {
+        warn(file, `${lineNo}행: \`#####\` 이하는 목차에 나오지 않음`);
       }
       return;
+    }
+
+    const callout = line.match(/^ {0,3}>\s*\[!([A-Za-z]+)\]/);
+    if (callout && !CALLOUT_TYPES.includes(callout[1].toUpperCase())) {
+      warn(file, `${lineNo}행: 알 수 없는 콜아웃 타입 [!${callout[1]}] → 일반 인용으로 렌더됨 (지원: ${CALLOUT_TYPES.join(", ")})`);
+    } else if (callout && isPlainTextAfterMarker(line)) {
+      // 렌더러(remark-alerts.ts)는 마커가 든 첫 텍스트 노드에서 마커 뒤가 줄바꿈(또는 노드 끝)이어야 콜아웃으로 바꾼다.
+      warn(file, `${lineNo}행: [!${callout[1]}] 마커 뒤 같은 줄에 텍스트가 있으면 일반 인용으로 렌더됨. 제목은 다음 줄에 **제목** 으로`);
+    }
+
+    const plain = stripInlineCode(line);
+    const definition = plain.match(/^ {0,3}\[\^([^\]\s]+)\]:/);
+    // remark-gfm 은 각주 라벨을 대소문자 구분 없이 맞춘다([^A] ↔ [^a]:). 키는 소문자, 값에 원래 표기를 둔다.
+    if (definition && !footnoteDefs.has(definition[1].toLowerCase())) {
+      footnoteDefs.set(definition[1].toLowerCase(), { id: definition[1], lineNo });
+    }
+    const refSource = definition ? plain.slice(definition[0].length) : plain;
+    for (const ref of refSource.matchAll(/\[\^([^\]\s]+)\](?!:)/g)) {
+      if (!footnoteRefs.has(ref[1].toLowerCase())) footnoteRefs.set(ref[1].toLowerCase(), { id: ref[1], lineNo });
     }
 
     if (IMAGE_REF_RE.test(line)) {
@@ -268,6 +322,13 @@ const checkTechBody = (file, body, bodyStartLine) => {
   });
 
   if (fence) warn(file, "닫히지 않은 코드 블록이 있음");
+
+  for (const [key, { id, lineNo }] of footnoteRefs) {
+    if (!footnoteDefs.has(key)) warn(file, `${lineNo}행: 각주 [^${id}] 의 정의([^${id}]: …)가 없음 → 각주로 렌더되지 않고 글자 그대로 보임`);
+  }
+  for (const [key, { id, lineNo }] of footnoteDefs) {
+    if (!footnoteRefs.has(key)) warn(file, `${lineNo}행: 각주 정의 [^${id}] 를 참조하는 곳이 없음 → 렌더되지 않음`);
+  }
 };
 
 const checkLogBody = (file, body) => {
@@ -404,6 +465,9 @@ const scan = () => {
 };
 
 // ---------- 실행 ----------
+if (CODE_LANGS.size === 0) {
+  error(LANGUAGES_FILE, "src/lib/markdown/languages.ts 에서 코드 언어 목록을 읽지 못함");
+}
 scan();
 
 let reported = problems;

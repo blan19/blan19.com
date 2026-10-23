@@ -6,7 +6,9 @@ A Markdown Blog built with Next.js, Tailwind and Vercel. Designed, built, and ma
 
 [next.js](https://github.com/vercel/next.js)  
 [tailwind](https://github.com/tailwind)  
-[react-markdown](https://github.com/remarkjs/react-markdown)  
+[unified](https://github.com/unifiedjs/unified) (remark / rehype)  
+[shiki](https://github.com/shikijs/shiki)  
+[mermaid](https://github.com/mermaid-js/mermaid)  
 [prisma](https://github.com/prisma/prisma)  
 [vercel](https://github.com/vercel)
 
@@ -18,13 +20,13 @@ Create an `.env` file for local environment variables. These are the variables t
 
 ```
 //.env
-POSTGRES_URL=""               # when empty, view counts display as 0 (increments and home lists still use POSTGRES_PRISMA_URL)
+POSTGRES_URL=""               # when empty, view counts are not read (increments and the home "most read" list still use POSTGRES_PRISMA_URL)
 POSTGRES_PRISMA_URL=""        # runtime connection (pooled)
 POSTGRES_URL_NON_POOLING=""   # Prisma CLI (db push on Vercel)
 NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=""
 ```
 
-> **Note:** there is no separate development database. If `.env` points at the production database, `npm run dev` / `npm start` read and write production data (every `/tech/<slug>` visit increments its view count). Use `npm run dev:safe` for local work. With the database blocked, pages that query it (`/`, `/tech`, `/tech/<slug>`) switch to the error screen after loading; to preview posts, run `node scripts/with-blocked-db.mjs --preview next dev` (view counts show as 0).
+> **Note:** there is no separate development database. If `.env` points at the production database, `npm run dev` / `npm start` read and write production data (every `/tech/<slug>` visit increments its view count). Use `npm run dev:safe` for local work. With the database blocked, view counts and the home "most read" list are simply left out (the rest of each page renders normally); to preview posts, run `node scripts/with-blocked-db.mjs --preview next dev` (the post view count shows as 0).
 
 ### Install Dependencies
 

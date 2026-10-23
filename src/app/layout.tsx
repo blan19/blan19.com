@@ -1,38 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
-import Header from "@/components/layouts/header";
-import localFont from "next/font/local";
-import Footer from "@/components/layouts/footer";
 import Script from "next/script";
-import Head from "next/head";
+import Header from "@/components/layouts/header";
+import Footer from "@/components/layouts/footer";
+import { notoSerifKr, plexMono, pretendard } from "@/app/fonts";
 import config from "@/lib/config";
+import { THEME_COLORS } from "@/lib/theme";
 
-const pretendard = localFont({
-  src: [
-    {
-      path: "../../public/font/Pretendard-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/font/Pretendard-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/font/Pretendard-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/font/Pretendard-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-  display: "swap",
-  variable: "--font-pretendard",
-});
+// 첫 페인트 전에 저장된 테마(data-theme)와 JS 사용 여부(data-js)를 <html> 에 붙인다.
+// 저장 키("theme")는 src/lib/theme.ts 의 THEME_STORAGE_KEY 와 같다. system 이면 속성 없이 CSS 미디어쿼리가 처리한다.
+const THEME_INIT = `(function(){var d=document.documentElement;d.setAttribute("data-js","");try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")d.setAttribute("data-theme",t)}catch(e){}})()`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(config.url),
@@ -50,6 +27,20 @@ export const metadata: Metadata = {
       "naver-site-verification": "802885b1ae64198e719ba1a0a3f60119c65302e1",
     },
   },
+  alternates: {
+    types: {
+      "application/rss+xml": [{ url: "/rss.xml", title: "RSS" }],
+      "application/atom+xml": [{ url: "/rss-atom.xml", title: "RSS Atom" }],
+    },
+  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
+  ],
 };
 
 export default function RootLayout({
@@ -59,26 +50,24 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
-      className={`${pretendard.variable} font-pretendard bg-greyscale-0 text-greyscale-9 dark:bg-greyscale-9 dark:text-greyscale-0`}
+      lang="ko"
+      suppressHydrationWarning
+      className={`${pretendard.variable} ${notoSerifKr.variable} ${plexMono.variable}`}
     >
-      <Head>
-        <link
-          rel="alternate"
-          type="application/rss+xml"
-          href="/rss.xml"
-          title="RSS"
-        />
-        <link
-          rel="alternate"
-          type="application/atom+xml"
-          href="/rss-atom.xml"
-          title="RSS Atom"
-        />
-      </Head>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:text-text"
+        >
+          본문으로 건너뛰기
+        </a>
         <Header />
-        <main className="responsive pt-12">{children}</main>
+        <main id="main" className="site-main" tabIndex={-1}>
+          {children}
+        </main>
         <Footer />
       </body>
       <Script

@@ -1,15 +1,17 @@
-import MDX from "@/components/ui/mdx";
-import Toc from "@/components/ui/toc";
-import formatDate from "@/lib/format-date";
-import Comment from "@/components/ui/comment";
-import { getBlogPosts } from "@/lib/posts";
 import { notFound } from "next/navigation";
-import { Suspense, cache } from "react";
-import { increment } from "@/lib/db/action";
-import { getViewCount } from "@/lib/db/queries";
-import ViewCounter from "@/components/ui/view-counter";
 import type { Metadata } from "next";
 import config from "@/lib/config";
+import { getAdjacentPosts, getPost } from "@/lib/posts";
+import { renderMarkdown } from "@/lib/markdown";
+import PostHeader from "@/components/ui/post-header";
+import TocRail, { TocDetails } from "@/components/ui/toc";
+import TocSpy from "@/components/ui/toc-spy";
+import PostBody from "@/components/ui/post-body";
+import PostReferences from "@/components/ui/post-references";
+import PostTags from "@/components/ui/post-tags";
+import AuthorCard from "@/components/ui/author-card";
+import PrevNext from "@/components/ui/prev-next";
+import Comment from "@/components/ui/comment";
 
 export async function generateMetadata({
   params,
@@ -17,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata | undefined> {
   const { slug } = await params;
-  let post = getBlogPosts("tech").find((post) => post.slug == slug);
+  const post = getPost("tech", slug);
 
   if (!post) {
     return;
@@ -29,7 +31,8 @@ export async function generateMetadata({
     tags: keywords,
     publishedAt: publishedTime,
   } = post.metadata;
-  let ogImage = `${config.url}og?title=${title}`;
+  // 알려진 이슈: title 을 인코딩하지 않는다.
+  const ogImage = `${config.url}og?title=${title}`;
 
   return {
     title,
@@ -56,53 +59,36 @@ export async function generateMetadata({
   };
 }
 
-const incrementView = cache(increment);
-
-const View = async ({ slug }: { slug: string }) => {
-  const view = await getViewCount(slug);
-  incrementView(slug);
-  return (
-    <ViewCounter
-      className="text-sm md:text-base dark:text-greyscale-4"
-      view={view?.count ?? 0}
-    />
-  );
-};
-
 const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
-  const post = getBlogPosts("tech").find((post) => post.slug === slug);
+  const post = getPost("tech", slug);
 
   if (!post) {
     notFound();
   }
 
+  const { hast, toc } = await renderMarkdown(post.slug, post.content);
+  const { prev, next } = getAdjacentPosts("tech", post.slug);
+
   return (
-    <section>
-      <ul className="flex gap-2 mb-4">
-        {post.metadata.tags.map((tag) => (
-          <li key={tag}>
-            <span className="text-base md:text-lg font-medium text-greyscale-7 dark:text-greyscale-5 tracking-tighter">
-              #{tag}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <h1 className="font-medium text-3xl md:text-4xl tracking-tighter mb-3">
-        {post.metadata.title}
-      </h1>
-      <div className="flex justify-between items-center my-4 mb-10">
-        <p className="text-sm md:text-base dark:text-greyscale-4">
-          {formatDate(post.metadata.publishedAt)}
-        </p>
-        <Suspense fallback={<p className="text-sm md:text-base">......</p>}>
-          <View slug={post.slug} />
-        </Suspense>
-      </div>
-      <Toc contents={post.content} />
-      <MDX contents={post.content} reference={post.metadata.reference} />
-      <Comment />
-    </section>
+    <div className="site-wrap">
+      <article className="site-col article">
+        <PostHeader post={post} />
+        <TocDetails items={toc} />
+        <div className="post-layout">
+          <TocRail items={toc} />
+          <PostBody hast={hast} />
+        </div>
+        <PostReferences urls={post.metadata.reference} />
+        <section className="end-sec" aria-label="태그와 공유">
+          <PostTags tags={post.metadata.tags} />
+          <AuthorCard />
+          <PrevNext prev={prev} next={next} />
+        </section>
+        <Comment key={post.slug} />
+      </article>
+      <TocSpy items={toc} />
+    </div>
   );
 };
 
