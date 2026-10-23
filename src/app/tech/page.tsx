@@ -5,8 +5,7 @@ import TagFilter from "@/components/ui/tag-filter";
 
 export const metadata: Metadata = {
   title: "글 목록",
-  description:
-    "React, Next.js, WebGL처럼 공부한 기술과 일하면서 고민한 걸 적은 글을 모았어요.",
+  description: "일하며 부딪힌 문제와 알게 된 것을 정리한 글을 모았습니다.",
 };
 
 const Tech = async ({
@@ -32,9 +31,7 @@ const Tech = async ({
       <header className="rail-grid page-head">
         <div className="rail-main">
           <h1 className="page-h1">글</h1>
-          <p className="page-lede">
-            개발하면서 공부하고 고민한 걸 적어요.
-          </p>
+          <p className="page-lede">일하며 부딪힌 문제와 알게 된 것을 정리합니다.</p>
           {posts.length > 0 && (
             <TagFilter tags={tags} total={posts.length} selected={selected} />
           )}
@@ -46,7 +43,7 @@ const Tech = async ({
         </div>
       ) : (
         <div className="rail-grid">
-          <p className="rail-main empty-note">아직 글이 없어요.</p>
+          <p className="rail-main empty-note">아직 글이 없습니다.</p>
         </div>
       )}
     </div>

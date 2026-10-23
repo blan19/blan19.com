@@ -24,7 +24,8 @@ export default function Home() {
         <div className="rail-main intro-body">
           <div>
             <h1 id="home-h1" className="intro-h1">
-              프론트엔드 엔지니어 blan19예요. 새로 배운 걸 글로 정리해요.
+              소프트웨어 엔지니어 blan19입니다. 문제가 생기면 원인을 끝까지 좁히고, 알게 된 것은
+              글로 남깁니다.
             </h1>
             <p className="link-row intro-links">
               <a
@@ -52,7 +53,7 @@ export default function Home() {
           {recent.length > 0 ? (
             <PostList posts={recent} variant="home" />
           ) : (
-            <p className="empty-note">아직 글이 없어요.</p>
+            <p className="empty-note">아직 글이 없습니다.</p>
           )}
           <p className="more-link">
             <Link href="/tech">글 {tech.length}편 모두 보기 →</Link>
@@ -69,8 +70,8 @@ export default function Home() {
           요즘
         </h2>
         <p className="rail-main now-line">
-          TypeScript와 Next.js로 웹을 만들어요. WebGL, three.js, Rust, Flutter도
-          공부하고 있어요.
+          팀의 일이 어디서 막히는지 살펴보고, 그 병목을 AI로 없애는 방법을 찾고
+          있습니다.
         </p>
       </section>
 

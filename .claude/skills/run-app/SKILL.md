@@ -17,7 +17,7 @@ argument-hint: "[dev|preview|prod] [경로, 예: /tech/<slug>]"
 | `dev` | 코드 수정 중 HMR, DB 를 쓰지 않는 페이지(`/log`, RSS, sitemap, `/og`) 확인 | `node scripts/with-blocked-db.mjs next dev -p 3100` |
 | `prod` | 프로덕션 빌드 동작 자동 점검 | `npm run verify` (DB 차단 빌드 + smoke, 서버를 알아서 띄우고 종료함) |
 
-`dev` 는 `POSTGRES_URL` 까지 차단 주소로 덮는다(`npm run dev:safe` 와 같은 env). 그래서 조회수(글 머리, 목록 행)와 홈 "많이 읽힌 글"이 표시되지 않는다(쿼리가 실패하면 컴포넌트가 오류를 삼키고 그 칸만 비운다). 터미널의 `[views] 조회수를 불러오지 못했습니다 … P1001`, `[most-read] …` 로그와 함께 DB 가 막혀서 생기는 정상 현상이고 코드 버그가 아니다. 페이지 전체가 `error.tsx`("문제가 생겼어요")로 바뀌면 그건 버그다.
+`dev` 는 `POSTGRES_URL` 까지 차단 주소로 덮는다(`npm run dev:safe` 와 같은 env). 그래서 조회수(글 머리, 목록 행)와 홈 "많이 읽힌 글"이 표시되지 않는다(쿼리가 실패하면 컴포넌트가 오류를 삼키고 그 칸만 비운다). 터미널의 `[views] 조회수를 불러오지 못했습니다 … P1001`, `[most-read] …` 로그와 함께 DB 가 막혀서 생기는 정상 현상이고 코드 버그가 아니다. 페이지 전체가 `error.tsx`("문제가 생겼습니다")로 바뀌면 그건 버그다.
 
 ### 글 미리보기 (`preview`)
 

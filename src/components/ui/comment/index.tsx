@@ -72,7 +72,7 @@ const Comment = () => {
         <div className="skel" aria-hidden="true">
           <span className="bar bar-long" />
           <span className="bar bar-mid" />
-          <p className="note">GitHub 계정으로 댓글을 남길 수 있어요.</p>
+          <p className="note">GitHub 계정으로 댓글을 남길 수 있습니다.</p>
         </div>
       )}
       <div className="utt-host" ref={hostRef} />

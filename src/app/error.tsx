@@ -19,7 +19,7 @@ export default function Error({
       <div className="rail-grid page-head">
         <div className="rail-main">
           <p className="code-label">error</p>
-          <h1 className="page-h1">문제가 생겼어요</h1>
+          <h1 className="page-h1">문제가 생겼습니다</h1>
           <p className="page-lede">잠시 후 다시 시도해 주세요.</p>
           <p className="link-row err-links">
             <button type="button" className="u-link" onClick={() => retry()}>
