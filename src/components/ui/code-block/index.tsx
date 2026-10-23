@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import CodeFold from "@/components/ui/code-fold";
 import CopyButton from "@/components/ui/copy-button";
 import Icon from "@/components/ui/icon";
-import { normalizeLanguage } from "@/lib/markdown/languages";
 
 interface CodeBlockProps {
   lang: string;
@@ -12,13 +11,9 @@ interface CodeBlockProps {
   diff: boolean;
   prompt: boolean;
   collapsible: boolean;
+  terminal: boolean;
   children: ReactNode;
 }
-
-const isTerminal = (lang: string) => {
-  const language = normalizeLanguage(lang);
-  return language.kind === "code" && language.lang === "bash";
-};
 
 const CodeBlock = ({
   lang,
@@ -28,9 +23,9 @@ const CodeBlock = ({
   diff,
   prompt,
   collapsible,
+  terminal,
   children,
 }: CodeBlockProps) => {
-  const terminal = isTerminal(lang);
   const name = title ?? (terminal ? "터미널" : lang);
   return (
     <figure

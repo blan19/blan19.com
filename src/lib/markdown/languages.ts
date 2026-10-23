@@ -1,5 +1,5 @@
 // 코드 블록 언어의 단일 진실 원본. scripts/validate-content.mjs 가 이 파일을 정규식으로 읽는다.
-// 형식을 바꾸지 않는다(큰따옴표, 한 줄에 하나). CODE_LANGUAGES 를 바꾸면 shiki.ts 의 langs 목록도 같이 바꾼다.
+// 형식을 바꾸지 않는다(큰따옴표, 한 줄에 하나). CODE_LANGUAGES 를 바꾸면 shiki.ts 의 LANG_LOADERS 도 바꾼다(빠지면 tsc 가 잡는다).
 export const CODE_LANGUAGES = [
   "bash",
   "css",

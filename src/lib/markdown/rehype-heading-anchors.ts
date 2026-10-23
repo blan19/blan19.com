@@ -1,6 +1,6 @@
 import type { Root } from "hast";
 import { SKIP, visit } from "unist-util-visit";
-import { isFootnoteSection } from "@/lib/markdown/hast-utils";
+import { el, headingId, isFootnoteSection } from "@/lib/markdown/hast-utils";
 
 const ANCHOR_HEADINGS = ["h2", "h3", "h4"];
 
@@ -10,19 +10,15 @@ const rehypeHeadingAnchors = () => (tree: Root) => {
   visit(tree, "element", (node) => {
     if (isFootnoteSection(node)) return SKIP;
     if (!ANCHOR_HEADINGS.includes(node.tagName)) return;
-    const id = node.properties.id;
-    if (typeof id !== "string" || id === "") return SKIP;
-    node.children.push({
-      type: "element",
-      tagName: "a",
-      properties: {
-        className: ["anchor"],
-        href: `#${id}`,
-        ariaHidden: "true",
-        tabIndex: -1,
-      },
-      children: [{ type: "text", value: "#" }],
-    });
+    const id = headingId(node);
+    if (id === undefined) return SKIP;
+    node.children.push(
+      el(
+        "a",
+        { className: ["anchor"], href: `#${id}`, ariaHidden: "true", tabIndex: -1 },
+        [{ type: "text", value: "#" }],
+      ),
+    );
     return SKIP;
   });
 };

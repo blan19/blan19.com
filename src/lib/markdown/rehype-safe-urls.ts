@@ -22,6 +22,7 @@ const isSafeUrl = (value: string) => {
 const sanitize = (value: unknown) =>
   typeof value === "string" && isSafeUrl(value) ? value : "";
 
+// a[href], img[src] 만 본다. URL 속성을 새로 만드는 플러그인은 이 플러그인 앞에 두거나 여기에 그 속성을 더한다.
 const rehypeSafeUrls = () => (tree: Root) => {
   visit(tree, "element", (node) => {
     if (node.tagName === "a" && node.properties.href !== undefined) {
