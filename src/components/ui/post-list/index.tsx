@@ -1,37 +1,56 @@
-import clsx from "clsx";
 import { groupByYear } from "@/lib/posts";
 import type { Post } from "@/lib/posts";
 import PostRow from "@/components/ui/post-row";
 
 interface PostListProps {
   posts: Post[];
-  variant: "compact" | "full";
-  newestSlug?: string;
-  // 헤딩 단계를 건너뛰지 않게: 홈(h1 → h2 "최근 글" → 연도)은 h3, /tech(h1 → 연도)는 h2
-  yearHeading: "h2" | "h3";
+  // home: 연도 묶음 없는 한 목록(설명은 데스크톱만, 조회수 없음)
+  // archive(/tech): 연도별 섹션, 연도 라벨은 레일(≥1280)에. 헤딩 순서 h1 → h2(연도)
+  variant: "home" | "archive";
 }
 
-const PostList = ({ posts, variant, newestSlug, yearHeading }: PostListProps) => {
-  const YearHeading = yearHeading;
+const PostList = ({ posts, variant }: PostListProps) => {
+  if (variant === "home") {
+    return (
+      <ol className="idx-list">
+        {posts.map((post) => (
+          <PostRow
+            key={post.slug}
+            post={post}
+            date="full"
+            desc="desktop"
+            views={false}
+          />
+        ))}
+      </ol>
+    );
+  }
 
   return (
     <>
       {groupByYear(posts).map(({ year, posts: group }) => (
-        <div key={year} className="year-group">
-          <YearHeading className="year-label">
-            {year} <span className="cnt">{group.length}편</span>
-          </YearHeading>
-          <ol className={clsx("post-rows", variant === "full" && "is-full")}>
-            {group.map((post) => (
-              <PostRow
-                key={post.slug}
-                post={post}
-                variant={variant}
-                isNewest={post.slug === newestSlug}
-              />
-            ))}
-          </ol>
-        </div>
+        <section
+          key={year}
+          className="rail-grid list-year"
+          aria-labelledby={`y-${year}`}
+        >
+          <h2 className="rail-side rail-label" id={`y-${year}`}>
+            {year}
+          </h2>
+          <div className="rail-main">
+            <ol className="idx-list">
+              {group.map((post) => (
+                <PostRow
+                  key={post.slug}
+                  post={post}
+                  date="month-day"
+                  desc="always"
+                  views
+                />
+              ))}
+            </ol>
+          </div>
+        </section>
       ))}
     </>
   );

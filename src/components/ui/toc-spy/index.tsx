@@ -10,14 +10,11 @@ interface TocSpyProps {
   items: TocItem[];
 }
 
-const RING = 62.83; // 2π × r(10)
-
-// 스크롤 위치에 따라 목차의 현재 섹션, 진행률, 모바일 pill 을 갱신한다.
-// 활성/진행률/pill 표시는 DOM 에 직접 쓰고, React 상태는 pill 의 현재 섹션 이름 하나뿐이다.
+// 스크롤 위치에 따라 목차의 현재 섹션과 모바일 pill 을 갱신한다.
+// 활성 링크와 pill 표시는 DOM 에 직접 쓰고, React 상태는 pill 의 현재 섹션 이름 하나뿐이다.
 const TocSpy = ({ items }: TocSpyProps) => {
   const [current, setCurrent] = useState("");
   const pillRef = useRef<HTMLButtonElement>(null);
-  const ringRef = useRef<SVGCircleElement>(null);
   const sheetRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -32,11 +29,8 @@ const TocSpy = ({ items }: TocSpyProps) => {
     const links = Array.from(
       document.querySelectorAll<HTMLAnchorElement>("[data-toc] a"),
     );
-    const tracks = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-toc-track]"),
-    );
-    const percents = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-toc-pct]"),
+    const rails = Array.from(
+      document.querySelectorAll<HTMLElement>(".toc-rail nav"),
     );
     let frame = 0;
 
@@ -53,43 +47,29 @@ const TocSpy = ({ items }: TocSpyProps) => {
         const index = order.get(link.dataset.id ?? "") ?? -1;
         const isActive = index !== -1 && index === active;
         link.classList.toggle("active", isActive);
-        link.classList.toggle("read", index !== -1 && index < active);
         if (isActive) link.setAttribute("aria-current", "location");
         else link.removeAttribute("aria-current");
       }
 
-      for (const track of tracks) {
-        const link = track.querySelector<HTMLAnchorElement>("a.active");
-        track.classList.toggle("has-active", link !== null);
+      // 레일이 스스로 스크롤될 만큼 길면 활성 링크가 보이게 맞춘다(nav 가 sticky 라 offsetParent 다).
+      for (const nav of rails) {
+        const link = nav.querySelector<HTMLAnchorElement>("a.active");
         if (!link) continue;
-        const y = link.offsetTop + link.offsetHeight / 2 - 3.5;
-        track.style.setProperty("--dot-y", `${y}px`);
         const top = link.offsetTop;
         const bottom = top + link.offsetHeight;
-        if (top < track.scrollTop || bottom > track.scrollTop + track.clientHeight) {
-          track.scrollTop = top - track.clientHeight / 2;
+        if (top < nav.scrollTop || bottom > nav.scrollTop + nav.clientHeight) {
+          nav.scrollTop = top - nav.clientHeight / 2;
         }
       }
 
-      const rect = body.getBoundingClientRect();
-      const progress =
-        rect.bottom <= viewport
-          ? 1
-          : Math.min(1, Math.max(0, (-rect.top + viewport * 0.35) / rect.height));
-      const percent = `${Math.round(progress * 100)}%`;
-      for (const element of percents) element.textContent = percent;
-
       const pill = pillRef.current;
       if (pill) {
+        const rect = body.getBoundingClientRect();
         const pastHead = head ? head.getBoundingClientRect().bottom < 0 : true;
         const show = pastHead && rect.bottom > viewport * 0.6;
         pill.classList.toggle("show", show);
         pill.inert = !show;
       }
-      ringRef.current?.style.setProperty(
-        "stroke-dashoffset",
-        String(RING * (1 - progress)),
-      );
 
       const id = active === -1 ? undefined : headings[active].id;
       setCurrent((id && names.get(id)) ?? "");
@@ -138,18 +118,6 @@ const TocSpy = ({ items }: TocSpyProps) => {
         inert
         onClick={openSheet}
       >
-        <svg className="toc-pill-ring" viewBox="0 0 26 26" aria-hidden="true">
-          <circle className="ring-bg" cx="13" cy="13" r="10" />
-          <circle
-            className="ring-fg"
-            ref={ringRef}
-            cx="13"
-            cy="13"
-            r="10"
-            strokeDasharray={RING}
-            strokeDashoffset={RING}
-          />
-        </svg>
         <span className="pill-text">{current || "목차"}</span>
         <Icon name="list" />
       </button>

@@ -3,7 +3,7 @@ import "@/styles/globals.css";
 import Script from "next/script";
 import Header from "@/components/layouts/header";
 import Footer from "@/components/layouts/footer";
-import { notoSerifKr, plexMono, pretendard } from "@/app/fonts";
+import { plexMono, pretendard } from "@/app/fonts";
 import config from "@/lib/config";
 import { THEME_COLORS } from "@/lib/theme";
 
@@ -52,7 +52,7 @@ export default function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`${pretendard.variable} ${notoSerifKr.variable} ${plexMono.variable}`}
+      className={`${pretendard.variable} ${plexMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
@@ -60,7 +60,7 @@ export default function RootLayout({
       <body>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:text-text"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-box focus:bg-text focus:px-4 focus:py-2 focus:text-bg"
         >
           본문으로 건너뛰기
         </a>

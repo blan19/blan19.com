@@ -31,12 +31,7 @@ const ArticleViews = async ({ slug }: ViewsProps) => {
     return null;
   }
 
-  return (
-    <>
-      <span className="meta-sep" aria-hidden="true" />
-      <span className="views tnum">{formatViews(count)}</span>
-    </>
-  );
+  return <span className="views tnum">{formatViews(count)}</span>;
 };
 
 const RowViews = async ({ slug }: ViewsProps) => {
@@ -57,12 +52,9 @@ const RowViews = async ({ slug }: ViewsProps) => {
 };
 
 const ViewsPending = () => (
-  <>
-    <span className="meta-sep" aria-hidden="true" />
-    <span className="views is-loading" aria-busy="true">
-      <span className="v-num">—</span>회
-    </span>
-  </>
+  <span className="views is-loading" aria-busy="true">
+    <span className="v-num">—</span>회
+  </span>
 );
 
 export { RowViews, ViewsPending };

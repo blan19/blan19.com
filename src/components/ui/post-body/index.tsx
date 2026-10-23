@@ -42,7 +42,6 @@ const Figure = ({
         diff={flag(node, "dataDiff")}
         prompt={flag(node, "dataPrompt")}
         collapsible={flag(node, "dataCollapsible")}
-        wide={flag(node, "dataWide")}
       >
         {children}
       </CodeBlock>

@@ -54,6 +54,7 @@ const checks = [
   { path: "/robots.txt", type: /text\/plain/ },
   { path: "/og", type: /image\/png/ },
   { path: "/og?title=smoke", type: /image\/png/ },
+  { path: "/icon.svg", type: /image\/svg\+xml/ },
   { path: "/__smoke-not-found__", status: 404, type: HTML },
 ];
 

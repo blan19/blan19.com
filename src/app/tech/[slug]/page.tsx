@@ -8,8 +8,6 @@ import TocRail, { TocDetails } from "@/components/ui/toc";
 import TocSpy from "@/components/ui/toc-spy";
 import PostBody from "@/components/ui/post-body";
 import PostReferences from "@/components/ui/post-references";
-import PostTags from "@/components/ui/post-tags";
-import AuthorCard from "@/components/ui/author-card";
 import PrevNext from "@/components/ui/prev-next";
 import Comment from "@/components/ui/comment";
 
@@ -72,20 +70,18 @@ const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   return (
     <div className="site-wrap">
-      <article className="site-col article">
+      <article className="rail-grid post-grid">
         <PostHeader post={post} />
-        <TocDetails items={toc} />
-        <div className="post-layout">
-          <TocRail items={toc} />
+        <TocRail items={toc} />
+        <div className="rail-main post-main">
+          <TocDetails items={toc} />
           <PostBody hast={hast} />
+          <footer className="post-end">
+            <PostReferences urls={post.metadata.reference} />
+            <PrevNext prev={prev} next={next} />
+            <Comment key={post.slug} />
+          </footer>
         </div>
-        <PostReferences urls={post.metadata.reference} />
-        <section className="end-sec" aria-label="태그와 공유">
-          <PostTags tags={post.metadata.tags} />
-          <AuthorCard />
-          <PrevNext prev={prev} next={next} />
-        </section>
-        <Comment key={post.slug} />
       </article>
       <TocSpy items={toc} />
     </div>

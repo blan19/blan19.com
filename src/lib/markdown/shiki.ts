@@ -115,8 +115,8 @@ export const blanTheme: ThemeRegistration = {
       ],
       settings: { foreground: "var(--sh-text)" },
     },
-    // ```diff 펜스: +/- 줄을 diff 기호 색으로(코드 배경 대비 ≥ 4.6:1). 표기(// [!code ++])
-    // 방식은 줄 배경과 gutter 기호로 구분하므로 여기와 무관하다.
+    // ```diff 펜스: 무채색으로 구분한다(--diff-add = --text, --diff-del = --text-3, 코드 배경 대비 ≥ 4.6:1).
+    // 표기(// [!code ++]) 방식은 줄 배경과 gutter 기호로 구분하므로 여기와 무관하다.
     {
       scope: ["markup.inserted", "punctuation.definition.inserted"],
       settings: { foreground: "var(--diff-add)" },

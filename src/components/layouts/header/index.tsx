@@ -6,16 +6,19 @@ import Wordmark from "@/components/ui/wordmark";
 const Header = () => {
   return (
     <header className="site-header">
-      <div className="site-wrap flex items-center justify-between gap-3 pt-8 pb-2">
-        <Wordmark />
-        <nav aria-label="주 메뉴" className="site-nav">
-          <NavLinks />
-          <span className="dot-sep" aria-hidden="true" />
-          <a className="icon-btn" href="/rss.xml" aria-label="RSS 피드">
-            <Icon name="rss" />
-          </a>
-          <ThemeToggle />
-        </nav>
+      <div className="site-wrap">
+        <div className="rail-grid head-grid">
+          <div className="rail-side">
+            <Wordmark />
+          </div>
+          <nav aria-label="주 메뉴" className="rail-main site-nav">
+            <NavLinks />
+            <a className="icon-btn" href="/rss.xml" aria-label="RSS 피드">
+              <Icon name="rss" />
+            </a>
+            <ThemeToggle />
+          </nav>
+        </div>
       </div>
     </header>
   );

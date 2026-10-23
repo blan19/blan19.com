@@ -14,12 +14,9 @@ export type IconName =
   | "moon"
   | "system"
   | "chev"
-  | "left"
-  | "right"
   | "file"
   | "term"
   | "img-off"
-  | "link"
   | "list"
   | "x";
 
@@ -94,8 +91,6 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   chev: <path d="m6 9 6 6 6-6" />,
-  left: <path d="M19 12H5M11 6l-6 6 6 6" />,
-  right: <path d="M5 12h14M13 6l6 6-6 6" />,
   file: (
     <>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
@@ -115,12 +110,6 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2" />
       <path d="m3 16 4.5-4.5 3 3" />
       <path d="M14.5 14.5 16 13l5 5" />
-    </>
-  ),
-  link: (
-    <>
-      <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
-      <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
     </>
   ),
   list: (

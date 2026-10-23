@@ -1,11 +1,10 @@
-import Icon from "@/components/ui/icon";
 import type { TocItem } from "@/lib/markdown/types";
 
 interface TocProps {
   items: TocItem[];
 }
 
-// 목차 링크 목록. TocSpy 가 [data-toc] a 의 active/read 클래스를 직접 바꾼다.
+// 목차 링크 목록. TocSpy 가 [data-toc] a 의 active 클래스와 aria-current 를 직접 바꾼다.
 const TocList = ({ items }: TocProps) => {
   return (
     <ol className="toc-list" data-toc>
@@ -25,34 +24,20 @@ const TocDetails = ({ items }: TocProps) => {
   if (items.length === 0) return null;
   return (
     <details className="toc-details">
-      <summary>
-        <span>목차</span>
-        <span className="cnt">· {items.length}</span>
-        <Icon name="chev" className="chev" />
-      </summary>
+      <summary>목차</summary>
       <TocList items={items} />
     </details>
   );
 };
 
-// 1280px 이상에서 본문 왼쪽 여백에 붙는 목차 레일.
+// 1280px 이상에서 왼쪽 레일에 붙는 목차.
 const TocRail = ({ items }: TocProps) => {
   if (items.length === 0) return null;
   return (
-    <aside className="toc-rail">
+    <aside className="rail-side toc-rail">
       <nav aria-label="목차">
-        <p className="toc-label">
-          목차 <span className="cnt">{items.length}</span>
-          <span className="pct" data-toc-pct>
-            0%
-          </span>
-        </p>
-        <div className="toc-track" data-toc-track>
-          <span className="rail-line" />
-          <span className="rail-fill" />
-          <span className="rail-dot" />
-          <TocList items={items} />
-        </div>
+        <p className="toc-label">목차</p>
+        <TocList items={items} />
       </nav>
     </aside>
   );

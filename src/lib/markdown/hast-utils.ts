@@ -19,5 +19,3 @@ export const isElement = (
 
 export const isFootnoteSection = (node: Element) =>
   node.tagName === "section" && node.properties.dataFootnotes !== undefined;
-
-export const HEADING_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6"];

@@ -2,7 +2,7 @@
 
 개인 한국어 기술 블로그(https://www.blan19.xyz). `contents/` 의 MDX 글을 Next.js App Router 로 렌더하고, Postgres 는 글 조회수에만 쓴다. Vercel GitHub 연동으로 배포(브랜치 push → Preview(PR 유무 무관), main → Production). 앱 테스트 코드는 없다(훅 테스트만 있다). 검증은 `npm run verify`.
 
-- 스택: Next.js 16.4 (Turbopack), React 19.3, TypeScript 6.0, Tailwind CSS 4.3, Prisma 7.10 (`@prisma/adapter-pg`), ESLint 10 flat config, Node 24 / npm 11. 글 렌더: unified 11(remark-parse, remark-gfm, remark-rehype, `hast-util-to-jsx-runtime`), Shiki 4.5(서버 전용, JS 정규식 엔진, CSS 변수 테마), mermaid 11(클라이언트 지연 로드).
+- 스택: Next.js 16.4 (Turbopack), React 19.3, TypeScript 6.0, Tailwind CSS 4.3, Prisma 7.10 (`@prisma/adapter-pg`), ESLint 10 flat config, Node 24 / npm 11. 글 렌더: unified 11(remark-parse, remark-gfm, remark-rehype, `hast-util-to-jsx-runtime`), Shiki 4.5(서버 전용, JS 정규식 엔진, CSS 변수 테마), mermaid 11(클라이언트 지연 로드). 디자인: 회색조 G3 "Minimal Index"(색상 없음, 다크 배경 `#16181b`), 글꼴은 Pretendard(sans) + IBM Plex Mono(메타, 코드) 둘뿐이다(세리프, 도장 없음).
 - Next 16 API 가 헷갈리면 학습 데이터 대신 버전이 맞는 로컬 문서를 먼저 본다: `node_modules/next/dist/docs/01-app/`
 - Claude Code 전용 프로젝트다. `next.config.js` 의 `agentRules: false` 는 `next dev` 가 `AGENTS.md` 를 만들지 않게 하는 설정이니 지우지 않는다.
 
@@ -40,10 +40,11 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 verify 와 같은 단�
 ```
 contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 = slug = URL = 조회수 키)
 src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /og /rss.xml /rss-atom.xml /sitemap.xml /robots.txt, error.tsx, not-found.tsx
-                    fonts.ts(next/font 3종), og/Pretendard-Bold.woff(OG 이미지 폰트)
+                    fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 정적 점묘 매듭), og/Pretendard-Bold.woff(OG 이미지 폰트)
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더), markdown/(글 렌더 파이프라인, 서버 전용), db/(action.ts 쓰기, queries.ts 조회. "use server"),
-                    views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL), format-date.ts
+                    views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), knot.ts(홈/404 매듭 기하, 서버·클라이언트 공용),
+                    prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL), format-date.ts
 src/fonts/          PretendardVariable.woff2 + 라이선스(OFL)
 src/styles/         globals.css(토큰, Tailwind 4 매핑, 공용 클래스, 크롬), markdown.css(글 본문), pages.css(페이지). 뒤의 둘은 globals.css 가 import
 src/generated/      Prisma 생성 코드 (gitignore)
@@ -55,9 +56,10 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 ## 아키텍처 요점
 
 - 글 → `getBlogPosts("tech"|"log")`(`src/lib/posts.ts`)가 fs 로 읽고 gray-matter 로 frontmatter 를 파싱한다(검증 없음). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, sitemap 이 이 결과를 쓴다. `/og` 는 쿼리의 `title` 만 읽는다(URL 은 `tech/[slug]` 의 `generateMetadata` 가 만든다). `/log` 는 마크다운 렌더 없이 원문 문단을 출력하고 상세 페이지가 없다.
-- 글 본문 → `renderMarkdown(slug, content)`(`src/lib/markdown/index.ts`)가 HAST 를 한 번 만들어 모듈 캐시(키 `slug:sha1(본문)`, 50개)에 두고, 목차·mermaid 여부·각주 수를 같은 트리에서 뽑는다. `ui/post-body` 가 `hast-util-to-jsx-runtime` 으로 렌더한다. 세부는 frontend.md.
-- 목록 순서는 `publishedAt` 이 아니다. `posts.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 페이지가 `.reverse()` 한다.
+- 글 본문 → `renderMarkdown(slug, content)`(`src/lib/markdown/index.ts`)가 HAST 를 한 번 만들어 모듈 캐시(키 `slug:sha1(본문)`, 50개)에 두고, 목차를 같은 트리에서 뽑는다. `ui/post-body` 가 `hast-util-to-jsx-runtime` 으로 렌더한다. 세부는 frontend.md.
+- 목록 순서는 `publishedAt` 이 아니다. `posts.ts` 에 정렬 코드가 없어 `readdirSync` 가 돌려주는 날짜 폴더 순서(현재 이름순)를 `getPostsNewestFirst` 가 뒤집어 최신순으로 쓴다.
 - 홈의 최근 글과 /tech 목록은 파일시스템만으로 그린다. DB 는 조회수(글 머리 `ArticleViews`, 목록 행 `RowViews`)와 홈 "많이 읽힌 글"(`MostRead`, `unstable_cache` 1시간)에만 쓴다.
+- 홈 소개 옆과 404 의 점묘 매듭(`ui/hero-object`)은 서버가 SVG 로 그리고, 홈만 클라이언트 섬 `ui/hero-canvas` 가 캔버스로 회전시킨다. 세부와 규칙은 frontend.md.
 - DB 는 `View(slug, count)` 하나. `/tech/[slug]` 렌더 때마다 `increment` 가 upsert 한다.
 - DB 실패는 컴포넌트가 삼킨다: DB 를 읽는 컴포넌트(`ui/view-count`, `ui/most-read`)는 쿼리만 try/catch 하고 실패하면 `null` 을 렌더해 그 칸이나 섹션만 사라진다. `app/error.tsx` 로 번지지 않는다.
 - `/`, `/tech`, `/tech/[slug]`, `/og` 는 dynamic, 나머지는 static.
@@ -75,7 +77,7 @@ scripts/            verify, smoke, validate-content, with-blocked-db
   4. DB 를 읽으면 `<Suspense>` 로 감싸고, 쿼리 전에 `await connection()`(`next/server`)을 호출해 dynamic 으로 둔다. `connection()` 은 try 밖에서 부르고, 쿼리만 try/catch 해 catch 첫 줄에서 `unstable_rethrow(error)`(`next/navigation`) 후 `null` 을 렌더한다(`ui/view-count`, `ui/most-read` 패턴). `unstable_cache` 안에서 부르면 오류가 나니 그 바깥(컴포넌트)에서 부른다. 빠뜨리면 빌드가 prerender 하며 쿼리를 실행한다(기존 코드의 `unstable_noStore()` 도 같은 역할).
   5. `npm run verify` 를 실행한다.
 - `@/generated/prisma/client` 가 없다는 tsc 오류는 `npx prisma generate` 로 해결한다(DB 접속 없음). npm 11 에서도 자동 generate 는 없다.
-- 영역별 세부 규칙과 알려진 이슈는 해당 파일을 열 때 `.claude/rules/` 에서 자동 로드된다: content.md(글), frontend.md(Tailwind 4, 테마, 폰트, 글 렌더러, Next 16), database.md(Prisma, 스키마 변경), tooling.md(scripts, hooks, settings, CI 의 하드코딩 경로).
+- 영역별 세부 규칙과 알려진 이슈는 해당 파일을 열 때 `.claude/rules/` 에서 자동 로드된다: content.md(글), frontend.md(Tailwind 4, 토큰, 테마, 폰트, 글 렌더러, 히어로 오브젝트, Next 16), database.md(Prisma, 스키마 변경), tooling.md(scripts, hooks, settings, CI 의 하드코딩 경로).
 
 ## 코드 컨벤션
 

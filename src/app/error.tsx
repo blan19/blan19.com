@@ -16,17 +16,19 @@ export default function Error({
 
   return (
     <div className="site-wrap">
-      <div className="site-col">
-        <p className="kicker">error</p>
-        <h1 className="page-title mt-3">문제가 생겼어요</h1>
-        <p className="page-lede">잠시 후 다시 시도해 주세요.</p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <button type="button" className="btn-outline" onClick={() => retry()}>
-            다시 시도
-          </button>
-          <Link href="/" className="btn-outline">
-            홈으로
-          </Link>
+      <div className="rail-grid page-head">
+        <div className="rail-main">
+          <p className="code-label">error</p>
+          <h1 className="page-h1">문제가 생겼어요</h1>
+          <p className="page-lede">잠시 후 다시 시도해 주세요.</p>
+          <p className="link-row err-links">
+            <button type="button" className="u-link" onClick={() => retry()}>
+              다시 시도
+            </button>
+            <Link href="/" className="u-link">
+              홈으로
+            </Link>
+          </p>
         </div>
       </div>
     </div>

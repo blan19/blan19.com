@@ -30,7 +30,7 @@ const PostReferences = ({ urls }: PostReferencesProps) => {
   return (
     <section className="end-sec refs" aria-labelledby="ref-label">
       <h2 className="end-label" id="ref-label">
-        참고 자료 <span className="cnt">{list.length}</span>
+        참고 자료
       </h2>
       <ol>
         {list.map((url, i) => {
