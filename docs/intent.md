@@ -10,13 +10,13 @@
   - 읽기 편하다: 본문 17px, 회색조, 한 열, 코드와 다이어그램이 화면에서 바로 읽힌다.
   - 빠르다: 글 페이지는 빌드 때 만든 정적 HTML 이고 클라이언트 JS 는 필요한 섬(island)뿐이다.
   - 글쓰기 마찰이 적다: 저장소에 `.mdx` 파일 하나를 넣고 push 하면 끝난다. 검사기가 실수를 먼저 잡는다.
-  - 운영비가 거의 없고 혼자 유지보수할 수 있다: 외부 서비스는 Vercel, Neon Postgres(조회수), GitHub(댓글, 이미지)뿐이다.
+  - 운영비가 거의 없고 혼자 유지보수할 수 있다: 외부 서비스는 Vercel, Neon Postgres(조회수), utterances(GitHub issues 댓글), GitHub(이미지), Google Analytics(ID 가 있을 때만), 빌드 때의 Google Fonts(IBM Plex Mono)뿐이다(3.11).
   - DB 가 죽어도 글은 모두 보인다.
 
 ## 2. 디자인 철학: G3 "Minimal Index"
 
 - 색상(hue)이 없는 회색조다. 강조는 잉크 대비, 굵기, 밑줄로만 한다. 예외는 둘뿐이다: 빨강은 오류 표시(404, error 코드 라벨)에만, slate 하나는 코드의 문자열과 숫자 리터럴에만 쓴다.
-- 목록은 색인처럼 읽힌다: 날짜 · 제목 · 읽는 시간 · 조회수. 배지, 리더 점선, 순번, 형광펜 같은 장식은 없다.
+- 목록은 색인처럼 읽힌다: /tech 는 날짜 · 제목 · 읽는 시간 · 조회수, 홈 최근 글은 조회수 없이 날짜 · 제목, 홈 "많이 읽힌 글"은 순위 · 제목 · 조회수. 배지, 리더 점선, 형광펜 같은 장식은 없고, 순위 번호는 "많이 읽힌 글"에만 쓴다.
 - 글꼴은 둘뿐이다: Pretendard(본문, 제목, UI)와 IBM Plex Mono(날짜, 수치, 코드, 메타). 세리프, 한글 이탤릭, 도장은 없다.
 - ≥1280px 에서는 왼쪽 레일(섹션 라벨, 목차)과 본문 열 하나, 그 미만은 한 열이다. 오른쪽 여백 열이 없으므로 사이드노트도 없다.
 - 장식은 하나만 둔다: 홈 소개 옆의 점묘 노트북(404 에서는 같은 노트북의 분해도). 정보나 링크를 담지 않고(`aria-hidden`), JS 가 없어도 서버 SVG 가 최종 이미지다. 다른 곳(헤더, 푸터, OG 이미지)에서 반복하지 않는다.
@@ -40,7 +40,7 @@
 - 결정: 본문은 GFM 마크다운으로만 해석한다. JSX, MDX 컴포넌트, raw HTML 은 렌더하지 않고 글자 그대로 보여 준다. `---js` frontmatter 는 거부한다(YAML 만).
 - 이유: 글이 코드를 실행하지 않으므로 보안 면이 작고, 렌더러를 서버 한 곳에 둘 수 있다. 확장자는 기존 파일명(= slug)과 도구 호환 때문에 유지한다.
 - 버린 대안: `next-mdx-remote`/`@next/mdx` 로 진짜 MDX 를 쓰는 것, 확장자를 `.md` 로 바꾸는 것(파일명 변경 → 이력 단절).
-- 결과·제약: 글 안의 인터랙티브 컴포넌트는 없다. 필요한 블록(콜아웃, 코드 메타, 이미지 메타, mermaid)은 마크다운 문법 확장으로 넣는다(→ architecture.md "마크다운 블록 추가").
+- 결과·제약: 글 안의 인터랙티브 컴포넌트는 없다. 필요한 블록(콜아웃, 코드 메타, 이미지 메타, mermaid)은 마크다운 문법 확장으로 넣는다(→ architecture.md 10장 "마크다운 블록").
 - 재검토 조건: 글마다 인터랙티브 데모가 꼭 필요해질 때.
 
 ### 3.3 경로 규약과 바꿀 수 없는 slug
@@ -69,7 +69,7 @@
 
 ### 3.6 조회수는 근사치다
 
-- 결정: 글 페이지 요청에서 `ArticleViews` 가 렌더될 때마다 `recordView` 가 upsert 로 +1 하고 올린 값을 보여 준다(요청당 한 번, 응답 전에 await). 중복 제거, 봇 필터, 세션 구분은 없다.
+- 결정: 글 페이지 요청에서 `ArticleViews` 가 렌더될 때마다 `recordView` 가 upsert 로 +1 하고 올린 값을 보여 준다(요청당 한 번. 정적 셸은 먼저 스트리밍되고, 조회수 Suspense 구멍을 채우기 전, 즉 스트리밍 응답이 끝나기 전에 await 한다. 서버리스에서 응답 뒤 쓰기가 유실되지 않게). 중복 제거, 봇 필터, 세션 구분은 없다.
 - 이유: "대략 무엇이 많이 읽히는가"만 알면 된다. 정확한 집계는 비용 대비 가치가 낮다.
 - 버린 대안: 쿠키/IP 기반 중복 제거, 클라이언트 비콘, GA 수치 연동.
 - 결과·제약: 크롤러와 새로고침도 센다. 실제 DB 로 띄운 서버에 글 경로를 요청하면 운영 수치가 오른다(이 때문에 3.12 의 하네스가 있다). 이전 구현은 새 행을 0 으로 만들었기 때문에 그때 생긴 행은 실제보다 1 적다.
@@ -88,7 +88,7 @@
 - 결정: `shiki/core` + JS 정규식 엔진(wasm 없음)으로 서버에서만 하이라이트한다. 테마의 토큰 색은 `var(--sh-*)` 다.
 - 이유: 하이라이트된 HTML 이 테마와 무관하게 하나라서 라이트/다크 전환은 CSS 변수 교체뿐이다. 클라이언트 JS 와 wasm 이 없다.
 - 버린 대안: 테마별 HTML 두 벌(`themes: {light, dark}`), 클라이언트 하이라이터, Oniguruma wasm 엔진.
-- 결과·제약: 지원 언어는 `languages.ts` 의 13개뿐이고 나머지는 색 없는 text 다. 하이라이트가 실패해도 그 블록만 평문이 되고 글 전체가 오류가 되지 않는다(평문으로 대체된 렌더는 캐시하지 않는다).
+- 결과·제약: 지원 언어는 `languages.ts` 의 13개뿐이고 나머지는 색 없는 text 다. 하이라이트가 실패해도 글 전체가 오류가 되지 않는다: 블록 하나가 실패하면 그 블록만 Shiki `text` 로, 그것도 실패하면 평문으로 그리고, Shiki 초기화가 실패하면 그 글의 모든 코드 블록이 평문이 된다(평문으로 대체된 렌더는 캐시하지 않는다).
 - 재검토 조건: JS 엔진이 필요한 문법을 처리하지 못할 때.
 
 ### 3.9 mermaid 는 클라이언트에서 늦게 불러온다
@@ -101,7 +101,7 @@
 
 ### 3.10 테마: system / light / dark
 
-- 결정: 색은 전부 CSS 토큰이고, 다크 값은 `globals.css` 의 `@variant dark` 한 곳에 둔다. 첫 페인트 전에 `layout.tsx` 의 인라인 스크립트가 저장된 설정(`data-theme`)을 붙인다. React 상태로 색을 계산하지 않는다.
+- 결정: 사이트 CSS 의 색은 전부 CSS 토큰이고, 다크 값은 `globals.css` 의 `@variant dark` 한 곳에 둔다(CSS 변수를 못 쓰는 `theme.ts` 의 `THEME_COLORS`, `icon.svg`, OG 카드 `og-image.tsx` 만 예외로 hex 를 직접 둔다. frontend.md). 첫 페인트 전에 `layout.tsx` 의 인라인 스크립트가 저장된 설정(`data-theme`)을 붙인다. React 상태로 색을 계산하지 않는다.
 - 이유: 깜빡임 없이, 서버 HTML 하나로 세 설정을 모두 그린다.
 - 버린 대안: next-themes 같은 라이브러리, 서버 쿠키로 테마 렌더(정적 HTML 이 요청마다 달라진다).
 - 결과·제약: CSS 로 못 바꾸는 것(mermaid, utterances iframe, 히어로 캔버스)만 `subscribeResolvedTheme` 로 따라간다. 인라인 스크립트 때문에 CSP 에 `'unsafe-inline'` 이 필요하다(3.14).
@@ -117,11 +117,11 @@
 
 ### 3.12 Cache Components: 정적 셸 + 조회수 구멍
 
-- 결정: `cacheComponents: true`. 페이지는 빌드 때 정적 셸로 prerender 하고, 요청 시점 데이터(조회수, 많이 읽힌 글, `/tech` 의 `searchParams`)만 `<Suspense>` 구멍에서 스트리밍한다. 모든 글은 `generateStaticParams` 로 미리 만든다. "많이 읽힌 글"은 `'use cache: remote'` 로 1시간 캐시한다. `partialPrefetching` 은 끈다.
+- 결정: `cacheComponents: true`. 페이지는 빌드 때 정적 셸로 prerender 하고, 요청 시점 데이터(조회수, 많이 읽힌 글, `/tech` 의 `searchParams`)만 `<Suspense>` 구멍에서 스트리밍한다. 모든 글은 `generateStaticParams` 로 미리 만든다. "많이 읽힌 글"은 `'use cache: remote'` + `cacheLife("hours")` + `cacheTag("views")` 로 캐시한다(1시간마다 다시 검증하고, 그동안 오래된 값을 최대 하루까지 내줄 수 있다). `partialPrefetching` 은 끈다.
 - 이유: 글 본문과 목록은 배포 사이에 바뀌지 않으므로 요청마다 다시 그릴 이유가 없다. 조회수만 요청마다 다르다.
 - 버린 대안: 페이지 전체 dynamic(`unstable_noStore`), ISR(`revalidate`), 조회수를 클라이언트에서 가져오기(추가 API 와 레이아웃 이동).
-- 결과·제약: `connection()` 이 prerender 를 멈추는 지점이라 빌드는 DB 를 쿼리하지 않는다. prerender 경로에서 현재 시각과 난수를 쓸 수 없다(푸터 연도는 빌드한 해 `env.BUILD_YEAR`). 떠난 페이지가 `<Activity>` 로 DOM 에 숨겨져 남으므로 클라이언트 DOM 조회는 자기 `.site-wrap` 안으로 한정한다. Partial Prefetching 을 켜면 목록에 없는 `/tech/<slug>` 가 200 + noindex 가 되고 HTML 이 커졌다(`next.config.js` 주석). 규칙은 `CLAUDE.md` 라우트 절차.
-- 재검토 조건: Vercel 의 PPR 서빙에서 404 상태가 유지되지 않을 때(7장), Next 가 Cache Components 동작을 바꿀 때.
+- 결과·제약: `connection()` 이 prerender 를 멈추는 지점이라 빌드는 DB 를 쿼리하지 않는다. prerender 경로에서 현재 시각과 난수를 쓸 수 없다(푸터 연도는 빌드한 해 `env.BUILD_YEAR`). 떠난 페이지가 `<Activity>` 로 DOM 에 숨겨져 남으므로 클라이언트 DOM 조회는 자기 `.site-wrap` 안으로 한정한다. Partial Prefetching 을 켜면 목록에 없는 `/tech/<slug>` 가 200 + noindex 가 되고 HTML 이 커졌다(`next.config.js` 주석). 페이지의 `notFound()` 는 Cache Components 에서 lang 과 본문 없는 오류 셸(`<html id="__next_error__">`)을 내므로, `src/proxy.ts`(matcher `/tech/:slug`)가 빌드 때 `next.config.js` 가 인라인한 slug 목록(`env.TECH_SLUGS`)에 없는 slug 를 루트 404(`/__not-found__`)로 rewrite 한다. smoke 가 404 본문의 `lang="ko"` 와 not-found 제목을 확인한다. 규칙은 `CLAUDE.md` 라우트 절차.
+- 재검토 조건: Vercel 배포에서 proxy 의 404 rewrite 가 기대대로 동작하지 않을 때(7장), Next 가 Cache Components 나 proxy 동작을 바꿀 때.
 
 ### 3.13 OG 이미지는 빌드 때 만든다
 
@@ -156,7 +156,7 @@
 
 ### 3.16 검증 전략: 앱 테스트 대신 단계 검사
 
-- 결정: `npm run verify` 하나가 검증 기준이다: prisma generate → tsc → eslint → content:check --strict → test:hooks → test:content → DB 차단 next build → smoke(24개 경로의 상태 코드와 content-type). CI 도 이것 하나를 돌린다.
+- 결정: `npm run verify` 하나가 검증 기준이다: prisma generate → tsc → eslint → content:check --strict → test:hooks → test:content → DB 차단 next build → smoke(tech 글 7개 기준 24개 경로의 상태 코드와 content-type, 404 본문, DB 와 무관한 서버 오류 로그). CI 도 이것 하나를 돌린다.
 - 이유: 앱 로직이 얇고(파일 읽기, 렌더, 조회수 한 테이블) 깨지는 곳은 대부분 타입, 글 형식, 빌드, 라우트 응답이다. 1인 유지보수에서 컴포넌트 테스트는 비용이 크다.
 - 버린 대안: 컴포넌트 단위 테스트, 시각 회귀 테스트, E2E.
 - 결과·제약: 화면 모양, 클라이언트 상호작용(목차 스파이, 댓글 로그인, 히어로 캔버스), DB 가 살아 있을 때의 경로는 자동으로 검사하지 않는다. 화면은 `/run-app` 으로 사람이 본다. smoke 는 차단 DB 에서만 돈다.
@@ -193,9 +193,9 @@
 ## 7. 미룬 결정과 열린 질문
 
 - 피드 크기 상한: 모든 tech 글의 전체 본문이 피드에 들어간다(지금 7개, 피드 하나 약 100KB). 글이 늘면 최근 N개만 본문을 넣을지 정한다. 피드 XML well-formed 검사를 smoke 에 넣을지도 정하지 않았다.
-- Vercel PPR 서빙의 404: `next start` 에서는 `/tech/<없는 slug>` 와 그 `opengraph-image` 가 404 다(smoke). Vercel 배포에서도 404 인지는 Preview 배포 뒤 `curl -I` 로 확인해야 한다. 200(soft 404)이면 대응을 정한다.
+- Vercel 배포의 404: `next start` 에서는 `/tech/<없는 slug>` 가 `src/proxy.ts` 의 rewrite 로 루트 404 페이지(상태 404, `lang="ko"`)가 되고, 그 `opengraph-image` 도 404 다(smoke). Vercel 배포에서도 proxy 가 같은 404 를 내는지는 Preview 배포 뒤 `curl -i` 로 확인해야 한다. 200(soft 404)이거나 오류 셸이면 대응을 정한다.
 - 원격 캐시 적중률: `'use cache: remote'` 가 Vercel 인스턴스 사이에서 실제로 적중하는지(Neon 쿼리 빈도)는 배포 뒤 로그로 확인한다.
-- 비공개 저장소 이미지: `3d-interactive-multi-players-web-with-three.js-and-r3f` 글의 이미지 3개(`github.com/blan19/3D_Interactive_Meta/assets/...`)는 GitHub 원본이 404 를 낸다. 원래 저장소가 비공개가 됐거나 첨부가 지워진 것으로 보인다. 글의 URL 을 고칠지 사용자 확인이 필요하다.
+- 비공개 저장소 이미지: `3d-interactive-multi-players-web-with-three.js-and-r3f` 글의 이미지 7개(모두 `github.com/blan19/3D_Interactive_Meta/assets/...`)는 GitHub 원본이 404 를 낸다. 원래 저장소가 비공개가 됐거나 첨부가 지워진 것으로 보인다. 글의 URL 을 고칠지 사용자 확인이 필요하다.
 - CSP 강제 계획: 지금은 Report-Only 다. 배포본에서 홈, `/tech`, mermaid·이미지가 있는 글, 댓글을 열어 콘솔에 위반이 없는지 본 뒤 강제로 옮긴다(`next.config.js` 주석의 절차).
 
 ## 8. 큰 방향 변화 기록
@@ -204,7 +204,8 @@
 
 | 시기 | 변화 |
 |---|---|
-| 2023-12 | Next 12 → 14 이전으로 블로그 시작(#2). Prisma 조회수(#4), 마크다운 파싱(#5), utterances 댓글(#10) |
+| 2022-09 | Create Next App(Next 12)으로 저장소 시작 |
+| 2023-12 | Next 12 → 14 이전(#2). Prisma 조회수(#4), 마크다운 파싱(#5), utterances 댓글(#10) |
 | 2023-12 | 목록 정렬 방향을 여러 번 고침(#35, #38, #39). PPR 켬(#37) |
 | 2024-02 | log 페이지 추가(#48) |
 | 2026-10 | 의존성 최신화(#50), Claude Code 하네스와 `vercel-build` 분리(#51), 도메인 `www.blan19.xyz` 이전과 Node 24 고정(#54), 디렉터리 재편(#57) |

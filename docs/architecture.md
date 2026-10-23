@@ -19,7 +19,7 @@
 | `/icon.svg`, `/favicon.ico` | `src/app/icon.svg`, `favicon.ico` | ○ | 없음 |
 | 404, 오류 | `src/app/not-found.tsx`, `error.tsx`(client) | ○ | 없음 |
 
-공통 셸은 `src/app/layout.tsx`(메타데이터 기본값, 테마 초기화 인라인 스크립트, 선택적 GA, 헤더, 푸터)다. smoke(`scripts/smoke.mjs`)가 위 경로 24개의 상태 코드와 content-type 을 요청한다.
+공통 셸은 `src/app/layout.tsx`(메타데이터 기본값, 테마 초기화 인라인 스크립트, 선택적 GA, 헤더, 푸터)다. smoke(`scripts/smoke.mjs`)가 `checks` 의 경로(고정 17개 + tech 글마다 1개, tech 글 7개 기준 24개)를 요청해 상태 코드와 content-type 을 보고, 404 HTML 두 개는 본문(`lang="ko"`, not-found 제목)까지 본다. 위 표와 정확히 같지는 않다: `/favicon.ico` 는 요청하지 않고, 표에 없는 `/tech?tag=react.js`, `/tech?tag=__none__`, 없는 경로 404 세 개(`/tech/__smoke-not-found__`, 그 `opengraph-image`, `/__smoke-not-found__`)를 요청한다.
 
 ## 2. 모듈 지도
 
@@ -175,7 +175,7 @@ flowchart TD
 
 | 모듈 | 담는 것 | src 의 사용처 | scripts 의 사용처 |
 |---|---|---|---|
-| `src/lib/config.ts` | `site`(이름, 제목, 설명, `url`, `origins`, `host`, `since`), `author`, `comments`, `analytics` | layout, page, sitemap, robots, footer, wordmark, comment, post-body, feed, metadata, og-image, opengraph-image | 없음 |
+| `src/lib/config.ts` | `site`(이름, 제목, 설명, `url`, `origins`, `host`, `locale`, `since`), `author`, `comments`, `analytics` | layout, page, sitemap, robots, footer, wordmark, comment, post-body, feed, metadata, og-image, opengraph-image | 없음 |
 | `src/lib/page-ids.ts` | `PAGE_IDS`(글 페이지 고정 id) | layout, post-header, post-body, post-references, comment, toc-spy | `scripts/content/body.mjs`(제목 id 와 겹치면 warn) |
 | `src/lib/markdown/languages.ts` | `CODE_LANGUAGES`, `LANGUAGE_ALIASES`, `PLAIN_LANGUAGES`, `DIAGRAM_LANGUAGES`, `normalizeLanguage` | shiki, code/highlight, rehype-code-blocks | `scripts/content/context.mjs` |
 | `src/lib/markdown/image-meta.ts` | `parseImageMeta`, `DEFAULT_IMAGE_SIZE`, `isUrlCaption`, `captionHost` | rehype-image-figures, figures, feed-html, post-image | `scripts/content/images.mjs` |

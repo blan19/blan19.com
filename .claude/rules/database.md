@@ -24,7 +24,7 @@ View 테이블 읽기와 쓰기는 이 파일만 한다. `server-only` 모듈이
 | 함수 | 동작 | 캐시 | 부르는 곳 |
 |---|---|---|---|
 | `recordView(slug)` | **쓰기**: `getPost("tech", slug)` 가 있는 글만 upsert(create `count: 1` / update `increment: 1`, `select: count`) 후 올린 값을 돌려준다(왕복 1회). DB 없음이나 없는 글이면 null | React `cache`(요청당 1번) | `ui/view-count` 의 `ArticleViews`(글 머리, 이번 방문 포함 값 표시) |
-| `getViewMap()` | findMany(slug, count) → `Map`. 실패는 여기서 요청당 한 번 `[views]` 로그 후 다시 던진다. DB 없음이면 null | React `cache`(요청당 쿼리 1번) | `ui/view-count` 의 `RowViews`(홈, /tech 목록 행, 로그 없이 null) |
+| `getViewMap()` | findMany(slug, count) → `Map`. 실패는 여기서 요청당 한 번 `[views]` 로그 후 다시 던진다. DB 없음이면 null | React `cache`(요청당 쿼리 1번) | `ui/view-count` 의 `RowViews`(/tech 목록 행만, 로그 없이 null. 홈 최근 글 행과 /tech Suspense fallback 은 `views={false}` 라 부르지 않는다) |
 | `getMostRead(n)` | `getTopViews(n)`(count desc) 결과를 글과 조인. DB 에만 남은 slug 는 빠진다. DB 없음이면 `[]` | `getTopViews` 가 `'use cache: remote'` + `cacheLife("hours")` + `cacheTag("views")`(slug, count 만 캐시) | `ui/most-read` 의 `MostRead`(홈 "많이 읽힌 글") |
 
 - DB 쓰기는 `/tech/[slug]` 요청 때 `ArticleViews` 가 `recordView` 를 await 하는 것 하나뿐이다(서버리스에서 응답 뒤 유실되지 않게). 실제 DB 로 띄운 서버에 이 경로를 요청하면 운영 조회수가 오른다.

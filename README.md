@@ -23,7 +23,7 @@ npm ci
 npm run dev:safe   # dev server with every database URL blocked
 ```
 
-Open http://localhost:3000. With the database blocked, view counts and the home "most read" list are left out; the rest of each page renders normally. To preview posts without any database errors in the log, run `node scripts/with-blocked-db.mjs --preview next dev` instead.
+Open http://localhost:3000. With the database blocked, view counts and the home "most read" list are left out; the rest of each page renders normally. To preview posts without any database errors in the log, run `node scripts/with-blocked-db.mjs --preview next dev` instead. Unlike `dev:safe`, it does not run `prisma generate`, so on a fresh clone run `npx prisma generate` (no database access) or `npm run dev:safe` once first.
 
 > **Warning:** there is no separate development database. If `.env` points at the production database, `npm run dev`, `npm start` and `npm run build` read it, and every `/tech/<slug>` visit on a server started that way increments the production view count. Use `npm run dev:safe` and `npm run verify` for local work. Never run `npm run vercel-build` or `prisma db push` / `migrate` locally.
 
@@ -38,7 +38,7 @@ Open http://localhost:3000. With the database blocked, view counts and the home 
 | `npm run lint` | `eslint .` |
 | `npm run content:check` | Validate `contents/` structure, frontmatter and post bodies (`--strict` turns `TODO:` into an error) |
 | `npm run smoke` | Serve the existing `.next` build with the database blocked and request the main routes |
-| `npm run dev` / `npm start` | `next dev` / `next start` using the database in `.env` (production) |
+| `npm run dev` / `npm start` | `prisma generate` + `next dev` / plain `next start`, using the database in `.env` (production) |
 | `npm run build` | `prisma generate` + `next build`. No schema changes, but reads `.env`; `npm run verify` builds with the database blocked |
 | `npm run vercel-build` | `prisma generate` + `prisma db push` + `next build`. Vercel runs this; do not run it locally |
 
@@ -57,7 +57,7 @@ NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=""  # optional; when empty, Google Analytics is 
 
 ### Writing a Post
 
-Add `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`: one file per date folder, and the file name is the URL slug and the view-count key, so it never changes after publishing. The files use the `.mdx` extension but are plain Markdown (GFM), not MDX: JSX and raw HTML are shown as text. Frontmatter is YAML with `publishedAt` (quoted `"YYYY-MM-DD"`), `title`, `tags`, `description` and `reference`. Then run `npm run content:check`.
+Add `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`: one file per date folder. For `tech` posts the file name is the URL slug and the view-count key, so it never changes after publishing; `log` posts have no detail page or view count, and their file name is only a unique key (the `log-<slug>` element id on `/log`). The files use the `.mdx` extension but are plain Markdown (GFM), not MDX: JSX and raw HTML are shown as text. Frontmatter is YAML with `publishedAt` (quoted `"YYYY-MM-DD"`), `title`, `tags`, `description` and `reference`. Then run `npm run content:check`.
 
 `log` posts are plain paragraphs shown on `/log` without Markdown rendering.
 

@@ -24,7 +24,7 @@
 | `npm run lint` | `eslint .` |
 | `npm run content:check [파일...]` | `contents/` 구조, frontmatter, 본문 검사. 글을 쓰거나 고친 뒤 실행. `--strict` 는 `TODO:` 를 error 로 본다(verify, CI) |
 | `npm test` | `test:hooks` + `test:content` |
-| `npm run test:hooks` | `.claude/hooks` 테스트(guard-bash 판정 매트릭스). 훅을 고치면 실행 |
+| `npm run test:hooks` | `.claude/hooks` 테스트(guard-bash 판정 매트릭스와 post-edit-check). 훅을 고치면 실행 |
 | `npm run test:content` | 콘텐츠 검사기(`scripts/content/`) 테스트. 검사 규칙을 고치면 실행 |
 | `npm run build` | `prisma generate && next build`. db push 는 없지만 `.env`(운영 DB)를 그대로 읽는다. 에이전트는 `npm run verify` 나 `node scripts/with-blocked-db.mjs next build` 를 쓴다 |
 | `npm run smoke` | 기존 `.next` 빌드를 DB 차단 `next start` 로 띄워 `scripts/smoke.mjs` 의 `checks` 를 요청(서버 로그는 `.next/smoke-server.log`). build 다음에 실행 |
@@ -43,7 +43,7 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 DB 차단 env 로 `npm
 - `prisma/schema.prisma` 변경(커밋 여부 무관)이 있으면 push 하거나 PR 을 만들기 전에 반드시 직접 사용자에게 묻는다(Preview 빌드도 운영 스키마를 바꿀 수 있다. 이유는 database.md). 훅의 확인 창은 보조 수단이다. GitHub MCP 도구로 push/PR 하지 않고, CLI 배포(`vercel`, `vercel deploy`)도 쓰지 않는다.
 - `.env` 내용을 출력, 복사, 수정, 삭제하지 않는다. 변수 이름은 코드(`process.env.*`)에서 확인한다. DB 연결 문제를 디버깅할 때도 dotenv 등으로 env 값을 출력하지 말고 사용자에게 확인을 요청한다.
 - 실제 DB 로 띄운 서버에 `/tech/<slug>` 를 요청하면 운영 조회수가 올라간다(이미 한 번 사고 났음). 런타임 확인은 `verify`, `smoke`, `dev:safe`, `with-blocked-db.mjs`, `/run-app` 으로만 한다. 차단 주소는 `postgres://blocked:blocked@127.0.0.1:1/blocked`(원본 `scripts/lib/blocked-db.mjs`)이고 process env 가 `.env` 보다 우선한다. 띄운 서버는 끝나기 전에 PID 로 종료한다.
-- 훅과 권한이 일부를 강제한다(`.claude/settings.json`): `guard-bash.mjs` 는 위 명령, `.env` 읽기, `vercel --prod`/`build`/`env pull`, DB 차단 없는 `next dev/start`·`npm run dev/start`(`node --run` 포함)를 차단하고, 스키마 변경이 있을 때 `git push`·`gh pr create`·`vercel deploy` 에 확인을 요청한다. 같은 Bash 호출 안의 `cd` 는 `&&` 로 이어 쓸 때만 따라간다(`cd x; grep -r …` 같은 상대 경로 재귀 검색은 막힌다). GitHub MCP 쓰기 도구는 권한 `ask` 다. 우회를 모두 막지는 못하므로 위 규칙이 우선이다. 훅에 막히면 우회하지 말고 메시지의 대안을 따른다.
+- 훅과 권한이 일부를 강제한다(`.claude/settings.json`): `guard-bash.mjs` 는 위 명령, `.env` 읽기, `vercel --prod`/`build`/`env pull`, DB 차단 없는 `next dev/start`·`npm run dev/start`(`node --run` 포함)를 차단하고, 스키마 변경이 있을 때 `git push`·`gh pr create`·`vercel deploy` 에 확인을 요청한다. 같은 Bash 호출 안의 `cd` 는 `&&` 로 이어 쓸 때만 따라간다(`cd x; grep -r …` 같은 상대 경로 재귀 검색은 막힌다). GitHub MCP 도구 중 권한 `ask` 인 것은 push, 파일 생성·수정·삭제, 브랜치 생성, PR 생성·머지, PR 브랜치 갱신 7개뿐이다(PR 수정, 이슈와 댓글, 리뷰, 저장소 생성·삭제·fork 같은 다른 쓰기 도구는 목록에 없어 권한 모드에 따라 확인 없이 실행될 수 있다). 우회를 모두 막지는 못하므로 위 규칙이 우선이다. 훅에 막히면 우회하지 말고 메시지의 대안을 따른다.
 - `npm run build` 는 `.env` 를 읽는다. 정적 셸은 빌드 때 prerender 되고, DB 쿼리는 `connection()` 뒤의 Suspense 구멍(`ArticleViews`, `RowViews`, `MostRead`)에서만 요청 때 돈다(`src/lib/views.ts` 함수도 각자 `connection()` 을 먼저 부른다). 정적 렌더 경로(generateStaticParams, opengraph-image, 정적 셸)에 DB 쿼리를 넣지 않는다. 넣으면 로컬 빌드가 운영 DB 를 읽는다.
 
 ## 디렉터리
@@ -110,7 +110,7 @@ docs/               intent.md, architecture.md, design.md
 
 - 큰따옴표, 2칸 들여쓰기, 세미콜론, trailing comma (Prettier 설정 없음, 주변 코드에 맞춤).
 - 컴포넌트: `src/components/ui/<kebab>/index.tsx`, 화살표 함수 + 파일 끝 `export default X`, 타입은 `import type`. props 는 `interface XProps` 가 많다(예외 있음).
-- layout, error, robots, sitemap, 홈 page 는 `export default function`, 나머지 page 는 화살표 함수 + 파일 끝 `export default`. 둘 다 허용하며 같은 폴더의 기존 파일에 맞춘다. route handler 는 `export async function GET`, 데이터 모듈은 named export.
+- layout, error, not-found, robots, sitemap, 홈 page, 루트 `opengraph-image` 는 `export default function`, 나머지 page 와 `tech/[slug]/opengraph-image` 는 화살표 함수 + 파일 끝 `export default`. 둘 다 허용하며 같은 폴더의 기존 파일에 맞춘다. route handler 는 `export async function GET`, 데이터 모듈은 named export.
 - 새 코드의 import 는 `@/*` (→ `src/*`) 별칭을 쓴다. 예외: 검사기가 Node 타입 제거로 직접 읽는 `languages.ts`, `image-meta.ts`, `page-ids.ts` 는 import 를 두지 않는다(tooling.md).
 - 서버 전용 모듈(`src/lib/posts.ts`, `views.ts`, `prisma.ts`, `feed.ts`, `og-image.tsx`, `markdown/index.ts`, `markdown/shiki.ts`, `markdown/feed-html.ts`, `markdown/code/highlight.ts`)은 첫 줄에 `import "server-only";` 를 둔다(패키지 설치 없이 Next 가 처리한다).
 
