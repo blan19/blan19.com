@@ -7,7 +7,12 @@ import { formatDotDate } from "@/lib/format";
 import HeroObject from "@/components/ui/hero-object";
 import PostList from "@/components/ui/post-list";
 import MostRead, { MostReadPending } from "@/components/ui/most-read";
-import JsonLd from "@/components/ui/json-ld";
+import { alternates } from "@/lib/metadata";
+
+// 제목, 설명, openGraph 는 layout 기본값(사이트)을 그대로 쓴다.
+export const metadata: Metadata = {
+  alternates: alternates("/"),
+};
 
 const RECENT_COUNT = 5;
 

@@ -1,5 +1,6 @@
 import { getBlogPosts, getPost } from "@/lib/posts";
-import { OG_CONTENT_TYPE, OG_SIZE, renderOgImage } from "@/lib/og-image";
+import { OG_CONTENT_TYPE, OG_SIZE } from "@/lib/metadata";
+import { renderOgImage } from "@/lib/og-image";
 
 // 글마다 제목을 그린 OG 이미지. 모든 글을 빌드 때 PNG 로 만든다(요청 때 렌더하지 않는다).
 // twitter:image 는 Next 가 og:image 를 그대로 물려받으므로 twitter-image 파일은 두지 않는다.

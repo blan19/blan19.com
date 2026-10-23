@@ -5,6 +5,7 @@ import Header from "@/components/layouts/header";
 import Footer from "@/components/layouts/footer";
 import { plexMono, pretendard } from "@/app/fonts";
 import { analytics, site } from "@/lib/config";
+import { alternates, openGraph } from "@/lib/metadata";
 import { THEME_COLORS, THEME_STORAGE_KEY } from "@/lib/theme";
 
 // 첫 페인트 전에 저장된 테마(data-theme)와 JS 사용 여부(data-js)를 <html> 에 붙인다.
@@ -36,15 +37,12 @@ export const metadata: Metadata = {
       "naver-site-verification": "802885b1ae64198e719ba1a0a3f60119c65302e1",
     },
   },
+  // canonical 은 페이지마다 둔다(여기 두면 404 같은 페이지도 물려받는다).
   alternates: alternates(),
-  // og:url 은 없다(페이지가 path 와 함께 다시 지정한다). 404, error 는 이 기본값을 쓴다.
-  openGraph: openGraph({
-    title: config.site.name,
-    description: config.site.description,
-  }),
-  twitter: {
-    card: "summary_large_image",
-  },
+  // 자기 openGraph 가 없는 페이지의 기본값. og:image 는 app/opengraph-image.tsx,
+  // twitter 의 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
+  openGraph: openGraph("/", site.title, site.description, { ownImage: true }),
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

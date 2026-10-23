@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { site } from "@/lib/config";
+import { alternates, openGraph } from "@/lib/metadata";
 import { getAdjacentPosts, getBlogPosts, getPost } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
 import { alternates, openGraph, postJsonLd } from "@/lib/seo";
@@ -38,25 +38,18 @@ export async function generateMetadata({
     tags: keywords,
     publishedAt: publishedTime,
   } = post.metadata;
-  // og:image, twitter:image 는 같은 폴더의 opengraph-image.tsx 가 채운다(파일 규칙이 우선).
+  const path = `/tech/${post.slug}`;
+  // og:image 는 같은 폴더의 opengraph-image.tsx 가 채운다(파일 규칙이 우선).
+  // twitter 는 layout 의 card 를 물려받고 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
   return {
     title,
     description,
     keywords: [...keywords],
+    alternates: alternates(path),
     openGraph: {
-      ...openGraph({
-        title,
-        description,
-        path: `/tech/${post.slug}`,
-        imageTitle: title,
-      }),
+      ...openGraph(path, title, description, { ownImage: true }),
       type: "article",
-      url: `${site.url}tech/${post.slug}`,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
+      publishedTime,
     },
   };
 }

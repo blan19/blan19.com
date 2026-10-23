@@ -4,11 +4,10 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { site } from "@/lib/config";
+import { OG_SIZE } from "@/lib/metadata";
 
 // opengraph-image(사이트 기본, 글마다)가 같이 쓰는 OG 카드. 둘 다 빌드 때 PNG 로 만든다.
-// 1200×630(1.91:1, summary_large_image). 수치는 이전 1920×1080 판의 0.625배다.
-export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_CONTENT_TYPE = "image/png";
+// 1200×630(1.91:1, summary_large_image, OG_SIZE). 수치는 이전 1920×1080 판의 0.625배다.
 
 // 한글을 지원하는 번들 폰트 하나만 쓴다(네트워크 요청 없음). satori 는 woff 를 읽고 woff2 는 못 읽는다.
 // 요청과 무관한 파일이라 모듈 스코프에서 한 번 읽는다(Next 문서의 OG 예시). 경로는 process.cwd() 기준이라
