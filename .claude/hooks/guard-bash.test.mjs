@@ -6,7 +6,7 @@
 //   os.tmpdir() 아래 임시 git 저장소에서 훅을 spawn 해 따로 검사한다.
 // - 훅을 고치면 여기에 차단(B)/허용(A)/확인(Q) 케이스를 추가한다.
 import { spawn, spawnSync } from "node:child_process";
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -247,9 +247,11 @@ const cases = [
   ["vercel --version", A],
 
   // 5. 작업 디렉터리(cd), ~/$PWD/$HOME, ag, git grep, find -exec
-  ['cd node_modules && grep -rln "use server" .', A],
+  // 없는 디렉터리로의 cd 는 따라가지 않으므로 항상 있는 src 로 검사한다(node_modules 는 설치 전에 없다)
+  ['cd src && grep -rln "use server" .', A],
   ["cd /tmp && grep -rn foo .", A],
-  ["cd src; grep -rn POSTGRES", A],
+  // ; 뒤 명령은 cd 가 실패해도 원래 디렉터리에서 실행된다
+  ["cd src; grep -rn POSTGRES", B],
   [`cd .. && grep -rn foo ${path.basename(ROOT)}`, B],
   ["cd .. && grep -rn foo .", B],
   ["grep -rn foo ..", B],
@@ -329,6 +331,68 @@ const cases = [
   ["vercel remove my-app", B],
   ["vercel rm my-app", B],
   ["vc ls", A],
+  // 8. find 식: "," 갈래, 모든 -exec, 해석하지 못하는 요소는 막는다
+  ["find . -name '*.ts' , -type f -exec cat {} +", B],
+  ["find . -name '*.ts' -exec true \\; -o -type f -exec cat {} +", B],
+  ["find . -type f -exec ls {} + -exec cat {} +", B],
+  ["find . -name '*.mdx' -exec grep -l x {} + , -exec cat {} +", B],
+  ["find . -not -name .env -type f -exec cat {} +", B],
+  ["find . -name '*.ts' -frobnicate -exec cat {} +", B],
+  ["find . \\( -name '*.ts' -exec cat {} +", B],
+  ["find . -regex '(' -exec cat {} +", B],
+  ["find . -type f -exec sh -c 'cat \"$1\"' _ {} \\;", B],
+  ["find . -type f -exec env cat {} +", B],
+  ["find -f . -type f -exec cat {} +", B],
+  ["find . -fprint .env", B],
+  ["cd /tmp && find /tmp -maxdepth 1 -execdir grep -rn foo . \\;", B],
+  ["find . -name '*.ts' -exec cat {} + , -name '*.mdx' -exec cat {} +", A],
+  ["find src -type f -exec ls {} + -exec cat {} +", A],
+  ["find . -name '*.ts' -exec wc -l {} \\; -exec cat {} \\;", A],
+  ["find . -name '*.ts' -a -type f -exec cat {} +", A],
+  ["find . -newermt 2024-01-01 -name '*.mdx' -exec cat {} +", A],
+  ["find /tmp -frobnicate x -exec cat {} +", A],
+  // 9. cd 추적: 셸과 다르게 해석할 수 있으면 작업 디렉터리를 모르는 것으로 본다
+  ["cd -- .. && grep -rn foo .", B],
+  ["cd -- src && grep -rn foo .", A],
+  ["cd ~+ && grep -rn foo .", B],
+  ["cd ~- && grep -rn foo .", B],
+  ["cd ~root && grep -rn foo .", B],
+  ["grep -rn foo ~+", B],
+  ["export CDPATH=..; cd src && grep -rn foo .", B],
+  ["CDPATH=.. cd src && grep -rn foo .", B],
+  ["cdpath=(..); cd src && grep -rn foo .", B],
+  ["HOME=/tmp; cd && grep -rn foo .", B],
+  ["cd nonexistent-dir-xyz && grep -rn foo .", B],
+  ["cd src && cd a b && grep -rn foo .", B],
+  ["cd src && cd -1 && grep -rn foo .", B],
+  ["cd src && chdir .. && grep -rn foo .", B],
+  ["cd src && .. && grep -rn foo .", B],
+  ["cd src && - && grep -rn foo .", B],
+  ["cd /tmp\ngrep -rn foo .", B],
+  ["cd /tmp && true; grep -rn foo .", B],
+  ["cd /tmp && true & grep -rn foo .", B],
+  ["true || cd /tmp && grep -rn foo .", B],
+  ["cd /tmp && false || grep -rn foo .", B],
+  ["(true) || cd /tmp && grep -rn foo .", B],
+  ["cd /tmp && true || echo $(grep -rn foo .)", B],
+  ["cd /tmp && (grep -rn foo .)", A],
+  ["cd /tmp && ls | grep -rn foo .", A],
+  ["cd /tmp && echo $(grep -rn foo .)", A],
+  // env -C / sudo -D 등 작업 디렉터리를 바꾸는 래퍼
+  ["cd src && env -C .. grep -rn foo .", B],
+  ["cd src && env --chdir=.. grep -rn foo .", B],
+  ["cd src && env -iC.. grep -rn foo .", B],
+  ["cd src && sudo -D .. grep -rn foo .", B],
+  ["cd src && sudo --chdir=.. grep -rn foo .", B],
+  ["cd src && sudo -i grep -rn foo .", B],
+  ["env -C /tmp/evil node scripts/with-blocked-db.mjs next dev", B],
+  ["sudo -D /tmp/evil node scripts/with-blocked-db.mjs next dev", B],
+  ["cd src && git -C .. grep --untracked --no-exclude-standard POSTGRES .", B],
+  ["env -S 'npx prisma db push'", B],
+  ["env - npx prisma db push", B],
+  ["sudo -u root npx prisma db push", B],
+  ["cd src && env -u FOO grep -rn foo .", A],
+  ["env -i FOO=1 node scripts/with-blocked-db.mjs next dev", A],
   // 허용 (단순 언급 / 안전 명령)
   ["node scripts/with-blocked-db.mjs npx prisma migrate diff --from-schema /tmp/old.prisma --to-schema prisma/schema.prisma --script", A],
   ["npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script -o /tmp/x.sql", A],
@@ -589,7 +653,21 @@ try {
     [wtMain, `cd ${other} && node scripts/with-blocked-db.mjs next dev`, B],
     [wtMain, `node ${wt}/scripts/../scripts/x/../with-blocked-db.mjs next dev`, A],
   ];
-  for (const [dir, command, expected] of wtCases) {
+  // 심볼릭 링크: 프로젝트 범위는 실제 경로(link/.. 는 링크 대상의 상위)로도 비교한다.
+  const rootLink = path.join(TMP, "root-link");
+  const srcLink = path.join(TMP, "src-link");
+  symlinkSync(ROOT, rootLink);
+  symlinkSync(path.join(ROOT, "src"), srcLink);
+  const linkCases = [
+    [ROOT, `grep -rn foo ${rootLink}`, B],
+    [ROOT, `cd ${rootLink} && grep -rn foo .`, B],
+    [ROOT, `grep -rn foo ${srcLink}/..`, B],
+    [ROOT, `cd ${srcLink}/.. && grep -rn foo .`, B],
+    [ROOT, `find ${rootLink} -type f -exec cat {} +`, B],
+    [ROOT, `cd ${srcLink} && grep -rn foo .`, A],
+    [ROOT, `grep -rn foo ${srcLink}`, A],
+  ];
+  for (const [dir, command, expected] of [...wtCases, ...linkCases]) {
     const { blocks } = analyze(command, { projectDir: dir });
     const got = blocks.length ? B : A;
     report(got === expected, `guard ${expected} got=${got} [${path.basename(dir)}] ${command}`, blocks[0] ?? "");

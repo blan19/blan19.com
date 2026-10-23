@@ -2,9 +2,9 @@
 // runSegment 가 앞쪽 래퍼(대입, env, sudo, xargs, dotenv, with-blocked-db 등)를 벗긴 뒤 명령 이름으로 핸들러를 고른다.
 // 명령을 추가하려면 HANDLERS 에 (c) => void 함수를 넣고 guard-bash.test.mjs 에 케이스를 추가한다.
 // c: { cmd, args, text, redirs, heredocs, pipedFrom, inner, envLoaded, projectDir,
-//      block(what, msg), ask(msg), recurse(words), runLexed(src), realDbServer(what), runScript(script, what), isProjectScope(target) }
+//      block(what, msg), ask(msg), recurse(words, { cwdUnknown }?), runLexed(src), realDbServer(what), runScript(script, what), isProjectScope(target) }
 import { spawnSync } from "node:child_process";
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { MAX_DEPTH, lex } from "./lex.mjs";
@@ -16,7 +16,7 @@ const ENV_ASSIGN = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const KEYWORDS = new Set(["if", "then", "else", "elif", "do", "while", "until", "!", "{", "}", "time", "fi", "done"]);
 const SHELLS = new Set(["bash", "sh", "zsh", "dash", "ksh"]);
 const SIMPLE_WRAPPERS = new Set(["command", "builtin", "exec", "nohup", "noglob", "nocorrect", "corepack"]);
-const CD_COMMANDS = new Set(["cd", "pushd", "popd"]);
+const CD_COMMANDS = new Set(["cd", "pushd", "popd", "chdir"]); // chdir: zsh 의 cd 별칭
 const SAFE_ENV_EXAMPLES = /^\.env\.(example|sample|template|dist)$/;
 const ENV_NAMES = [".env", ".env.local", ".env.production", ".env.development"];
 // DB 차단 실행으로 인정하는 스크립트. basename 이 아니라 프로젝트 안의 이 경로로 해석될 때만 믿는다.
@@ -96,12 +96,86 @@ const TMP_ROOTS = [...new Set([os.tmpdir(), "/tmp", "/private/tmp", "/var/folder
 const isTmpPath = (p) => path.isAbsolute(p) && !p.includes("$") && TMP_ROOTS.some((r) => path.resolve(p).startsWith(`${r}/`));
 
 const expandHome = (p) => (p === "~" ? os.homedir() : p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p);
+// ~user, ~+($PWD), ~-($OLDPWD) 처럼 홈 말고 다른 곳으로 펼쳐지는 ~ 접두어
+const isOtherTilde = (p) => p.startsWith("~") && p !== "~" && !p.startsWith("~/");
 const realOrResolved = (p) => {
   try {
     return realpathSync(p);
   } catch {
     return path.resolve(p);
   }
+};
+// 커널처럼 앞에서부터 심볼릭 링크를 풀며 ".." 를 처리한 실제 경로(link/.. 는 링크 대상의 상위). 없으면 null.
+const physical = (p) => {
+  try {
+    return realpathSync.native(p);
+  } catch {
+    return null;
+  }
+};
+// 존재하는 가장 가까운 상위 경로를 실제 경로로 풀고 나머지를 붙인다(없는 경로도 /tmp → /private/tmp 같은 링크를 반영).
+const realish = (p) => {
+  const abs = path.resolve(p);
+  const rest = [];
+  for (let cur = abs; ; cur = path.dirname(cur)) {
+    const real = physical(cur);
+    if (real) return path.join(real, ...rest);
+    if (path.dirname(cur) === cur) return abs;
+    rest.unshift(path.basename(cur));
+  }
+};
+// dir 이 target 자신이거나 그 상위 디렉터리인지
+const containsPath = (dir, target) => {
+  const rel = path.relative(dir, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+};
+const isDirectory = (p) => {
+  try {
+    return statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+};
+
+// 래퍼(env, sudo)의 옵션을 getopt 처럼 벗긴다. 묶인 짧은 옵션(-iC dir, -uroot)과 --opt=값, --opt 값을 읽는다.
+// valueShort: 값을 받는 짧은 옵션 글자, valueLong: 값을 받는 긴 옵션 → 짧은 글자. 결과: { j: 명령 시작 위치, opts: [[글자 또는 긴 이름, 값]] }
+const wrapperOpts = (w, valueShort, valueLong = {}) => {
+  const opts = [];
+  let j = 1;
+  while (j < w.length) {
+    const a = w[j];
+    if (a === "--") {
+      j++;
+      break;
+    }
+    if (a === "-") {
+      opts.push(["-", ""]); // env - (= -i)
+      j++;
+    } else if (a.startsWith("--")) {
+      const eq = a.indexOf("=");
+      const name = eq === -1 ? a : a.slice(0, eq);
+      const key = valueLong[name] ?? name;
+      if (eq === -1 && valueLong[name]) {
+        opts.push([key, w[j + 1] ?? ""]);
+        j += 2;
+      } else {
+        opts.push([key, eq === -1 ? "" : a.slice(eq + 1)]);
+        j++;
+      }
+    } else if (isFlag(a)) {
+      for (let k = 1; k < a.length; k++) {
+        if (!valueShort.includes(a[k])) {
+          opts.push([a[k], ""]);
+          continue;
+        }
+        if (k + 1 < a.length) opts.push([a[k], a.slice(k + 1)]);
+        else opts.push([a[k], w[++j] ?? ""]);
+        break;
+      }
+      j++;
+    } else break;
+  }
+  return { j, opts };
 };
 
 const positionals = (args, valueFlags = []) => {
@@ -170,6 +244,9 @@ const MSG = {
   findExecRead:
     "이름 필터 없이 find 로 찾은 프로젝트 파일을 읽기 도구에 넘기면 .env 까지 읽힙니다.\n" +
     "  대안: -name '*.mdx' 처럼 이름 필터를 붙이거나(-not -name '.env*' 도 됨), 시작 경로를 src/ contents/ 처럼 좁히세요.",
+  findUnmodeled:
+    "find 식에 이 훅이 해석하지 못하는 요소가 있어 -exec 가 어떤 파일에 실행될지 판단할 수 없습니다.\n" +
+    "  대안: 시작 경로를 src/ contents/ 처럼 좁히거나, -name/-type/-o/( ) 같은 기본 요소로 식을 다시 쓰세요.",
 };
 
 const READERS = new Set([
@@ -298,7 +375,10 @@ const git = (c) => {
     const hasPatternFlag = grepArgs.some((a) => a === "-e" || a === "-f");
     const gp = positionals(grepArgs, ["-e", "-f", "-A", "-B", "-C", "-m", "--max-count", "--max-depth", "--threads", "-O"]);
     const targets = hasPatternFlag ? gp : gp.slice(1);
-    if (targets.length === 0 || targets.some(c.isProjectScope)) c.block(text, MSG.grepRecursive);
+    // git -C <dir>, --work-tree 는 작업 디렉터리를 바꾸므로 상대 경로 대상은 프로젝트 범위로 본다.
+    const chdir = args.slice(0, args.indexOf("grep")).some((a) => a === "-C" || /^--(git-dir|work-tree)(=|$)/.test(a));
+    const inScope = (t) => (chdir && !path.isAbsolute(expandHome(t))) || c.isProjectScope(t);
+    if (targets.length === 0 || targets.some(inScope)) c.block(text, MSG.grepRecursive);
   }
 };
 
@@ -307,85 +387,179 @@ const gh = (c) => {
 };
 
 const FIND_EXEC = ["-exec", "-execdir", "-ok", "-okdir"];
-const FIND_OR = ["-o", "-or"];
-const FIND_NAME_TESTS = ["-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename", "-regex", "-iregex"];
+const FIND_NAME = ["-name", "-iname"];
+const FIND_PATH = ["-path", "-ipath", "-wholename", "-iwholename"];
+const FIND_REGEX = ["-regex", "-iregex"];
+const FIND_WRITE = ["-fprint", "-fprint0", "-fls", "-fprintf"];
+// find 식 요소(GNU, BSD)의 인자 개수. 여기 없는 요소가 있으면 식을 해석하지 못한 것으로 보고 막는 쪽으로 판정한다.
+const FIND_ARITY = new Map([
+  ...[
+    "-true", "-false", "-empty", "-executable", "-readable", "-writable", "-nouser", "-nogroup", "-prune", "-quit",
+    "-print", "-print0", "-ls", "-delete", "-depth", "-d", "-mount", "-xdev", "-follow", "-noleaf",
+    "-ignore_readdir_race", "-noignore_readdir_race", "-daystart", "-warn", "-nowarn",
+  ].map((a) => [a, 0]),
+  ...[
+    ...FIND_NAME, ...FIND_PATH, ...FIND_REGEX, "-lname", "-ilname", "-type", "-xtype", "-size", "-perm", "-user", "-group",
+    "-uid", "-gid", "-links", "-inum", "-samefile", "-newer", "-anewer", "-cnewer", "-mtime", "-atime", "-ctime", "-mmin",
+    "-amin", "-cmin", "-used", "-maxdepth", "-mindepth", "-fstype", "-regextype", "-printf", "-fprint", "-fprint0", "-fls",
+  ].map((a) => [a, 1]),
+  ["-fprintf", 2],
+]);
+const findArity = (a) => FIND_ARITY.get(a) ?? (/^-newer[aBcmt][aBcmt]$/.test(a) ? 1 : undefined);
+
+// find 식을 트리로 읽는다. 우선순위: ( ) > ! -not > -a -and(생략 가능) > -o -or > ","
+// 노드: { t: "test", op, arg } | { t: "action", op, words } | { t: "not" | "group", kid } | { t: "and" | "or" | "comma", kids } | { t: "unknown" }
+const parseFind = (expr) => {
+  let k = 0;
+  let unmodeled = false;
+  const primary = () => {
+    const a = expr[k];
+    if (a === undefined) {
+      unmodeled = true;
+      return { t: "unknown" };
+    }
+    if (a === "(") {
+      k++;
+      const kid = comma();
+      if (expr[k] === ")") k++;
+      else unmodeled = true;
+      return { t: "group", kid };
+    }
+    if (FIND_EXEC.includes(a)) {
+      // ; 나 {} 바로 뒤의 + 까지가 명령이다(-ok/-okdir 는 ; 만).
+      let end = k + 1;
+      while (end < expr.length && !(expr[end] === ";" || (expr[end] === "+" && expr[end - 1] === "{}" && !a.startsWith("-ok")))) end++;
+      const node = { t: "action", op: a, words: expr.slice(k + 1, end) };
+      k = end + 1;
+      return node;
+    }
+    const n = findArity(a);
+    if (n === undefined || k + n >= expr.length) {
+      unmodeled = true;
+      k++;
+      return { t: "unknown" };
+    }
+    const node = { t: "test", op: a, arg: expr[k + 1] };
+    k += 1 + n;
+    return node;
+  };
+  const unary = () => {
+    if (expr[k] === "!" || expr[k] === "-not") {
+      k++;
+      return { t: "not", kid: unary() };
+    }
+    return primary();
+  };
+  const list = (t, sub, ops) => {
+    const kids = [sub()];
+    while (k < expr.length && ops(expr[k])) {
+      if (t !== "and" || expr[k] === "-a" || expr[k] === "-and") k++;
+      kids.push(sub());
+    }
+    return kids.length === 1 ? kids[0] : { t, kids };
+  };
+  const and = () => list("and", unary, (a) => ![")", "-o", "-or", ","].includes(a));
+  const or = () => list("or", and, (a) => a === "-o" || a === "-or");
+  const comma = () => list("comma", or, (a) => a === ",");
+  const tree = expr.length ? comma() : null;
+  if (k < expr.length) unmodeled = true; // 짝 없는 ) 등
+  return { tree, unmodeled };
+};
+
 const find = (c) => {
   const { args, text } = c;
-  // find … -name .env -exec cat {} \; : 찾은 .env 를 다른 명령에 넘긴다.
-  const execAt = args.findIndex((a) => FIND_EXEC.includes(a));
-  if (execAt === -1) return;
-  const expr = args.slice(0, execAt);
-  // -not -name '.env*' 처럼 .env 를 빼는 패턴은 .env 경로로 보지 않는다.
-  const negatedPattern = (k) => FIND_NAME_TESTS.includes(expr[k - 1]) && (expr[k - 2] === "!" || expr[k - 2] === "-not");
-  if (expr.some((a, k) => isEnvPath(a) && !negatedPattern(k))) {
-    c.block(text, MSG.envRead);
-    return;
+  // 앞쪽 전역 옵션: -H -L -P, BSD 의 -E -X -d -s -x 와 -f <시작 경로>, GNU 의 -D <옵션>, -O<n>
+  const starts = [];
+  let i = 0;
+  while (i < args.length) {
+    const a = args[i];
+    if (/^-[HLPEXdsx]+$/.test(a) || /^-O\d*$/.test(a)) i++;
+    else if (a === "-D") i += 2;
+    else if (a === "-f") {
+      starts.push(args[i + 1] ?? ".");
+      i += 2;
+    } else if (a === "--") {
+      i++;
+      break;
+    } else break;
   }
-  const firstTest = expr.findIndex((a) => a.startsWith("-") || a === "(" || a === "!");
-  const starts = firstTest === -1 ? expr : expr.slice(0, firstTest);
-  // 이름/경로 필터가 .env 를 잡는지. -not/! 이 앞에 있으면 .env 를 빼는 필터다.
-  const filters = [];
-  expr.forEach((a, k) => {
-    if (!FIND_NAME_TESTS.includes(a) || expr[k + 1] === undefined) return;
-    const pattern = expr[k + 1];
-    const icase = a.startsWith("-i");
-    const candidates = a.endsWith("name") ? ENV_NAMES : (starts.length ? starts : ["."]).flatMap((s) => ENV_NAMES.map((n) => `${s.replace(/\/+$/, "")}/${n}`));
-    const hitsEnv = candidates.some((n) => {
-      if (!a.endsWith("regex")) return fnmatch(pattern, n, icase);
+  while (i < args.length && !args[i].startsWith("-") && !["(", "!", ",", ")"].includes(args[i])) starts.push(args[i++]);
+  const expr = args.slice(i);
+  const { tree, unmodeled } = parseFind(expr);
+  const inProject = (starts.length ? starts : ["."]).some(c.isProjectScope);
+
+  // 이름/경로 필터가 .env 를 잡는지(some), 모든 .env 이름을 잡는지(every). 정규식이 깨지면 해석하지 못한 것으로 본다.
+  let badRegex = false;
+  const envHits = (n) => {
+    const icase = n.op.startsWith("-i");
+    const candidates = FIND_NAME.includes(n.op) ? ENV_NAMES : (starts.length ? starts : ["."]).flatMap((s) => ENV_NAMES.map((e) => `${s.replace(/\/+$/, "")}/${e}`));
+    const match = (name) => {
+      if (!FIND_REGEX.includes(n.op)) return fnmatch(n.arg, name, icase);
       try {
-        return new RegExp(`^(?:${pattern})$`, icase ? "i" : "").test(n);
+        return new RegExp(`^(?:${n.arg})$`, icase ? "i" : "").test(name);
       } catch {
+        badRegex = true;
         return false;
       }
-    });
-    filters.push({ k, negated: expr[k - 1] === "!" || expr[k - 1] === "-not", hitsEnv });
-  });
-  if (filters.some((f) => !f.negated && f.hitsEnv)) {
+    };
+    return { some: candidates.some(match), every: candidates.every(match) };
+  };
+  const isFilter = (n) => n?.t === "test" && [...FIND_NAME, ...FIND_PATH, ...FIND_REGEX].includes(n.op);
+  // 노드가 참이면 그 파일이 .env 가 아님이 보장되는지(필터를 거쳤는지)
+  const guarded = (n) => {
+    if (!n) return false;
+    if (isFilter(n)) return !envHits(n).some;
+    if (n.t === "not") return isFilter(n.kid) && envHits(n.kid).every; // -not -name '.env*'
+    if (n.t === "group") return guarded(n.kid);
+    if (n.t === "and") return n.kids.some(guarded);
+    if (n.t === "or") return n.kids.every(guarded);
+    if (n.t === "comma") return guarded(n.kids.at(-1));
+    return false;
+  };
+  // 각 -exec 가 실행되는 갈래가 필터를 거치는지. -a 로 이어진 앞쪽 요소만 제한이 된다(-o, "," 의 다른 갈래, 뒤쪽 요소는 아님).
+  const actions = [];
+  const envFilters = [];
+  const visit = (n, g, negated) => {
+    if (!n) return;
+    if (n.t === "and") {
+      let run = g;
+      for (const kid of n.kids) {
+        visit(kid, run, negated);
+        run = run || guarded(kid);
+      }
+    } else if (n.t === "or" || n.t === "comma") n.kids.forEach((kid) => visit(kid, g, negated));
+    else if (n.t === "not") visit(n.kid, g, !negated);
+    else if (n.t === "group") visit(n.kid, g, negated);
+    else if (n.t === "action") actions.push({ ...n, guarded: g });
+    else if (n.t === "test") {
+      if (FIND_WRITE.includes(n.op) && isEnvPath(n.arg)) c.block(text, MSG.envRead); // -fprint .env 는 .env 를 덮어쓴다
+      if (!negated && ((isFilter(n) && envHits(n).some) || isEnvPath(n.arg ?? ""))) envFilters.push(n);
+    }
+  };
+  visit(tree, false, false);
+  const hasExec = expr.some((a) => FIND_EXEC.includes(a));
+  if (!hasExec) return;
+  // find … -name .env -exec cat {} \; : 찾은 .env 를 다른 명령에 넘긴다.
+  if (envFilters.length) {
     c.block(text, MSG.envRead);
     return;
   }
-  let end = args.findIndex((a, k) => k > execAt && (a === ";" || a === "+"));
-  if (end === -1) end = args.length;
-  const execWords = args.slice(execAt + 1, end);
-  // 필터 없이 프로젝트 전체를 읽기 도구에 넘기는 경우(find . -type f -exec cat {} +).
-  // -exec 에 닿는 갈래가 필터를 거쳐야 제한된 것으로 본다: -o 로 갈린 다른 갈래나, ( ) 안에서 -o 로 빠지는 갈래의 필터는 세지 않는다.
-  const guardAt = new Set(filters.filter((f) => !f.negated || f.hitsEnv).map((f) => f.k));
-  const closeOf = (k) => {
-    let d = 0;
-    for (let j = k; j < expr.length; j++) {
-      if (expr[j] === "(") d++;
-      else if (expr[j] === ")" && --d === 0) return j;
-    }
-    return expr.length;
-  };
-  // [from, to) 의 식에서 -o 로 갈린 모든 갈래가 필터를 거치는지
-  const guarded = (from, to) => {
-    let ok = false;
-    for (let k = from; k < to; k++) {
-      if (FIND_OR.includes(expr[k])) {
-        if (!ok) return false;
-        ok = false;
-      } else if (expr[k] === "(") {
-        const close = closeOf(k);
-        if (expr[k - 1] !== "!" && expr[k - 1] !== "-not" && guarded(k + 1, close)) ok = true;
-        k = close;
-      } else if (guardAt.has(k)) ok = true;
-    }
-    return ok;
-  };
-  // -exec 는 마지막 최상위 갈래에만 걸린다.
-  let branchStart = 0;
-  for (let k = 0, d = 0; k < expr.length; k++) {
-    if (expr[k] === "(") d++;
-    else if (expr[k] === ")") d = Math.max(0, d - 1);
-    else if (d === 0 && FIND_OR.includes(expr[k])) branchStart = k + 1;
-  }
-  const limited = guarded(branchStart, expr.length);
-  if (READERS.has(base(execWords[0] ?? "")) && !limited && (starts.length === 0 || starts.some(c.isProjectScope))) {
-    c.block(text, MSG.findExecRead);
+  if ((unmodeled || badRegex) && inProject) {
+    c.block(text, MSG.findUnmodeled);
     return;
   }
-  c.recurse(execWords);
+  for (const act of actions) {
+    // {} 앞의 단어에 읽기 도구, 셸, 인터프리터가 있으면 찾은 파일을 읽는 것으로 본다(-exec sh -c 'cat "$1"' _ {} 포함).
+    const brace = act.words.findIndex((x) => x.includes("{}"));
+    const head = brace === -1 ? act.words : act.words.slice(0, brace);
+    const reads = head.some((x) => READERS.has(base(x)) || SHELLS.has(base(x)) || Object.hasOwn(INTERPRETERS, base(x)));
+    if (reads && !act.guarded && inProject) {
+      c.block(text, MSG.findExecRead);
+      return;
+    }
+  }
+  // -execdir/-okdir 는 찾은 파일의 디렉터리에서 실행되므로 안쪽 명령의 상대 경로는 작업 디렉터리를 모르는 것으로 본다.
+  for (const act of actions) c.recurse(act.words, { cwdUnknown: act.op.endsWith("dir") });
 };
 
 // node / bun / deno / tsx / ts-node 공통 옵션. 판정을 끝냈으면 true.
@@ -491,10 +665,15 @@ const HANDLERS = {
 export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd() } = {}) => {
   const blocks = [];
   const asks = []; // 사용자 확인이 필요한 명령 (permissionDecision: ask)
-  // cwd: 같은 명령 문자열 안에서 앞선 `cd <dir> &&` 로 바뀐 작업 디렉터리(최상위 세그먼트만 추적).
-  // cwdUnknown: 따라갈 수 없는 cd/pushd/popd(서브셸, bash -c, 변수 대상 등)가 앞에 있어 작업 디렉터리를 모르는 상태.
+  // cwd: 같은 명령 문자열 안에서 앞선 `cd <dir> &&` 로 바뀐 작업 디렉터리(최상위 세그먼트만 추적, 논리 경로).
+  // cwdUnknown: 따라갈 수 없는 cd/pushd/popd(서브셸, bash -c, 변수 대상, ; 뒤 등)가 앞에 있어 작업 디렉터리를 모르는 상태.
   const ctx = { exportedSafeDb: false, vars: new Map(), cwd: projectDir, cwdUnknown: false };
   const root = path.resolve(projectDir);
+  const rootReal = realish(root);
+  // CDPATH(zsh 는 cdpath 배열)가 있으면 상대 경로 cd 가 다른 곳으로 갈 수 있고, HOME 을 바꾸면 cd / ~ 가 다른 곳이다.
+  // 명령 어디에든 이름이 보이면(따옴표 안 포함) 그 cd 는 따라가지 않는다.
+  const cdpathRisk = /cdpath/i.test(command) || Boolean(process.env.CDPATH);
+  const homeRisk = /(^|[^\w])HOME=/.test(command);
   const blockedDbScript = realOrResolved(path.join(root, BLOCKED_DB_SCRIPT));
 
   // git worktree 의 최상위 경로와 공통 git 디렉터리. 실패하면 null.
@@ -540,13 +719,15 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
   const subst = (s) => (s.includes("$") ? s.replace(/\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)/g, (m, a, b) => known(a ?? b) ?? m) : s);
 
   // target 이 프로젝트 루트이거나 그 상위 디렉터리인지(재귀 검색하면 .env 가 포함된다).
-  // 작업 디렉터리를 모르면 상대 경로는 모두 프로젝트 범위로 본다.
-  const isProjectScope = (target) => {
+  // 작업 디렉터리를 모르면(unknown: env -C 같은 래퍼, -execdir) 상대 경로는 모두 프로젝트 범위로 본다.
+  // 논리 경로와 실제 경로(심볼릭 링크, link/.. 를 커널처럼 푼 것)를 모두 보고 하나라도 걸리면 프로젝트 범위다.
+  const isProjectScope = (target, unknown = false) => {
+    if (isOtherTilde(target) || (homeRisk && target.startsWith("~"))) return true;
     const p = expandHome(target);
-    if (ctx.cwdUnknown && !path.isAbsolute(p)) return true;
-    const abs = path.resolve(ctx.cwd, p);
-    const rel = path.relative(abs, root);
-    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    if ((ctx.cwdUnknown || unknown) && !path.isAbsolute(p)) return true;
+    const logical = path.resolve(ctx.cwd, p);
+    const real = physical(path.isAbsolute(p) ? p : `${ctx.cwd}/${p}`) ?? realish(logical);
+    return [logical, real].some((t) => containsPath(t, root) || containsPath(t, rootReal));
   };
 
   const WRITE_OPS = new Set([">", ">>", ">|", "&>", "&>>"]);
@@ -570,6 +751,7 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
     const assigned = new Set(state.assigned);
     let blockedDb = state.blockedDb;
     let envLoaded = state.envLoaded; // dotenv 래퍼로 .env 가 env 에 올라간 상태
+    let cwdUnknown = Boolean(state.cwdUnknown); // env -C, sudo -D 처럼 이 명령만 다른 디렉터리에서 실행되는 상태
     const pendingVars = [];
 
     // 앞쪽의 키워드, 환경변수 대입, 단순 래퍼를 벗긴다.
@@ -602,9 +784,23 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
         w = [binFromPath(w[0]), ...w.slice(1)];
         break;
       } else if (SIMPLE_WRAPPERS.has(head) && !(head === "command" && w[1] === "-v")) w = w.slice(1);
-      else if (head === "sudo" || head === "env" || head === "nice" || head === "stdbuf" || head === "timeout" || head === "watch") {
+      else if (head === "env") {
+        // env -C/--chdir 는 감싼 명령의 작업 디렉터리를 바꾸고, -S 는 문자열을 나눠 명령으로 쓴다.
+        const { j, opts } = wrapperOpts(w, "uCS", { "--unset": "u", "--chdir": "C", "--split-string": "S" });
+        if (opts.some(([o]) => o === "C")) cwdUnknown = true;
+        const split = opts.filter(([o]) => o === "S").flatMap(([, v]) => lex(v, depth + 1).flatMap((x) => x.words.map((y) => y.value)));
+        w = [...split, ...w.slice(j)];
+      } else if (head === "sudo") {
+        // sudo -D/--chdir 는 작업 디렉터리를, -i/--login 은 홈으로, -R/--chroot 는 루트를 바꾼다.
+        const { j, opts } = wrapperOpts(w, "ugCDprtUTR", {
+          "--user": "u", "--group": "g", "--close-from": "C", "--chdir": "D", "--prompt": "p", "--role": "r", "--type": "t",
+          "--other-user": "U", "--command-timeout": "T", "--chroot": "R", "--host": "h",
+        });
+        if (opts.some(([o]) => ["D", "i", "R", "--login"].includes(o))) cwdUnknown = true;
+        w = w.slice(j);
+      } else if (head === "nice" || head === "stdbuf" || head === "timeout" || head === "watch") {
         let j = 1;
-        const valueFlags = { sudo: ["-u", "-g", "-C", "-D"], env: ["-u", "-C", "-S"], nice: ["-n"], watch: ["-n", "-d"], timeout: ["-s", "-k"], stdbuf: ["-i", "-o", "-e"] }[head] ?? [];
+        const valueFlags = { nice: ["-n"], watch: ["-n", "-d"], timeout: ["-s", "-k"], stdbuf: ["-i", "-o", "-e"] }[head] ?? [];
         while (j < w.length) {
           if (valueFlags.includes(w[j])) j += 2;
           else if (isFlag(w[j])) j++;
@@ -645,7 +841,7 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
         // 프로젝트(또는 같은 저장소 worktree)의 scripts/with-blocked-db.mjs 로 해석될 때만 DB 차단으로 본다.
         // 같은 이름의 다른 파일이나 작업 디렉터리를 모르는 상태의 상대 경로는 안쪽 명령만 그대로 검사한다.
         const script = expandHome(w[1]);
-        blockedDb = blockedDb || (!(ctx.cwdUnknown && !path.isAbsolute(script)) && isBlockedDbScript(path.resolve(ctx.cwd, script)));
+        blockedDb = blockedDb || (!((ctx.cwdUnknown || cwdUnknown) && !path.isAbsolute(script)) && isBlockedDbScript(path.resolve(ctx.cwd, script)));
         w = w.slice(2);
         if (w[0] === "--preview") w = w.slice(1);
       } else if ((head === "node" || head === "bun") && w[1] && binFromPath(w[1])) {
@@ -662,7 +858,11 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
     const cmd = base(w[0]).replace(/^(.+)@[^/]*$/, "$1");
     // 최상위 `cd … &&` 말고는 작업 디렉터리 변경을 따라가지 않는다(서브셸, bash -c, eval, builtin cd, pushd/popd).
     if (CD_COMMANDS.has(cmd) && !state.topCd) ctx.cwdUnknown = true;
-    const inner = { assigned, blockedDb, envLoaded };
+    // zsh 의 AUTO_CD(인자 없이 디렉터리 이름만 쓴 명령은 cd 다)와 oh-my-zsh 의 cd 별칭(.., ..., -, 1~9)
+    if (!CD_COMMANDS.has(cmd) && w.length === 1 && w[0] !== "." && (/^(\.{2,}\/?|-|\d)$/.test(w[0]) || w[0].startsWith("~") || isDirectory(path.resolve(ctx.cwd, w[0])))) {
+      ctx.cwdUnknown = true;
+    }
+    const inner = { assigned, blockedDb, envLoaded, cwdUnknown };
     const c = {
       cmd,
       args: w.slice(1),
@@ -676,8 +876,8 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
       block,
       ask,
       subst,
-      isProjectScope,
-      recurse: (nextWords) => runSegment(nextWords.map((value) => ({ value })), [], [], inner, depth + 1),
+      isProjectScope: (target) => isProjectScope(target, cwdUnknown),
+      recurse: (nextWords, extra = {}) => runSegment(nextWords.map((value) => ({ value })), [], [], { ...inner, ...extra, cwdUnknown: cwdUnknown || extra.cwdUnknown }, depth + 1),
       runLexed: (src) => runLexed(src, inner, depth),
       realDbServer: (what) => {
         if (blockedDb || assigned.has("POSTGRES_PRISMA_URL") || ctx.exportedSafeDb) return;
@@ -697,27 +897,64 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
     if (READERS.has(cmd)) return reader(c);
   };
 
-  // 최상위의 `cd <dir>` 가 && ; 개행으로 다음 명령에 이어지면 그 뒤 세그먼트의 상대 경로를 dir 기준으로 푼다.
-  // 결과: cd 대상(인자 없으면 "~") 또는 따라가는 cd 가 아니면 null. 그 밖의 cd 는 runSegment 가 cwdUnknown 으로 표시한다.
-  const trackedCd = (seg) => {
-    if (seg.grouped || seg.pipedFrom || !["&&", ";", "\n", undefined].includes(seg.op)) return null;
-    const w = seg.words.map((x) => subst(x.value));
-    if (w[0] !== "cd") return null;
-    return w.slice(1).find((a) => !/^-[LPe@]+$/.test(a)) ?? "~";
-  };
-  const applyCd = (dir) => {
+  // 최상위 `cd <dir> &&` 의 대상. 셸과 다르게 해석할 여지가 있으면 작업 디렉터리를 모르는 것으로 둔다:
+  // 모르는 옵션, 인자 2개 이상(zsh 의 cd old new), - / +N / -N(디렉터리 스택), ~user ~+ ~-, 변수나 명령 치환,
+  // CDPATH/HOME 을 바꾼 명령, 없는 디렉터리, 논리 경로와 실제 경로가 다른 경우(link/.. 를 cd -P 나 zsh CHASE_LINKS 가 다르게 푼다).
+  const applyCd = (args) => {
+    const unknown = () => {
+      ctx.cwdUnknown = true;
+    };
+    let i = 0;
+    for (; i < args.length && isFlag(args[i]); i++) {
+      if (args[i] === "--") {
+        i++;
+        break;
+      }
+      if (!/^-[LPe@qs]+$/.test(args[i])) return unknown();
+    }
+    const rest = args.slice(i);
+    if (rest.length > 1) return unknown();
+    const dir = rest[0] ?? "~";
+    if (cdpathRisk || /^[-+]\d*$/.test(dir) || /[$`…]/.test(dir) || isOtherTilde(dir)) return unknown();
+    if (dir.startsWith("~") && homeRisk) return unknown();
     const p = expandHome(dir);
-    if (dir === "-" || p.includes("$")) ctx.cwdUnknown = true;
-    else if (path.isAbsolute(p)) {
-      ctx.cwd = p;
-      ctx.cwdUnknown = false;
-    } else if (!ctx.cwdUnknown) ctx.cwd = path.resolve(ctx.cwd, p);
+    if (ctx.cwdUnknown && !path.isAbsolute(p)) return;
+    const logical = path.resolve(ctx.cwd, p);
+    const real = physical(path.isAbsolute(p) ? p : `${ctx.cwd}/${p}`);
+    if (!real || !isDirectory(real) || real !== realish(logical)) return unknown();
+    ctx.cwd = logical;
+    ctx.cwdUnknown = false;
   };
 
-  for (const seg of lex(command)) {
-    const cd = trackedCd(seg);
-    runSegment(seg.words, seg.redirs, seg.heredocs, { assigned: new Set(), blockedDb: false, envLoaded: false, topCd: cd !== null }, 0, seg.pipedFrom);
-    if (cd !== null) applyCd(cd);
+  // && || ; 목록을 따라 cd 가 실제로 실행됐다고 볼 수 있는 구간에서만 cwd 를 바꾼다.
+  // - cd 는 같은 목록 안에서 앞 연산자가 모두 && 이고(|| 뒤나 그룹 뒤가 아님) 자신도 && 로 끝날 때만 따라간다.
+  //   `cd x; …`, `cd x\n…` 는 cd 가 실패해도 다음 명령이 원래 디렉터리에서 실행되므로 따라가지 않는다.
+  // - 따라간 cd 뒤에 || 가 오거나 목록이 끝나면(; 개행 &) cd 가 실패했을 수 있으므로 작업 디렉터리를 모르는 것으로 바꾼다.
+  // $( ) 안쪽 세그먼트는 그 바깥 세그먼트(뒤에 오는 첫 비중첩 세그먼트)의 앞 연산자로 판정한다.
+  const segs = lex(command);
+  const boundary = [];
+  for (let k = segs.length - 1, owner; k >= 0; k--) {
+    if (!segs[k].nested) owner = segs[k].prevOp;
+    boundary[k] = owner;
   }
+  let chainOk = true;
+  let cdInList = false;
+  segs.forEach((seg, k) => {
+    const op = boundary[k];
+    if (op === undefined || [";", ";;", "\n", "&"].includes(op)) {
+      if (cdInList) ctx.cwdUnknown = true;
+      cdInList = false;
+      chainOk = true;
+    } else if (op !== "&&") {
+      chainOk = false;
+      if (cdInList && op !== "|" && op !== "|&") ctx.cwdUnknown = true;
+    }
+    const tracked = !seg.grouped && !seg.pipedFrom && chainOk && seg.op === "&&" && seg.words[0]?.value === "cd";
+    runSegment(seg.words, seg.redirs, seg.heredocs, { assigned: new Set(), blockedDb: false, envLoaded: false, topCd: tracked }, 0, seg.pipedFrom);
+    if (tracked) {
+      applyCd(seg.words.slice(1).map((x) => subst(x.value)));
+      cdInList = true;
+    }
+  });
   return { blocks: [...new Set(blocks)], asks: [...new Set(asks)] };
 };

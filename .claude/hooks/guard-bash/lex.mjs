@@ -4,7 +4,9 @@ export const MAX_DEPTH = 6;
 
 // 결과: segments = [{ words: [{ value, quoted }], redirs: [{ op, target }], heredocs: [body], pipedFrom?: segment,
 //   op: 세그먼트를 끝낸 연산자("&&", "||", ";", "|", "&", "\n", "(", ")" 또는 끝이면 undefined),
-//   grouped: ( ) 서브셸이나 $( ) / 백틱 / <( ) 안쪽이면 true (cd 가 바깥 명령의 작업 디렉터리를 바꾸지 않는다) }]
+//   prevOp: 세그먼트 앞의 연산자(처음이면 undefined). 빈 세그먼트를 건너뛰어 `(a) || b` 의 b 는 "||" 다. "(" 는 세지 않는다,
+//   grouped: ( ) 서브셸이나 $( ) / 백틱 / <( ) 안쪽이면 true (cd 가 바깥 명령의 작업 디렉터리를 바꾸지 않는다),
+//   nested: $( ) / 백틱 / <( ) 안쪽이면 true (바깥 && || ; 목록의 일부가 아니다) }]
 export const lex = (src, depth = 0) => {
   const segments = [];
   if (depth > MAX_DEPTH) return segments;
@@ -18,6 +20,7 @@ export const lex = (src, depth = 0) => {
     let pendingRedir = null;
     const pendingHeredocs = [];
     let parenDepth = 0;
+    let prevOp;
 
     const endWord = () => {
       if (word === null) return;
@@ -38,10 +41,13 @@ export const lex = (src, depth = 0) => {
       endWord();
       if (seg.words.length || seg.redirs.length) {
         seg.op = op;
+        seg.prevOp = prevOp;
         seg.grouped = stopAtParen || parenDepth > 0;
+        seg.nested = stopAtParen;
         segments.push(seg);
         lastSeg = seg;
       }
+      if (op !== "(") prevOp = op;
       seg = { words: [], redirs: [], heredocs: [] };
     };
     const append = (s) => {
@@ -50,6 +56,7 @@ export const lex = (src, depth = 0) => {
     const nested = (inner) => {
       for (const s of lex(inner, depth + 1)) {
         s.grouped = true;
+        s.nested = true;
         segments.push(s);
       }
     };

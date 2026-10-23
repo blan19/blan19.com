@@ -11,13 +11,17 @@
 // 명령 문자열을 셸처럼 대략 토큰화해 && || ; | & 개행, $( ) / 백틱 / <( ), bash -c, eval, 파이프·<<< 로
 // 셸에 넘긴 문자열 안쪽까지 "실제로 실행되는" 명령만 본다. 따옴표 안의 단순 언급(git commit -m "prisma db push")은 무시한다.
 // 상대 경로는 같은 명령 안의 앞선 최상위 `cd <dir> &&` 를 반영하고, ~, $HOME, $PWD, $CLAUDE_PROJECT_DIR 는 펼친다.
-// 따라갈 수 없는 cd(서브셸, bash -c, 변수 대상)나 pushd/popd 뒤에는 작업 디렉터리를 모르는 것으로 보고
-// 상대 경로를 모두 프로젝트 범위로 판정하며, 상대 경로의 with-blocked-db.mjs 도 믿지 않는다.
+// cd 는 && 로 이어진 같은 목록 안에서만 따라간다. `cd x;`, || 뒤, 목록이 끝난 뒤(cd 가 실패했을 수 있음),
+// 셸과 다르게 해석할 수 있는 cd(서브셸, bash -c, 변수 대상, ~user/~+/~-, 모르는 옵션, 인자 2개, 없는 디렉터리,
+// CDPATH/HOME 변경, 심볼릭 링크와 .. 가 섞인 경로, zsh AUTO_CD), pushd/popd, env -C / sudo -D 로 감싼 명령,
+// find -execdir 안쪽에서는 작업 디렉터리를 모르는 것으로 보고 상대 경로를 모두 프로젝트 범위로 판정하며,
+// 상대 경로의 with-blocked-db.mjs 도 믿지 않는다. 프로젝트 범위는 실제 경로(심볼릭 링크를 푼 것)로도 비교한다.
+// find 는 식을 트리로 읽어 -exec 마다 그 갈래가 이름 필터를 거치는지 보고, 해석하지 못하는 요소가 있으면 막는다.
 // 우회를 완벽히 막지는 못한다. 행동 규칙(CLAUDE.md)이 우선이다. 알려진 한계(막지 않음):
 //   명령 치환이나 모르는 변수로 만든 경로(`cat $(echo .env)`, `grep -r x $DIR`), 스크립트 파일 안의 명령(`bash x.sh`, `node x.mjs`, `make`),
 //   셸 env 출력(`printenv`, `env | grep …`), 디렉터리 통째 복사·압축(`cp -r . /tmp/x`, `tar cf x.tar .`),
-//   묶인 짧은 옵션에 붙은 경로(`curl -d@.env`), 읽기 도구 목록(READERS)에 없는 명령, find -exec 의 셸 래퍼(`-exec sh -c 'cat "$1"'`),
-//   이전 Bash 호출에서 바뀐 작업 디렉터리(훅은 프로젝트 루트에서 실행된다고 본다).
+//   묶인 짧은 옵션에 붙은 경로(`curl -d@.env`), 읽기 도구 목록(READERS)에 없는 명령, 사용자 셸의 별칭과 함수,
+//   이름을 동적으로 만든 CDPATH 대입(`export CD${X}PATH=…`), 이전 Bash 호출에서 바뀐 작업 디렉터리(훅은 프로젝트 루트에서 실행된다고 본다).
 import { readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
