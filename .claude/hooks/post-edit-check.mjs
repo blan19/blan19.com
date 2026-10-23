@@ -51,7 +51,7 @@ const main = () => {
     const r = run(process.execPath, [path.join(PROJECT_DIR, "scripts", "validate-content.mjs"), rel]);
     const out = (r.stdout ?? "").trim();
     if (r.status === 1) {
-      process.stderr.write(`[post-edit-check] 콘텐츠 검사 실패: ${rel}\n${out}\n규칙은 scripts/validate-content.mjs 참고.\n`);
+      process.stderr.write(`[post-edit-check] 콘텐츠 검사 실패: ${rel}\n${out}\n규칙은 scripts/content/*.mjs 참고.\n`);
       return 2;
     }
     if (r.status === 0 && /\[warn\]/.test(out)) context(`[post-edit-check] 콘텐츠 경고: ${rel}\n${out}`);

@@ -71,7 +71,7 @@ describe("parseFrontmatter", () => {
     const r = parseFrontmatter('---js\n{ title: (globalThis.__contentTestEval = 1, "t") }\n---\nbody\n');
     assert.equal(globalThis.__contentTestEval, undefined);
     assert.equal(r.data, null);
-    assertProblems(r.problems, [["error", "YAML 만 허용"], ["error", "JS frontmatter"]]);
+    assertProblems(r.problems, [["error", "YAML 만 허용"]]);
   });
   test("YAML 파싱 실패", () => {
     assertProblems(parseFrontmatter("---\ntitle: [\n---\n").problems, [["error", "YAML 파싱 실패"]]);

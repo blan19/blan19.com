@@ -26,7 +26,9 @@ export const parseFrontmatter = (raw) => {
   if (!raw.startsWith("---")) {
     problems.push(error("파일 맨 앞에 --- 로 시작하는 frontmatter 가 없음"));
   } else if (!/^---[ \t]*\r?\n/.test(raw)) {
+    // ---js 등. 파싱하지 않는다(MATTER_OPTIONS 는 2차 방어선).
     problems.push(error("frontmatter 는 YAML 만 허용 (첫 줄은 --- 만)"));
+    return { data: null, content: "", bodyStartLine: 1, problems };
   }
   let parsed;
   try {
