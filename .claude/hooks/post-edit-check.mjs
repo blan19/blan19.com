@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // PostToolUse(Edit|Write|MultiEdit) 훅: 방금 수정한 파일 하나만 빠르게 검사한다.
 // - .ts/.tsx/.js/.jsx/.mjs/.cjs → ESLint. error 면 exit 2 + stderr (Claude 가 보고 고친다).
+//   제외 대상(.next, src/generated 등)은 eslint.config.mjs 의 ignore 한 곳에서 정한다(--no-warn-ignored 로 조용히 통과).
 // - contents/**/*.mdx → scripts/validate-content.mjs. error 면 exit 2.
 // - warning 만 있으면 exit 0 + additionalContext 로 알려준다. 그 외 파일은 바로 exit 0.
 // 타입 검사(tsc)는 느려서 여기서 하지 않는다 → npm run typecheck / npm run verify.
@@ -11,7 +12,6 @@ import path from "node:path";
 const PROJECT_DIR = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
 const TIMEOUT_MS = 40_000;
 const CODE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
-const SKIP_DIRS = ["node_modules/", ".next/", "src/generated/", "out/", "build/"];
 
 const context = (text) =>
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: text } }));
@@ -31,7 +31,6 @@ const main = () => {
   const abs = path.resolve(PROJECT_DIR, filePath);
   const rel = path.relative(PROJECT_DIR, abs).split(path.sep).join("/");
   if (rel.startsWith("..") || path.isAbsolute(rel) || !existsSync(abs)) return 0;
-  if (SKIP_DIRS.some((d) => rel.startsWith(d))) return 0;
 
   const ext = path.extname(rel);
 
