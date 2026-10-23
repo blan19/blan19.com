@@ -1,0 +1,14 @@
+# GitHub Actions 만 주 1회 갱신한다.
+# npm 은 아직 넣지 않는다: 브랜치 push 마다 Vercel Preview 가 vercel-build(prisma db push)를 실행하고
+# Preview env 가 운영 DB 를 가리킬 수 있어, 사람 검토 없는 의존성 PR(특히 prisma 업그레이드)이 운영 스키마 경로를 탄다.
+# Preview DB 분리나 dependabot/** 브랜치의 Vercel 빌드 제외 뒤에 npm(prisma, @prisma/* 는 ignore)을 추가한다.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 3
