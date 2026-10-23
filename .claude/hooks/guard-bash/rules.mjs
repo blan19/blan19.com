@@ -47,15 +47,20 @@ const fnmatch = (pattern, name, ignoreCase = false) => {
   }
 };
 
+// 대소문자를 구분하지 않는 파일 시스템(macOS APFS 기본)에서는 .ENV 도 .env 를 연다.
 const isEnvPath = (arg) => {
   if (!arg) return false;
-  const name = base(arg);
+  const name = base(arg).toLowerCase();
   if (SAFE_ENV_EXAMPLES.test(name)) return false;
   if (/^\.env(\..+)?$/.test(name)) return true;
   return ENV_NAMES.some((n) => globMatches(name, n));
 };
 // 인자 앞에 붙은 dd 의 if=, curl 의 @(파일 내용 전송)를 떼고 본다.
-const isEnvArg = (arg) => isEnvPath(arg.replace(/^if=/, "").replace(/^@/, ""));
+// curl -F/--form 의 name=@파일, name=<파일은 이름과 뒤의 ;type= 같은 수식자도 뗀다.
+const isEnvArg = (arg) => {
+  const form = arg.match(/^[^=@<]*=[@<]([^;]*)/);
+  return isEnvPath(form ? form[1] : arg.replace(/^if=/, "").replace(/^@/, ""));
+};
 
 // NODE_OPTIONS="--require dotenv/config" 처럼 이후 node 실행마다 .env 를 불러오는 대입
 const isDotenvNodeOptions = (assign) =>
