@@ -102,8 +102,11 @@ describe("checkTechBody", () => {
     ["이미지 뒤 텍스트", "![설명](/image/memoji.png) 뒤\n", [["error", "나머지 텍스트는 렌더되지 않고"]]],
     ["로컬 이미지 있음", "![설명 {768x432}](/image/memoji.png)\n", []],
     ["로컬 이미지 없음", "![설명](/image/none.png)\n", [["error", "public/image/none.png 파일이 없음"]]],
-    ["허용 원격 이미지", "![설명](https://github.com/x.png)\n", []],
-    ["허용되지 않은 원격 이미지", "![설명](https://example.com/x.png)\n", [["error", "remotePatterns 에 없음 (허용: user-images.githubusercontent.com, github.com)"]]],
+    ["허용 원격 이미지", "![설명](https://github.com/blan19/blan19.xyz/assets/1/x.png)\n", []],
+    ["새 GitHub 첨부 이미지", "![설명](https://github.com/user-attachments/assets/abc)\n", []],
+    ["허용되지 않은 원격 이미지", "![설명](https://example.com/x.png)\n", [["error", "remotePatterns 에 맞지 않음 (허용: github.com/blan19/** (쿼리 없음), github.com/user-attachments/** (쿼리 없음))"]]],
+    ["허용 호스트의 다른 경로", "![설명](https://github.com/someone/repo/assets/1/x.png)\n", [["error", "https://github.com/someone/repo/assets/1/x.png 는"]]],
+    ["허용 경로에 쿼리", "![설명](https://github.com/blan19/blan19.xyz/assets/1/x.png?v=2)\n", [["error", "x.png?v=2 는"]]],
     ["상대 경로 이미지", "![설명](image/x.png)\n", [["error", "https URL 이거나 public 기준"]]],
     ["참조 형식 이미지", "![설명][ref]\n", [["warn", "참조 형식 이미지"]]],
   ];
@@ -115,7 +118,7 @@ describe("checkTechBody", () => {
   });
   test("next.config.js 를 못 읽으면 원격 이미지마다 이유를 쓴다", () => {
     const broken = { ...ctx, remotePatterns: [], remoteError: "boom" };
-    assertProblems(checkTechBody("![설명](https://github.com/x.png)\n", 1, broken), [["error", "next.config.js 를 읽지 못함: boom"]]);
+    assertProblems(checkTechBody("![설명](https://github.com/blan19/x.png)\n", 1, broken), [["error", "next.config.js 를 읽지 못함: boom"]]);
   });
 });
 
@@ -137,7 +140,12 @@ describe("checkImageMeta", () => {
 });
 
 describe("isAllowedRemote", () => {
-  const patterns = [{ protocol: "https", hostname: "**.example.com", pathname: "/img/**" }, { hostname: "*.cdn.dev", port: "8080" }];
+  const patterns = [
+    { protocol: "https", hostname: "**.example.com", pathname: "/img/**" },
+    { hostname: "*.cdn.dev", port: "8080" },
+    { protocol: "https", hostname: "gh.dev", pathname: "/*/assets/**", search: "" },
+    { hostname: "q.dev", search: "?v=1" },
+  ];
   const cases = [
     ["https://a.b.example.com/img/x/y.png", true],
     ["http://a.example.com/img/x.png", false],
@@ -145,6 +153,15 @@ describe("isAllowedRemote", () => {
     ["https://x.cdn.dev:8080/a.png", true],
     ["https://x.y.cdn.dev:8080/a.png", false],
     ["https://x.cdn.dev/a.png", false],
+    // 경로 glob: * 는 한 세그먼트(점 포함), ** 는 여러 세그먼트
+    ["https://gh.dev/blan19.xyz/assets/1/2.png", true],
+    ["https://gh.dev/a/b/assets/1.png", false],
+    ["https://gh.dev/assets/1.png", false],
+    // search: "" 는 쿼리 없음만, 값이 있으면 정확히 같아야 한다
+    ["https://gh.dev/a/assets/1.png?x=1", false],
+    ["https://q.dev/a.png?v=1", true],
+    ["https://q.dev/a.png?v=2", false],
+    ["https://q.dev/a.png", false],
   ];
   for (const [url, expected] of cases) {
     test(url, () => assert.equal(isAllowedRemote(new URL(url), patterns), expected));

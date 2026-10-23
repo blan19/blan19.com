@@ -14,15 +14,22 @@ const globToRegExp = (glob, sep) => {
   return new RegExp(`^${escaped.replace(/\*\*/g, "\u0000").replace(/\*/g, single).replace(/\u0000/g, ".*")}$`);
 };
 
-// next.config.js images.remotePatterns 와 같은 규칙(프로토콜, 호스트 glob, 포트, 경로 glob)으로 허용 여부를 본다.
+// next.config.js images.remotePatterns 와 같은 규칙으로 허용 여부를 본다(next/dist/shared/lib/match-remote-pattern.js):
+// 프로토콜, 호스트 glob(`*` 한 단계, `**` 여러 단계), 포트, 경로 glob(`*` 한 세그먼트, `**` 여러 세그먼트),
+// search(지정하면 쿼리 문자열이 정확히 같아야 한다. "" 면 쿼리가 없어야 한다). 생략한 항목은 모두 허용.
 export const isAllowedRemote = (url, patterns) =>
   patterns.some((p) => {
     if (p.protocol && `${p.protocol}:` !== url.protocol) return false;
     if (!globToRegExp(p.hostname, ".").test(url.hostname)) return false;
     if (p.port && p.port !== url.port) return false;
     if (p.pathname && !globToRegExp(p.pathname, "/").test(url.pathname)) return false;
+    if (p.search !== undefined && p.search !== url.search) return false;
     return true;
   });
+
+// 오류 메시지용: "github.com/blan19/**" 처럼 호스트와 경로(와 search 제한)를 함께 보여 준다.
+export const describePattern = (p) =>
+  `${p.hostname}${p.pathname ?? ""}${p.search === "" ? " (쿼리 없음)" : p.search ? ` (${p.search})` : ""}`;
 
 export const checkImageMeta = (lineNo, alt) => {
   const where = `${lineNo}행 이미지`;
@@ -62,8 +69,8 @@ export const checkImageSrc = (lineNo, src, ctx) => {
       return [error(`${where}: ${url.protocol}//${url.hostname} 허용 여부를 확인하지 못함 (next.config.js 를 읽지 못함: ${ctx.remoteError})`)];
     }
     if (!isAllowedRemote(url, ctx.remotePatterns)) {
-      const hosts = ctx.remotePatterns.map((p) => p.hostname).join(", ");
-      return [error(`${where}: ${url.protocol}//${url.hostname} 는 next.config.js images.remotePatterns 에 없음 (허용: ${hosts})`)];
+      const allowed = ctx.remotePatterns.map(describePattern).join(", ");
+      return [error(`${where}: ${url.protocol}//${url.host}${url.pathname}${url.search} 는 next.config.js images.remotePatterns 에 맞지 않음 (허용: ${allowed})`)];
     }
     return [];
   }
