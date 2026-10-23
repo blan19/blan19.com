@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 // guard-bash.mjs / post-edit-check.mjs 테스트. 실행: npm run test:hooks (의존성 없음, 실패하면 exit 1)
-// - 기본 케이스는 CLAUDE_PROJECT_DIR=저장소 루트로 실행한다. 결과가 저장소 상태(스키마 변경 여부)에 따라
-//   달라지는 git push / gh pr create / vercel deploy 는 os.tmpdir() 아래 임시 git 저장소에서 따로 검사한다.
+// - 판정 매트릭스는 guard-bash/rules.mjs 의 analyze() 를 projectDir=저장소 루트로 직접 부른다.
+// - 진입점 계약(stdin JSON, exit code, ask 출력, 모듈 로드 실패 시 차단)은 실제 훅을 spawn 해 검사한다.
+// - 결과가 저장소 상태(스키마 변경 여부)에 따라 달라지는 git push / gh pr create / vercel deploy 는
+//   os.tmpdir() 아래 임시 git 저장소에서 훅을 spawn 해 따로 검사한다.
 // - 훅을 고치면 여기에 차단(B)/허용(A)/확인(Q) 케이스를 추가한다.
 import { spawn, spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { BLOCKED_DB_URL } from "../../scripts/lib/blocked-db.mjs";
+import { analyze } from "./guard-bash/rules.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const GUARD = path.join(ROOT, ".claude/hooks/guard-bash.mjs");
@@ -161,8 +165,8 @@ const cases = [
   ["npm run dev & sleep 5; curl localhost:3000/tech/rsc-deep-dive", B],
   ["npx next start -p 3100", B],
   ["node scripts/with-blocked-db.mjs --preview next dev -p 3100", A],
-  ["B=postgres://blocked:blocked@127.0.0.1:1/blocked\nPOSTGRES_URL= POSTGRES_PRISMA_URL=$B POSTGRES_URL_NON_POOLING=$B npx next dev -p 3100", A],
-  ["POSTGRES_PRISMA_URL=postgres://blocked:blocked@127.0.0.1:1/blocked npx next start", A],
+  [`B=${BLOCKED_DB_URL}\nPOSTGRES_URL= POSTGRES_PRISMA_URL=$B POSTGRES_URL_NON_POOLING=$B npx next dev -p 3100`, A],
+  [`POSTGRES_PRISMA_URL=${BLOCKED_DB_URL} npx next start`, A],
   ["node scripts/with-blocked-db.mjs npm run dev", A],
   ["node scripts/with-blocked-db.mjs next start -p 3000", A],
   // 셸 표준입력 / 변수 명령
@@ -191,7 +195,7 @@ const cases = [
   ["node --run lint", A],
   ["node --run verify", A],
   ["node scripts/with-blocked-db.mjs node --run dev", A],
-  ["POSTGRES_PRISMA_URL=postgres://blocked:blocked@127.0.0.1:1/blocked node --run start", A],
+  [`POSTGRES_PRISMA_URL=${BLOCKED_DB_URL} node --run start`, A],
   // 2. NODE_OPTIONS / prisma.config
   ["NODE_OPTIONS='--require dotenv/config' node scripts/x.mjs", B],
   ["NODE_OPTIONS=-rdotenv/config node -p process.env", B],
@@ -242,6 +246,65 @@ const cases = [
   ["vercel build --prod", B],
   ["vercel --version", A],
 
+  // 5. 작업 디렉터리(cd), ~/$PWD/$HOME, ag, git grep, find -exec
+  ['cd node_modules && grep -rln "use server" .', A],
+  ["cd /tmp && grep -rn foo .", A],
+  ["cd src; grep -rn POSTGRES", A],
+  [`cd .. && grep -rn foo ${path.basename(ROOT)}`, B],
+  ["cd .. && grep -rn foo .", B],
+  ["grep -rn foo ..", B],
+  ["grep -rn foo $PWD", B],
+  ["grep -rn foo ${PWD}/", B],
+  ["grep -rn foo $CLAUDE_PROJECT_DIR", B],
+  ["grep -rn foo $HOME", B],
+  ["grep -rn foo ~", B],
+  ["grep -rn foo $PWD/src", A],
+  ["(cd src) && grep -rn foo .", B],
+  ["cd src | grep -rn foo .", B],
+  ["cd src || grep -rn foo .", B],
+  ["cd $SOMEWHERE && grep -rn foo .", B],
+  ["cd - && grep -rn foo .", B],
+  ["ag -u DATABASE", B],
+  ["ag --hidden --unrestricted DATABASE .", B],
+  ["ag --hidden -U DATABASE", B],
+  ["ag -u DATABASE src", A],
+  ["ag DATABASE", A],
+  ["ag --hidden DATABASE", A],
+  ["git grep --untracked --no-exclude-standard POSTGRES", B],
+  ["git grep --no-index --no-exclude-standard POSTGRES .", B],
+  ["git grep --untracked --no-exclude-standard POSTGRES src", A],
+  ["git grep --untracked POSTGRES", A],
+  ["git grep -n POSTGRES", A],
+  ['find . -name "*env" -exec cat {} \\;', B],
+  ["find . -iname '*.ENV*' -exec head {} +", B],
+  ["find . -path './.env*' -exec cat {} +", B],
+  ["find . -regex '.*env' -exec cat {} \\;", B],
+  ["find . -maxdepth 1 -type f -exec cat {} +", B],
+  ["find -type f -exec cat {} +", B],
+  ["find src -type f -exec cat {} +", A],
+  ["find . -not -name '.env*' -type f -exec cat {} +", A],
+  ["find . -type f -name '*.ts' -exec wc -l {} +", A],
+  ["find . -type f -exec ls -la {} +", A],
+  // 6. with-blocked-db.mjs 는 프로젝트의 scripts/ 경로로 해석될 때만 DB 차단으로 본다
+  ["node /tmp/x/with-blocked-db.mjs next dev", B],
+  ["node /tmp/x/with-blocked-db.mjs --preview npm run dev", B],
+  ["node ./other/scripts/with-blocked-db.mjs next start", B],
+  ["cd src && node scripts/with-blocked-db.mjs next dev", B],
+  ["cd src && node ../scripts/with-blocked-db.mjs next dev -p 3100", A],
+  [`node ${ROOT}/scripts/with-blocked-db.mjs next start -p 3100`, A],
+  ['node "$CLAUDE_PROJECT_DIR"/scripts/with-blocked-db.mjs --preview next dev -p 3100', A],
+  ["node ./scripts/with-blocked-db.mjs next build", A],
+  // 7. vercel 별칭과 env/pull 계열 (settings.json deny 와 같은 목록)
+  ["vc env pull", B],
+  ["vc pull", B],
+  ["vc --prod", B],
+  ["npx vercel env pull .env.local", B],
+  ["npx vercel pull", B],
+  ["vercel env update FOO production", B],
+  ["vercel env remove FOO", B],
+  ["vercel remove my-app", B],
+  ["vercel rm my-app", B],
+  ["vc ls", A],
   // 허용 (단순 언급 / 안전 명령)
   ["node scripts/with-blocked-db.mjs npx prisma migrate diff --from-schema /tmp/old.prisma --to-schema prisma/schema.prisma --script", A],
   ["npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script -o /tmp/x.sql", A],
@@ -294,7 +357,7 @@ const cases = [
   ["bash scripts/x.sh", A],
   ["printf 'POSTGRES_URL=fake' > /tmp/envtest/.env.fake", A],
   [`printf 'POSTGRES_URL=fake' > ${path.join(os.tmpdir(), "envtest/.env")}`, A],
-  ["S=/tmp/x; cat > $S/repo/.env <<'EOF'\nPOSTGRES_URL=postgres://blocked:blocked@127.0.0.1:1/blocked\nEOF", A],
+  [`S=/tmp/x; cat > $S/repo/.env <<'EOF'\nPOSTGRES_URL=${BLOCKED_DB_URL}\nEOF`, A],
   ["", A],
 ];
 
@@ -322,7 +385,7 @@ const verifierMatrix = [
     "cat <<'EOF' > x.md\nprisma db push\nEOF", "ls .env", "git diff", "npm ci", "npx next build", "gh pr view 1", "cat README.md | grep vercel-build",
     "xargs cat < files.txt", "make db", "curl -s localhost:3000/tech/rsc-deep-dive", "npx prisma migrate diff --from-schema a --to-schema b --script",
     "cat .envrc", "npm pkg get scripts", "printenv PATH", "echo hi > /tmp/.env",
-    "POSTGRES_PRISMA_URL=postgres://blocked:blocked@127.0.0.1:1/blocked npm run dev",
+    `POSTGRES_PRISMA_URL=${BLOCKED_DB_URL} npm run dev`,
   ].map((c) => [c, A]),
 ];
 
@@ -376,16 +439,50 @@ for (const [command, expected] of [...cases, ...verifierMatrix, ...knownGaps]) {
   if (all.has(command) && all.get(command) !== expected) throw new Error(`기대값 충돌: ${JSON.stringify(command)}`);
   all.set(command, expected);
 }
-const entries = [...all];
-const results = await pool(entries, ([command]) => runHook(GUARD, payload(command), ROOT));
-entries.forEach(([command, expected], i) => {
-  const got = verdict(results[i]);
-  report(got === expected, `guard ${expected} got=${got} ${JSON.stringify(command)}`, results[i].stderr.split("\n").slice(0, 2).join(" | "));
+const analyzed = (command) => {
+  const { blocks, asks } = analyze(command, { projectDir: ROOT });
+  return { got: blocks.length ? B : asks.length ? Q : A, detail: blocks.slice(0, 2).join(" | ") };
+};
+for (const [command, expected] of all) {
+  const { got, detail } = analyzed(command);
+  report(got === expected, `guard ${expected} got=${got} ${JSON.stringify(command)}`, detail);
+}
+
+// ---------- 진입점 계약: 실제 훅 spawn ----------
+// 각 판정 종류와 래퍼, heredoc 을 대표하는 명령. spawn 결과가 analyze() 와 같아야 한다.
+const entryCases = ["npx prisma db push", "cat .env", "npm run dev", "$CMD db push", "npm run verify", "bash <<'EOF'\nnpx prisma db push\nEOF", "git status", ""];
+const entryResults = await pool(entryCases, (command) => runHook(GUARD, payload(command), ROOT));
+entryCases.forEach((command, i) => {
+  const expected = command === "" ? A : analyzed(command).got;
+  const got = verdict(entryResults[i]);
+  report(got === expected, `guard entry ${expected} got=${got} ${JSON.stringify(command)}`, entryResults[i].stderr.split("\n").slice(0, 2).join(" | "));
 });
 
 for (const bad of ["not json", "{}", '{"tool_input":{}}', '{"tool_input":{"command":42}}']) {
   const r = await runHook(GUARD, bad, ROOT);
   report(r.status === 0 && r.stderr === "" && r.stdout === "", `guard malformed ${JSON.stringify(bad)} exit=${r.status}`);
+}
+
+// import 하면 main 을 실행하지 않는다(테스트나 도구에서 불러와도 stdin 을 읽거나 exit 하지 않음).
+{
+  const code = `await import(${JSON.stringify(GUARD)}); console.log("imported");`;
+  const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], { input: "", encoding: "utf8" });
+  report(r.status === 0 && r.stdout.trim() === "imported", `guard import 시 main 미실행 exit=${r.status} out=${r.stdout.trim()}`, r.stderr);
+}
+
+// 판정 모듈을 불러오지 못하면 fail closed(exit 2). 입력이 이상하면 여전히 exit 0.
+{
+  const dir = mkdtempSync(path.join(os.tmpdir(), "guard-bash-broken-"));
+  try {
+    const broken = path.join(dir, "guard-bash.mjs");
+    copyFileSync(GUARD, broken);
+    const r = await runHook(broken, payload("ls"), ROOT);
+    report(r.status === 2 && r.stderr.includes("판정 모듈"), `guard 모듈 로드 실패 시 차단 exit=${r.status}`, r.stderr.split("\n")[0]);
+    const m = await runHook(broken, "not json", ROOT);
+    report(m.status === 0, `guard 모듈 로드 실패 + 이상한 입력 exit=${m.status}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 // ---------- 스키마 변경 여부에 따른 확인(ask): 임시 git 저장소 ----------
@@ -471,6 +568,8 @@ const postCases = [
   [editPayload(path.join(os.tmpdir(), "outside.ts")), 0],
   ...(firstPost ? [[editPayload(firstPost), 0]] : []),
   ...(existsSync(path.join(ROOT, "node_modules/.bin/eslint")) ? [[editPayload(path.join(ROOT, "scripts/verify.mjs")), 0]] : []),
+  // eslint ignore 대상(생성 코드)은 조용히 통과한다
+  ...(existsSync(path.join(ROOT, "src/generated/prisma/client.ts")) ? [[editPayload(path.join(ROOT, "src/generated/prisma/client.ts")), 0]] : []),
 ];
 for (const [stdin, expected] of postCases) {
   const r = await runHook(POST_EDIT, stdin, ROOT);
