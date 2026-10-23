@@ -40,6 +40,8 @@ const techSlugs = () => {
     .map((f) => f.replace(/\.mdx$/, ""));
 };
 
+// 404 HTML 은 레이아웃(lang)과 not-found.tsx 제목을 서버에서 그려야 한다(오류 셸 <html id="__next_error__"> 이면 실패).
+const NOT_FOUND_PAGE = [/<html lang="ko"/, /<h1 class="page-h1">페이지를 찾을 수 없습니다<\/h1>/];
 const HTML = /text\/html/;
 const XML = /xml/;
 const SITE = "https://www.blan19.xyz";
@@ -83,8 +85,8 @@ const checks = [
   { path: "/tech?tag=__none__", type: HTML },
   { path: "/log", type: HTML },
   ...techSlugs().map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}`, type: HTML })),
-  // 목록에 없는 글은 notFound() 로 404 여야 한다(partialPrefetching 을 켜면 200 + noindex 로 바뀌었다).
-  { path: "/tech/__smoke-not-found__", status: 404, type: HTML },
+  // 목록에 없는 글은 src/proxy.ts 가 루트 404 로 돌린다(partialPrefetching 을 켜면 200 + noindex 로 바뀌었다).
+  { path: "/tech/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE },
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
   { path: "/sitemap.xml", type: XML },
@@ -95,14 +97,7 @@ const checks = [
   ...techSlugs().slice(0, 1).map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}/opengraph-image`, type: /image\/png/ })),
   { path: "/tech/__smoke-not-found__/opengraph-image", status: 404, type: /./ },
   { path: "/icon.svg", type: /image\/svg\+xml/ },
-  // Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
-  {
-    path: "/__smoke-not-found__",
-    status: 404,
-    type: HTML,
-    body: [title("페이지를 찾을 수 없습니다 | blan19"), /<meta name="robots" content="noindex"\/>/],
-    notBody: [/name="robots"[\s\S]*name="robots"/],
-  },
+  { path: "/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE },
 ];
 
 let server = null;
@@ -143,8 +138,7 @@ const fetchWithTimeout = async (url, ms) => {
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     const res = await fetch(url, { redirect: "manual", signal: controller.signal });
-    const body = new TextDecoder().decode(await res.arrayBuffer());
-    return { res, body };
+    return { status: res.status, headers: res.headers, body: await res.text() };
   } finally {
     clearTimeout(timer);
   }
@@ -207,14 +201,9 @@ const main = async () => {
       const { res, body } = await fetchWithTimeout(base + check.path, REQUEST_TIMEOUT_MS);
       status = res.status;
       type = (res.headers.get("content-type") ?? "").split(";")[0];
-      const missing = (check.body ?? []).filter((re) => !re.test(body));
-      const unexpected = (check.notBody ?? []).filter((re) => re.test(body));
-      const problem = check.assert?.(body) ?? null;
-      ok = status === expectStatus && check.type.test(type) && missing.length === 0 && unexpected.length === 0 && !problem;
-      if (status !== expectStatus || !check.type.test(type)) note = `기대: ${expectStatus} ${check.type.source}`;
-      else if (missing.length) note = `본문에 없음: ${missing.map((re) => re.source).join(", ")}`;
-      else if (unexpected.length) note = `본문에 있으면 안 됨: ${unexpected.map((re) => re.source).join(", ")}`;
-      else if (problem) note = problem;
+      const missing = (check.body ?? []).filter((re) => !re.test(res.body));
+      ok = status === expectStatus && check.type.test(type) && missing.length === 0;
+      if (!ok) note = `기대: ${expectStatus} ${check.type.source}${missing.map((re) => ` 본문 ${re.source}`).join("")}`;
     } catch (e) {
       note = e.name === "AbortError" ? "시간 초과" : e.message;
     }

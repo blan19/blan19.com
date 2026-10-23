@@ -41,7 +41,7 @@ paths:
 ## 차단 주소와 smoke
 
 - 차단 DB 주소 `postgres://blocked:blocked@127.0.0.1:1/blocked` 의 원본은 `scripts/lib/blocked-db.mjs` 다. `smoke.mjs` 의 로그 분류 정규식도 여기서 만든다. 손으로 맞춰야 하는 곳은 ci.yml 의 env 블록(YAML 이라 import 불가)과 문서(CLAUDE.md, database.md, verify 스킬)뿐이다.
-- smoke 는 `checks` 를 요청한다: `/`, `/tech`, `/tech?tag=react.js`, `/tech?tag=__none__`, `/log`, 모든 tech 글, 없는 글 `/tech/__smoke-not-found__`(404), 피드 2개, sitemap, robots, opengraph-image 5개(사이트, `/tech`, `/log`, 첫 글, 없는 slug 404), `/icon.svg`, 없는 경로(404). tech 글 7개 기준 24개다. 새 라우트는 여기에 넣어야 검사된다.
+- smoke 는 `checks` 를 요청한다: `/`, `/tech`, `/tech?tag=react.js`, `/tech?tag=__none__`, `/log`, 모든 tech 글, 없는 글 `/tech/__smoke-not-found__`(404, 본문에 `lang="ko"` 와 not-found 제목), 피드 2개, sitemap, robots, opengraph-image 5개(사이트, `/tech`, `/log`, 첫 글, 없는 slug 404), `/icon.svg`, 없는 경로(404, 본문 검사 같음). tech 글 7개 기준 24개다. 새 라우트는 여기에 넣어야 검사된다.
 - smoke 의 로그 분류는 `⨯` 로 시작하는 서버 오류 블록만 센다. 차단 주소 접속 실패(P1001 등) 블록은 정상으로 세고, 그 밖의 블록이 있으면 실패다. `ArticleViews`, `getViewMap` 은 오류를 삼키고 `console.error`(`[views] …`)만 남겨 세지 않는다. `getTopViews`(`'use cache: remote'`)의 실패는 `[most-read]` 한 줄(원래 Prisma 오류)과 Next 의 `⨯` 블록 1건으로 남으므로 "DB 접속 실패 로그 1건"이 정상이다.
 - 서버 로그는 `.next/smoke-server.log` 에 남는다(성공, 실패 무관. 출력의 `[smoke] 서버 로그:` 줄).
 - settings.json 의 allow 규칙은 스크립트 경로를 문자열로 갖는다. 스크립트를 옮기면 allow 도 고친다.

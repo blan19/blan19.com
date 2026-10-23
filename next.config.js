@@ -4,7 +4,20 @@
 // 강제로 옮기기 전에 배포본에서 홈, /tech, mermaid 와 이미지가 있는 글, 댓글을 열고 콘솔의 Report-Only 위반이 없는지 직접 본다.
 // GA 호스트는 Google 의 GA4 CSP 안내대로 *.googletagmanager.com 와일드카드로 둔다(지역 서브도메인을 쓴다).
 // mermaid 는 eval 을 쓰지 않는다. 개발 서버는 React 가 eval 을 써서 'unsafe-eval' 을 더한다(Next CSP 문서).
+const fs = require("node:fs");
+const path = require("node:path");
+
 const isDev = process.env.NODE_ENV === "development";
+
+// tech 글 slug(contents/tech/<날짜>/<slug>.mdx 의 파일명). src/proxy.ts 가 목록에 없는 /tech/<slug> 를 루트 404 로 돌릴 때 쓴다.
+const techSlugs = () => {
+  const dir = path.join(__dirname, "contents", "tech");
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .flatMap((d) => fs.readdirSync(path.join(dir, d.name)).filter((f) => f.endsWith(".mdx")))
+    .map((f) => f.slice(0, -".mdx".length));
+};
 const REPORT_ONLY_CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.googletagmanager.com`,
@@ -42,8 +55,10 @@ const nextConfig = {
   poweredByHeader: false,
   // 푸터 저작권 끝 연도(빌드한 해, 한국 시간). 빌드 때 코드에 인라인되므로 prerender 에서 현재 시각을 읽지 않고,
   // 정적 라우트와 요청 시점 라우트가 같은 값을 쓴다. 글을 올리면 배포되므로 현재 연도와 거의 같다.
+  // TECH_SLUGS: tech 글 slug 의 JSON 배열(src/proxy.ts 가 읽는다).
   env: {
     BUILD_YEAR: new Intl.DateTimeFormat("en", { timeZone: "Asia/Seoul", year: "numeric" }).format(new Date()),
+    TECH_SLUGS: JSON.stringify(techSlugs()),
   },
   images: {
     // 글 이미지는 GitHub 첨부(github.com/blan19/<repo>/assets/…, 새 업로드는 github.com/user-attachments/assets/…)만 쓴다.

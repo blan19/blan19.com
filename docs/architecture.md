@@ -10,7 +10,7 @@
 |---|---|---|---|
 | `/` | `src/app/page.tsx` | ◐ | 많이 읽힌 글(`MostRead`). 최근 글 행에는 조회수가 없다 |
 | `/tech` | `src/app/tech/page.tsx` | ◐ | 태그 필터와 목록(`searchParams`), 행 조회수(`RowViews`) |
-| `/tech/[slug]` | `src/app/tech/[slug]/page.tsx` | ◐ (모든 글 prerender) | 글 머리 조회수(`ArticleViews`, +1 기록). 목록에 없는 slug 는 요청 때 렌더되어 `notFound()` → 404 |
+| `/tech/[slug]` | `src/app/tech/[slug]/page.tsx` | ◐ (모든 글 prerender) | 글 머리 조회수(`ArticleViews`, +1 기록). 목록에 없는 slug 는 `src/proxy.ts` 가 루트 404 로 rewrite(빌드 때 인라인된 slug 목록 기준) |
 | `/log` | `src/app/log/page.tsx` | ○ | 없음(마크다운 렌더 없이 원문 문단) |
 | `/rss.xml`, `/rss-atom.xml` | `src/app/{rss.xml,rss-atom.xml}/route.ts` | ○ | 없음(`src/lib/feed.ts` 의 `buildFeed`) |
 | `/sitemap.xml`, `/robots.txt` | `src/app/sitemap.ts`, `robots.ts` | ○ | 없음 |

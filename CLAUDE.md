@@ -53,6 +53,7 @@ contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 
 src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /rss.xml /rss-atom.xml /sitemap.xml /robots.txt, error.tsx, not-found.tsx
                     opengraph-image.tsx(사이트 카드. tech/, log/ 의 것은 re-export), tech/[slug]/opengraph-image.tsx(글 카드)
                     fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 이전 히어로였던 정적 점묘 매듭. 지금 히어로(노트북)와 무관)
+src/proxy.ts        목록에 없는 /tech/<slug> 를 루트 404 로 rewrite(slug 목록은 next.config.js 가 빌드 때 env.TECH_SLUGS 로 인라인, dev 는 통과)
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더, frontmatter 검증), markdown/(글 렌더 파이프라인과 피드 HTML), feed.ts(buildFeed, RSS/Atom),
                     views.ts(조회수: recordView, getViewMap, getMostRead), prisma.ts(클라이언트), config.ts(site, author, comments, analytics),
@@ -81,7 +82,7 @@ docs/               intent.md, architecture.md, design.md
 - 홈의 최근 글과 /tech 목록은 파일시스템만으로 그린다. DB 는 조회수(글 머리 `ArticleViews`, 목록 행 `RowViews`)와 홈 "많이 읽힌 글"(`MostRead` → `getTopViews`: `'use cache: remote'` + `cacheLife('hours')` + `cacheTag('views')`, Vercel 원격 캐시(로컬은 메모리), 배포마다 새로 채움)에만 쓴다.
 - DB 는 `View(slug, count)` 하나. `/tech/[slug]` 요청마다 `ArticleViews` 가 `recordView` 의 upsert 를 await 하고 올린 값(이번 방문 포함)을 표시한다. 있는 tech 글만 센다.
 - DB 실패는 컴포넌트가 삼킨다: `ui/view-count`, `ui/most-read` 는 쿼리만 try/catch 하고 실패하면 `null` 을 렌더해 그 칸이나 섹션만 사라진다. `app/error.tsx` 로 번지지 않는다.
-- 렌더 방식: `/`, `/tech`, `/tech/[slug]` 는 Partial Prerender(정적 셸 + Suspense 구멍. `/tech` 는 searchParams 를 구멍 안에서만 읽고, `/tech/[slug]` 는 generateStaticParams 로 모든 글을 prerender 하며 목록에 없는 slug 는 요청 때 404). 나머지(`/log`, 피드, sitemap, robots, opengraph-image)는 static.
+- 렌더 방식: `/`, `/tech`, `/tech/[slug]` 는 Partial Prerender(정적 셸 + Suspense 구멍. `/tech` 는 searchParams 를 구멍 안에서만 읽고, `/tech/[slug]` 는 generateStaticParams 로 모든 글을 prerender 하며 목록에 없는 slug 는 `src/proxy.ts` 가 루트 404 로 돌린다). 나머지(`/log`, 피드, sitemap, robots, opengraph-image)는 static.
 - Cache Components 의 Activity 로 떠난 페이지(최대 3개)가 `display:none` 으로 DOM 에 남는다. id 가 겹칠 수 있으니 클라이언트 DOM 조회는 자기 `.site-wrap` 안으로 한정한다(TocSpy 가 그렇게 한다).
 - 홈 소개 옆과 404 의 점묘 노트북(`ui/hero-object`, 404 는 흩어진 분해도)은 서버가 SVG 로 그리고, 홈만 클라이언트 섬 `ui/hero-canvas`(엔진 `src/lib/laptop-canvas.ts`)가 캔버스로 천천히 흔들고 재생 막대를 움직인다. 세부와 규칙은 frontend.md.
 - 푸터 연도는 `next.config.js` 의 `env.BUILD_YEAR`(빌드한 해, KST, 빌드 때 인라인)다. 보안 헤더와 Report-Only CSP 도 `next.config.js` 의 `headers()` 에 있다.
