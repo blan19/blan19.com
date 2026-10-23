@@ -9,7 +9,7 @@ paths:
 
 ## 경로와 slug
 
-- `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`. 날짜 폴더 하나에 `.mdx` 는 정확히 1개다. 같은 날 두 번째 글은 다른 날짜 폴더에 둔다. 카테고리 폴더 바로 아래에는 날짜 폴더만 둔다(`.DS_Store` 같은 파일도 안 된다). 어기면 `src/lib/posts.ts` 가 실패해 모든 페이지가 깨진다.
+- `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`. 날짜 폴더 하나에 `.mdx` 는 정확히 1개다. 같은 날 두 번째 글은 다른 날짜 폴더에 둔다. 카테고리 폴더 바로 아래에는 날짜 폴더만 둔다. 점 파일(`.DS_Store` 등)은 로더(`src/lib/posts.ts`)와 검사기가 건너뛰지만, 점으로 시작하지 않는 파일이나 날짜가 아닌 폴더가 있으면 `posts.ts` 가 실패해 모든 페이지가 깨진다(검사기 error).
 - slug = 파일명 = URL(`/tech/<slug>`) = 조회수 DB 키. 영문 소문자, 숫자, `.`, `-` 만 쓴다(예: `why-using-next.js-14`). 카테고리와 무관하게 유일해야 한다(검사기가 error 로 막는다).
 - 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 순서를 따른다. 새 글은 폴더 날짜와 `publishedAt` 을 같게 둔다. 다르면 검사기는 error 가 아니라 warn 을 낸다. 기존 글 하나(`2023-12-11/javascript-memory-management`, publishedAt 12-12)가 이미 다르고, 공개된 글의 폴더는 옮기지 않기 때문이다.

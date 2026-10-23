@@ -12,7 +12,7 @@ export interface RenderedPost {
 }
 
 // 콜아웃 타입의 원본. remark-alerts 의 마커 정규식, ui/post-body, 라벨(CALLOUT_LABELS)과 ui/callout 아이콘이 이 목록을 따른다.
-// scripts/validate-content.mjs 의 CALLOUT_TYPES 도 같이 바꾼다.
+// scripts/content/body.mjs 의 CALLOUT_TYPES 도 같이 바꾼다.
 export const CALLOUT_TYPES = [
   "note",
   "tip",
