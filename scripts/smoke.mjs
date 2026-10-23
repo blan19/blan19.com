@@ -90,11 +90,11 @@ const checks = [
   })),
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
-  { path: "/sitemap.xml", type: XML, notBody: [/<loc>[^<]*\/llms\.txt<\/loc>/] },
-  { path: "/robots.txt", type: /text\/plain/, body: [/Allow: \//], notBody: [/^Host:/m] },
-  { path: "/llms.txt", type: /text\/plain/, body: [/^# blan19 기술 블로그\n/, new RegExp(`\\]\\(${escapeRe(SITE)}/tech/`)] },
-  { path: "/og", type: /image\/png/ },
-  { path: "/og?title=smoke", type: /image\/png/ },
+  { path: "/sitemap.xml", type: XML },
+  { path: "/robots.txt", type: /text\/plain/ },
+  { path: "/opengraph-image", type: /image\/png/ },
+  ...techSlugs().slice(0, 1).map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}/opengraph-image`, type: /image\/png/ })),
+  { path: "/tech/__smoke-not-found__/opengraph-image", status: 404, type: /./ },
   { path: "/icon.svg", type: /image\/svg\+xml/ },
   // Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
   {

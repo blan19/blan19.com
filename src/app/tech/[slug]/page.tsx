@@ -38,9 +38,7 @@ export async function generateMetadata({
     tags: keywords,
     publishedAt: publishedTime,
   } = post.metadata;
-  // 알려진 이슈: title 을 인코딩하지 않는다.
-  const ogImage = `${site.url}og?title=${title}`;
-
+  // og:image, twitter:image 는 같은 폴더의 opengraph-image.tsx 가 채운다(파일 규칙이 우선).
   return {
     title,
     description,
@@ -54,17 +52,11 @@ export async function generateMetadata({
       }),
       type: "article",
       url: `${site.url}tech/${post.slug}`,
-      images: [
-        {
-          url: ogImage,
-        },
-      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
     },
   };
 }
