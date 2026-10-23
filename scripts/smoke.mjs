@@ -41,13 +41,24 @@ const techSlugs = () => {
 
 const HTML = /text\/html/;
 const XML = /xml/;
+const SITE = "https://www.blan19.xyz";
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// body: 응답 본문에 있어야 하는 패턴. 페이지가 alternates 를 덮어쓰면 RSS 링크가 빠지므로 함께 본다.
+const head = (path) => [
+  new RegExp(`<link rel="canonical" href="${escapeRe(SITE + path)}"/>`),
+  /<link rel="alternate" type="application\/rss\+xml"/,
+];
 const checks = [
-  { path: "/", type: HTML },
-  { path: "/tech", type: HTML },
-  { path: "/tech?tag=react.js", type: HTML },
+  { path: "/", type: HTML, body: [...head(""), /"@type":"WebSite"/] },
+  { path: "/tech", type: HTML, body: head("/tech") },
+  { path: "/tech?tag=react.js", type: HTML, body: head("/tech") },
   { path: "/tech?tag=__none__", type: HTML },
-  { path: "/log", type: HTML },
-  ...techSlugs().map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}`, type: HTML })),
+  { path: "/log", type: HTML, body: head("/log") },
+  ...techSlugs().map((slug) => ({
+    path: `/tech/${encodeURIComponent(slug)}`,
+    type: HTML,
+    body: [...head(`/tech/${slug}`), /"@type":"BlogPosting"/],
+  })),
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
   { path: "/sitemap.xml", type: XML },
@@ -93,8 +104,8 @@ const fetchWithTimeout = async (url, ms) => {
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     const res = await fetch(url, { redirect: "manual", signal: controller.signal });
-    await res.arrayBuffer();
-    return res;
+    const body = new TextDecoder().decode(await res.arrayBuffer());
+    return { res, body };
   } finally {
     clearTimeout(timer);
   }
@@ -105,7 +116,7 @@ const waitForReady = async (base) => {
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`서버가 시작 중 종료됨 (exit ${server.exitCode})`);
     try {
-      const res = await fetchWithTimeout(`${base}/robots.txt`, 2_000);
+      const { res } = await fetchWithTimeout(`${base}/robots.txt`, 2_000);
       if (res.status === 200) return;
     } catch {
       // 아직 준비 안 됨
@@ -150,11 +161,13 @@ const main = async () => {
     let ok = false;
     let note = "";
     try {
-      const res = await fetchWithTimeout(base + check.path, REQUEST_TIMEOUT_MS);
+      const { res, body } = await fetchWithTimeout(base + check.path, REQUEST_TIMEOUT_MS);
       status = res.status;
       type = (res.headers.get("content-type") ?? "").split(";")[0];
-      ok = status === expectStatus && check.type.test(type);
-      if (!ok) note = `기대: ${expectStatus} ${check.type.source}`;
+      const missing = (check.body ?? []).filter((re) => !re.test(body));
+      ok = status === expectStatus && check.type.test(type) && missing.length === 0;
+      if (status !== expectStatus || !check.type.test(type)) note = `기대: ${expectStatus} ${check.type.source}`;
+      else if (missing.length) note = `본문에 없음: ${missing.map((re) => re.source).join(", ")}`;
     } catch (e) {
       note = e.name === "AbortError" ? "시간 초과" : e.message;
     }

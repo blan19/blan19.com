@@ -5,6 +5,7 @@ import Header from "@/components/layouts/header";
 import Footer from "@/components/layouts/footer";
 import { plexMono, pretendard } from "@/app/fonts";
 import config from "@/lib/config";
+import { alternates } from "@/lib/seo";
 import { THEME_COLORS } from "@/lib/theme";
 
 // 첫 페인트 전에 저장된 테마(data-theme)와 JS 사용 여부(data-js)를 <html> 에 붙인다.
@@ -14,10 +15,10 @@ const THEME_INIT = `(function(){var d=document.documentElement;d.setAttribute("d
 export const metadata: Metadata = {
   metadataBase: new URL(config.url),
   title: {
-    default: "blan19 기술 블로그",
+    default: config.site.name,
     template: "%s | blan19",
   },
-  description: "소프트웨어 엔지니어 blan19의 블로그입니다. 일하며 배운 것과 짧은 기록을 씁니다.",
+  description: config.site.description,
   robots: {
     index: true,
     follow: true,
@@ -27,12 +28,7 @@ export const metadata: Metadata = {
       "naver-site-verification": "802885b1ae64198e719ba1a0a3f60119c65302e1",
     },
   },
-  alternates: {
-    types: {
-      "application/rss+xml": [{ url: "/rss.xml", title: "RSS" }],
-      "application/atom+xml": [{ url: "/rss-atom.xml", title: "RSS Atom" }],
-    },
-  },
+  alternates: alternates(),
 };
 
 export const viewport: Viewport = {

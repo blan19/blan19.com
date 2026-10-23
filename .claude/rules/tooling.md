@@ -27,6 +27,7 @@ paths:
 | `src/app/icon.svg` | `scripts/smoke.mjs`(`/icon.svg` 를 `image/svg+xml` 로 요청) | smoke 실패 |
 | `src/fonts/PretendardVariable.woff2` | `src/app/fonts.ts`(`localFont` 의 상대경로 `../fonts/…`) | 빌드 실패 |
 
+- 사이트 URL(`src/lib/config.ts` 의 `url`)은 `scripts/smoke.mjs` 의 `SITE` 에도 있다(canonical 본문 검사). 도메인을 바꾸면 둘 다 바꾼다(안 바꾸면 smoke 실패).
 - 차단 DB 주소 `postgres://blocked:blocked@127.0.0.1:1/blocked` 는 `with-blocked-db.mjs`, ci.yml, `guard-bash.test.mjs` 에 따로 적혀 있고, `smoke.mjs` 의 로그 분류 정규식(`127\.0\.0\.1:1`)이 이 주소를 전제한다. 문서(CLAUDE.md, database.md, verify 스킬)에도 있다. 바꾸면 모두 바꾼다.
 - smoke 의 로그 분류는 `⨯` 로 시작하는 서버 오류 블록만 센다. DB 컴포넌트가 오류를 삼키고 `console.error`(`[views] …`, `[most-read] …`)로 남기는 로그는 세지 않으므로 "DB 접속 실패 로그 0건"도 정상이다.
 - `verify.mjs` 단계를 바꾸면 ci.yml 도 같이 바꾼다(CLAUDE.md). 훅을 고치면 `npm run test:hooks` 를 실행한다.

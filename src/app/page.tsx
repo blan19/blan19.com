@@ -1,13 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import config from "@/lib/config";
 import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
 import { formatDotDate } from "@/lib/format-date";
+import { alternates, siteJsonLd } from "@/lib/seo";
 import HeroObject from "@/components/ui/hero-object";
 import PostList from "@/components/ui/post-list";
 import MostRead, { MostReadPending } from "@/components/ui/most-read";
+import JsonLd from "@/components/ui/json-ld";
 
 const RECENT_COUNT = 5;
+
+export const metadata: Metadata = {
+  alternates: alternates("/"),
+};
 
 export default function Home() {
   const tech = getPostsNewestFirst("tech");
@@ -95,6 +102,7 @@ export default function Home() {
           </div>
         </section>
       )}
+      <JsonLd data={siteJsonLd()} />
     </div>
   );
 }

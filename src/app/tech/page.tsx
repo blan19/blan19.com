@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { getPostsNewestFirst, getTagCounts } from "@/lib/posts";
+import { alternates } from "@/lib/seo";
 import PostList from "@/components/ui/post-list";
 import TagFilter from "@/components/ui/tag-filter";
 
 export const metadata: Metadata = {
   title: "글 목록",
   description: "일하며 부딪힌 문제와 알게 된 것을 정리한 글을 모았습니다.",
+  alternates: alternates("/tech"),
 };
 
 const Tech = async ({

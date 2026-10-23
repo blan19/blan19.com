@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { getLogParagraphs, getPostsNewestFirst } from "@/lib/posts";
 import { formatDotDate } from "@/lib/format-date";
+import { alternates } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  alternates: alternates("/log"),
+};
 
 // 마크다운 렌더 없이 원문 문단을 그대로 보여 준다. DB 를 쓰지 않는 정적 페이지다.
 // 날짜는 레일(≥1280)에, 그 아래에서는 제목 위에 온다.

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import config from "@/lib/config";
 import { getAdjacentPosts, getPost } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
+import { alternates, postJsonLd } from "@/lib/seo";
 import PostHeader from "@/components/ui/post-header";
 import TocRail, { TocDetails } from "@/components/ui/toc";
 import TocSpy from "@/components/ui/toc-spy";
@@ -10,6 +11,7 @@ import PostBody from "@/components/ui/post-body";
 import PostReferences from "@/components/ui/post-references";
 import PrevNext from "@/components/ui/prev-next";
 import Comment from "@/components/ui/comment";
+import JsonLd from "@/components/ui/json-ld";
 
 export async function generateMetadata({
   params,
@@ -36,10 +38,13 @@ export async function generateMetadata({
     title,
     description,
     keywords: keywords,
+    authors: [{ name: config.author.name, url: config.author.link }],
+    alternates: alternates(`/tech/${post.slug}`),
     openGraph: {
       title,
       description,
       publishedTime,
+      authors: [config.author.link],
       type: "article",
       url: `${config.url}tech/${post.slug}`,
       images: [
@@ -84,6 +89,7 @@ const Post = async ({ params }: { params: Promise<{ slug: string }> }) => {
         </div>
       </article>
       <TocSpy items={toc} />
+      <JsonLd data={postJsonLd(post)} />
     </div>
   );
 };

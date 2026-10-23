@@ -44,7 +44,7 @@ src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /l
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더), markdown/(글 렌더 파이프라인, 서버 전용), db/(action.ts 쓰기, queries.ts 조회. "use server"),
                     views.ts(요청당 조회수 맵), theme.ts(테마 API, 브라우저 전용), laptop.ts(홈/404 점묘 노트북 기하, 서버·클라이언트 공용),
-                    prisma.ts(클라이언트), config.ts(RSS 작성자, 사이트 URL), format-date.ts
+                    prisma.ts(클라이언트), config.ts(작성자, 사이트 URL, 사이트 이름·설명), seo.ts(canonical·RSS alternates, JSON-LD), format-date.ts
 src/fonts/          PretendardVariable.woff2 + 라이선스(OFL)
 src/styles/         globals.css(토큰, Tailwind 4 매핑, 공용 클래스, 크롬), markdown.css(글 본문), pages.css(페이지). 뒤의 둘은 globals.css 가 import
 src/generated/      Prisma 생성 코드 (gitignore)
@@ -73,7 +73,7 @@ scripts/            verify, smoke, validate-content, with-blocked-db
 - 라우트를 추가하거나 지울 때:
   1. `src/app/<route>/page.tsx`(또는 `route.ts`)를 만든다. Next 16 의 `params`/`searchParams` 는 Promise 다.
   2. `scripts/smoke.mjs` 의 `checks` 에 경로와 기대 content-type 을 넣는다. 넣지 않으면 verify 가 그 라우트를 요청하지 않는다.
-  3. 공개 페이지면 `src/app/sitemap.ts` 의 `routes` 에 넣는다.
+  3. 공개 페이지면 `src/app/sitemap.ts` 의 `routes` 에 넣고, metadata 에 `alternates: alternates("/<path>")`(`src/lib/seo.ts`, canonical + RSS 링크)를 넣는다. smoke 항목에는 `body: head("/<path>")` 를 붙인다.
   4. DB 를 읽으면 `<Suspense>` 로 감싸고, 쿼리 전에 `await connection()`(`next/server`)을 호출해 dynamic 으로 둔다. `connection()` 은 try 밖에서 부르고, 쿼리만 try/catch 해 catch 첫 줄에서 `unstable_rethrow(error)`(`next/navigation`) 후 `null` 을 렌더한다(`ui/view-count`, `ui/most-read` 패턴). `unstable_cache` 안에서 부르면 오류가 나니 그 바깥(컴포넌트)에서 부른다. 빠뜨리면 빌드가 prerender 하며 쿼리를 실행한다(기존 코드의 `unstable_noStore()` 도 같은 역할).
   5. `npm run verify` 를 실행한다.
 - `@/generated/prisma/client` 가 없다는 tsc 오류는 `npx prisma generate` 로 해결한다(DB 접속 없음). npm 11 에서도 자동 generate 는 없다.
