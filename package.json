@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "blan19.xyz",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -16,7 +16,9 @@
     "content:check": "node scripts/validate-content.mjs",
     "smoke": "node scripts/smoke.mjs",
     "verify": "node scripts/verify.mjs",
-    "test:hooks": "node .claude/hooks/guard-bash.test.mjs"
+    "test": "npm run test:hooks && npm run test:content",
+    "test:hooks": "node .claude/hooks/guard-bash.test.mjs",
+    "test:content": "node scripts/content/validate-content.test.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
