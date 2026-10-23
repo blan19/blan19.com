@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import Icon from "@/components/ui/icon";
 
 interface CopyButtonProps {
   label: string;
@@ -61,7 +60,6 @@ const CopyButton = ({ label }: CopyButtonProps) => {
       data-copied={copied ? "" : undefined}
       onClick={handleClick}
     >
-      <Icon name={copied ? "check" : "copy"} />
       <span aria-hidden="true">{copied ? "복사됨" : "복사"}</span>
       <span className="sr-only" aria-live="polite">
         {copied ? "복사했습니다" : ""}

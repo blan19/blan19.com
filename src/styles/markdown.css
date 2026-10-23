@@ -561,24 +561,29 @@
   }
 
   /* ───────────────────────── 코드 블록 ───────────────────────── */
+  /* 1행 = 헤더(figcaption .code-head + 복사 버튼), 2행 = 코드(.code-body, 두 칸 차지) */
   .code-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     position: relative;
     background: var(--code-bg);
     border: 1px solid var(--line);
     border-radius: var(--radius);
   }
 
-  .code-block .code-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 14px 0 16px;
+  .code-block :is(.code-head, .copy-btn) {
     font: var(--fw-regular) var(--fs-meta) / 20px var(--mono);
     color: var(--text-3);
   }
 
-  .code-block .code-head .icon {
-    display: none;
+  .code-block .code-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    min-height: 32px;
+    padding: 8px 0 0 16px;
   }
 
   .code-block .code-file {
@@ -593,23 +598,12 @@
     white-space: nowrap;
   }
 
-  .code-block .code-file + .copy-btn {
-    margin-left: auto;
-  }
-
   .code-block .copy-btn {
-    flex: none;
     min-height: 24px;
-    margin-right: -6px;
+    margin: 8px 8px 0 12px;
     padding: 2px 6px;
     border-radius: var(--radius-sm);
-    font: inherit;
-    color: var(--text-3);
     transition: color 0.2s var(--ease);
-  }
-
-  .code-block .copy-btn .icon {
-    display: none;
   }
 
   .code-block .copy-btn:hover,
@@ -618,6 +612,8 @@
   }
 
   .code-block .code-body {
+    grid-column: 1 / -1;
+    min-width: 0;
     position: relative;
   }
 
