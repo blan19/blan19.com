@@ -9,7 +9,7 @@ const TocList = ({ items }: TocProps) => {
   return (
     <ol className="toc-list" data-toc>
       {items.map((item) => (
-        <li key={item.id} className={item.depth === 2 ? "lv2" : "lv3"}>
+        <li key={item.id} className={item.depth === 3 ? "lv3" : undefined}>
           <a href={`#${item.id}`} data-id={item.id}>
             {item.text}
           </a>

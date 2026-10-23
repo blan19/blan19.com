@@ -27,7 +27,7 @@ const Caption = ({ caption }: { caption: string }) => {
     return (
       <figcaption>
         <a
-          className="img-src ext"
+          className="ext"
           href={caption}
           target="_blank"
           rel="noopener noreferrer"
@@ -78,7 +78,7 @@ const PostImage = ({
             width={width}
             height={height}
             sizes="(max-width: 767px) 100vw, 660px"
-            preload={priority}
+            loading={priority ? "eager" : undefined}
             fetchPriority={priority ? "high" : undefined}
             onError={() => setFailed(true)}
           />
@@ -92,7 +92,7 @@ const PostImage = ({
           aria-label={alt}
           onClick={handleDialogClick}
         >
-          <div className="zoom-inner">
+          <div>
             <div className="zoom-bar">
               <span>{caption && !/^https?:\/\//i.test(caption) ? caption : alt}</span>
               <button
