@@ -134,6 +134,40 @@ const TocSpy = ({ items }: TocSpyProps) => {
     };
   }, [items]);
 
+  // 글 안의 #앵커(목차, 각주) 이동. 떠난 글이 <Activity> 로 DOM 에 남아 id 가 겹치면 브라우저는 문서 순서상 첫 요소(숨은 글)로 간다.
+  // 그때만 기본 동작을 막고, 누른 링크가 있는 .site-wrap 안의 대상으로 스크롤한 뒤 hash 를 바꾼다.
+  // 겹치지 않으면 기본 동작(:target 포함) 그대로 둔다. 숨은 글의 effect 는 정리되므로 리스너는 보이는 글 하나뿐이다.
+  useEffect(() => {
+    const onClick = (event: globalThis.MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const link = (event.target as Element | null)?.closest?.<HTMLAnchorElement>(
+        'a[href^="#"]',
+      );
+      const root = link?.closest(".site-wrap");
+      if (!link || !root) return;
+      const id = decodeURIComponent(link.hash.slice(1));
+      if (!id || document.getElementById(id)?.closest(".site-wrap") === root) {
+        return;
+      }
+      const target = root.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
+      if (!target) return;
+      event.preventDefault();
+      target.scrollIntoView();
+      window.history.pushState(null, "", link.hash);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
   if (items.length === 0) return null;
 
   const openSheet = () => sheetRef.current?.showModal();
