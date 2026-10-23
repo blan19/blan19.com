@@ -4,7 +4,8 @@ import { DEFAULT_IMAGE_SIZE } from "@/lib/markdown/image-meta";
 import { type CalloutType, isCalloutType } from "@/lib/markdown/types";
 
 // 플러그인이 figure/aside 에 싣고 ui/post-body 가 컴포넌트 props 로 읽는 데이터의 약속.
-// 마커 클래스, data-* 키, 기본값은 이 파일에만 둔다(encode 는 플러그인, decode 는 post-body).
+// 플러그인(encode)과 post-body(decode) 사이의 hast data-* 약속은 이 파일에 둔다. 이미지 크기 기본값은 image-meta.ts 것을 쓰고,
+// 출력 컴포넌트(ui/code-block, post-image, mermaid, callout)와 markdown.css 는 같은 클래스 이름을 일부러 다시 쓴다.
 // server-only 가 아니다(shiki 를 import 하지 않는다). 이 속성들은 컴포넌트로 바뀌므로 HTML 에 그대로 나가지 않는다.
 
 export interface CodeFigure {
