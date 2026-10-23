@@ -264,6 +264,16 @@ const cases = [
   ["cd src || grep -rn foo .", B],
   ["cd $SOMEWHERE && grep -rn foo .", B],
   ["cd - && grep -rn foo .", B],
+  // 따라갈 수 없는 cd/pushd/popd 뒤에는 작업 디렉터리를 모르는 것으로 보고 상대 경로를 모두 프로젝트 범위로 본다
+  ["cd src && (cd .. && grep -r x .)", B],
+  ["cd src && bash -c 'cd .. && grep -r x .'", B],
+  ["cd src && eval 'cd ..' && grep -r x .", B],
+  ["cd src && pushd .. && grep -r x .", B],
+  ["cd src && builtin cd .. && grep -r x .", B],
+  ["cd src && popd && grep -rn foo .", B],
+  ["cd $SOMEWHERE && grep -rn foo src", B],
+  ["cd $SOMEWHERE && cd /tmp && grep -rn foo .", A],
+  ["pushd /tmp && grep -rn foo /tmp", A],
   ["ag -u DATABASE", B],
   ["ag --hidden --unrestricted DATABASE .", B],
   ["ag --hidden -U DATABASE", B],
@@ -285,6 +295,15 @@ const cases = [
   ["find . -not -name '.env*' -type f -exec cat {} +", A],
   ["find . -type f -name '*.ts' -exec wc -l {} +", A],
   ["find . -type f -exec ls -la {} +", A],
+  // -o 로 갈린 다른 갈래의 이름 필터는 -exec 갈래를 제한하지 않는다
+  ["find . -name x -o -type f -exec cat {} +", B],
+  ["find . -path '*/node_modules' -prune -o -type f -exec grep -l foo {} +", B],
+  ["find . \\( -type f \\) -exec cat {} +", B],
+  ["find . \\( -name '*.ts' -o -type f \\) -exec cat {} +", B],
+  ["find . ! \\( -name '*.ts' \\) -exec cat {} +", B],
+  ["find . -path '*/node_modules' -prune -o -name '*.ts' -exec grep -l foo {} +", A],
+  ["find . \\( -name '*.ts' -o -name '*.mdx' \\) -exec cat {} +", A],
+  ["find . -type d -o -name '*.mdx' -exec cat {} +", A],
   // 6. with-blocked-db.mjs 는 프로젝트의 scripts/ 경로로 해석될 때만 DB 차단으로 본다
   ["node /tmp/x/with-blocked-db.mjs next dev", B],
   ["node /tmp/x/with-blocked-db.mjs --preview npm run dev", B],
@@ -294,6 +313,11 @@ const cases = [
   [`node ${ROOT}/scripts/with-blocked-db.mjs next start -p 3100`, A],
   ['node "$CLAUDE_PROJECT_DIR"/scripts/with-blocked-db.mjs --preview next dev -p 3100', A],
   ["node ./scripts/with-blocked-db.mjs next build", A],
+  ["(cd /tmp/evil && node scripts/with-blocked-db.mjs next dev)", B],
+  ["bash -c 'cd /tmp/evil && node scripts/with-blocked-db.mjs next dev'", B],
+  ["cd $SOMEWHERE && node scripts/with-blocked-db.mjs next dev", B],
+  ["cd /tmp && node scripts/with-blocked-db.mjs next dev", B],
+  ["bash -c 'node scripts/with-blocked-db.mjs --preview next dev -p 3100'", A],
   // 7. vercel 별칭과 env/pull 계열 (settings.json deny 와 같은 목록)
   ["vc env pull", B],
   ["vc pull", B],
@@ -543,6 +567,34 @@ try {
     [noRepo, "git push", A],
     [noRepo, "vercel deploy", A],
   ];
+  // 같은 저장소의 git worktree 안 scripts/with-blocked-db.mjs 도 DB 차단 실행으로 본다(다른 저장소의 같은 파일은 아님).
+  const wtMain = makeRepo("wt-main", (dir) => {
+    mkdirSync(path.join(dir, "scripts"));
+    writeFileSync(path.join(dir, "scripts/with-blocked-db.mjs"), "\n");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-qm", "script");
+    git(dir, "worktree", "add", "-q", ".claude/worktrees/wt", "-b", "wt");
+  });
+  const wt = path.join(wtMain, ".claude/worktrees/wt");
+  const other = makeRepo("wt-other", (dir) => {
+    mkdirSync(path.join(dir, "scripts"));
+    writeFileSync(path.join(dir, "scripts/with-blocked-db.mjs"), "\n");
+  });
+  const wtCases = [
+    [wtMain, `cd ${wt} && node scripts/with-blocked-db.mjs --preview next dev -p 3100`, A],
+    [wtMain, `node ${wt}/scripts/with-blocked-db.mjs next start -p 3100`, A],
+    [wt, `node ${wtMain}/scripts/with-blocked-db.mjs next dev`, A],
+    [wt, "node scripts/with-blocked-db.mjs next dev", A],
+    [wtMain, `node ${other}/scripts/with-blocked-db.mjs next dev`, B],
+    [wtMain, `cd ${other} && node scripts/with-blocked-db.mjs next dev`, B],
+    [wtMain, `node ${wt}/scripts/../scripts/x/../with-blocked-db.mjs next dev`, A],
+  ];
+  for (const [dir, command, expected] of wtCases) {
+    const { blocks } = analyze(command, { projectDir: dir });
+    const got = blocks.length ? B : A;
+    report(got === expected, `guard ${expected} got=${got} [${path.basename(dir)}] ${command}`, blocks[0] ?? "");
+  }
+
   const repoResults = await pool(repoCases, ([dir, command]) => runHook(GUARD, payload(command), dir));
   repoCases.forEach(([dir, command, expected], i) => {
     const got = verdict(repoResults[i]);

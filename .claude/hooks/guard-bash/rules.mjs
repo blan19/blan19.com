@@ -1,10 +1,10 @@
 // guard-bash 판정 규칙. analyze(command, { projectDir }) → { blocks, asks }. 진입점은 ../guard-bash.mjs.
 // runSegment 가 앞쪽 래퍼(대입, env, sudo, xargs, dotenv, with-blocked-db 등)를 벗긴 뒤 명령 이름으로 핸들러를 고른다.
 // 명령을 추가하려면 HANDLERS 에 (c) => void 함수를 넣고 guard-bash.test.mjs 에 케이스를 추가한다.
-// c: { cmd, args, text, redirs, heredocs, pipedFrom, inner, envLoaded, projectDir, cwd,
+// c: { cmd, args, text, redirs, heredocs, pipedFrom, inner, envLoaded, projectDir,
 //      block(what, msg), ask(msg), recurse(words), runLexed(src), realDbServer(what), runScript(script, what), isProjectScope(target) }
 import { spawnSync } from "node:child_process";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { MAX_DEPTH, lex } from "./lex.mjs";
@@ -16,6 +16,7 @@ const ENV_ASSIGN = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const KEYWORDS = new Set(["if", "then", "else", "elif", "do", "while", "until", "!", "{", "}", "time", "fi", "done"]);
 const SHELLS = new Set(["bash", "sh", "zsh", "dash", "ksh"]);
 const SIMPLE_WRAPPERS = new Set(["command", "builtin", "exec", "nohup", "noglob", "nocorrect", "corepack"]);
+const CD_COMMANDS = new Set(["cd", "pushd", "popd"]);
 const SAFE_ENV_EXAMPLES = /^\.env\.(example|sample|template|dist)$/;
 const ENV_NAMES = [".env", ".env.local", ".env.production", ".env.development"];
 // DB 차단 실행으로 인정하는 스크립트. basename 이 아니라 프로젝트 안의 이 경로로 해석될 때만 믿는다.
@@ -306,6 +307,7 @@ const gh = (c) => {
 };
 
 const FIND_EXEC = ["-exec", "-execdir", "-ok", "-okdir"];
+const FIND_OR = ["-o", "-or"];
 const FIND_NAME_TESTS = ["-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename", "-regex", "-iregex"];
 const find = (c) => {
   const { args, text } = c;
@@ -336,7 +338,7 @@ const find = (c) => {
         return false;
       }
     });
-    filters.push({ negated: expr[k - 1] === "!" || expr[k - 1] === "-not", hitsEnv });
+    filters.push({ k, negated: expr[k - 1] === "!" || expr[k - 1] === "-not", hitsEnv });
   });
   if (filters.some((f) => !f.negated && f.hitsEnv)) {
     c.block(text, MSG.envRead);
@@ -345,8 +347,40 @@ const find = (c) => {
   let end = args.findIndex((a, k) => k > execAt && (a === ";" || a === "+"));
   if (end === -1) end = args.length;
   const execWords = args.slice(execAt + 1, end);
-  // 필터 없이 프로젝트 전체를 읽기 도구에 넘기는 경우(find . -type f -exec cat {} +)
-  const limited = filters.some((f) => !f.negated || f.hitsEnv);
+  // 필터 없이 프로젝트 전체를 읽기 도구에 넘기는 경우(find . -type f -exec cat {} +).
+  // -exec 에 닿는 갈래가 필터를 거쳐야 제한된 것으로 본다: -o 로 갈린 다른 갈래나, ( ) 안에서 -o 로 빠지는 갈래의 필터는 세지 않는다.
+  const guardAt = new Set(filters.filter((f) => !f.negated || f.hitsEnv).map((f) => f.k));
+  const closeOf = (k) => {
+    let d = 0;
+    for (let j = k; j < expr.length; j++) {
+      if (expr[j] === "(") d++;
+      else if (expr[j] === ")" && --d === 0) return j;
+    }
+    return expr.length;
+  };
+  // [from, to) 의 식에서 -o 로 갈린 모든 갈래가 필터를 거치는지
+  const guarded = (from, to) => {
+    let ok = false;
+    for (let k = from; k < to; k++) {
+      if (FIND_OR.includes(expr[k])) {
+        if (!ok) return false;
+        ok = false;
+      } else if (expr[k] === "(") {
+        const close = closeOf(k);
+        if (expr[k - 1] !== "!" && expr[k - 1] !== "-not" && guarded(k + 1, close)) ok = true;
+        k = close;
+      } else if (guardAt.has(k)) ok = true;
+    }
+    return ok;
+  };
+  // -exec 는 마지막 최상위 갈래에만 걸린다.
+  let branchStart = 0;
+  for (let k = 0, d = 0; k < expr.length; k++) {
+    if (expr[k] === "(") d++;
+    else if (expr[k] === ")") d = Math.max(0, d - 1);
+    else if (d === 0 && FIND_OR.includes(expr[k])) branchStart = k + 1;
+  }
+  const limited = guarded(branchStart, expr.length);
   if (READERS.has(base(execWords[0] ?? "")) && !limited && (starts.length === 0 || starts.some(c.isProjectScope))) {
     c.block(text, MSG.findExecRead);
     return;
@@ -458,9 +492,38 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
   const blocks = [];
   const asks = []; // 사용자 확인이 필요한 명령 (permissionDecision: ask)
   // cwd: 같은 명령 문자열 안에서 앞선 `cd <dir> &&` 로 바뀐 작업 디렉터리(최상위 세그먼트만 추적).
-  const ctx = { exportedSafeDb: false, vars: new Map(), cwd: projectDir };
+  // cwdUnknown: 따라갈 수 없는 cd/pushd/popd(서브셸, bash -c, 변수 대상 등)가 앞에 있어 작업 디렉터리를 모르는 상태.
+  const ctx = { exportedSafeDb: false, vars: new Map(), cwd: projectDir, cwdUnknown: false };
   const root = path.resolve(projectDir);
   const blockedDbScript = realOrResolved(path.join(root, BLOCKED_DB_SCRIPT));
+
+  // git worktree 의 최상위 경로와 공통 git 디렉터리. 실패하면 null.
+  const gitInfoCache = new Map();
+  const gitInfo = (dir) => {
+    if (!gitInfoCache.has(dir)) {
+      let info = null;
+      try {
+        const r = spawnSync("git", ["-C", dir, "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"], { encoding: "utf8", timeout: 3000 });
+        const [top, common] = r.status === 0 ? r.stdout.trim().split("\n") : [];
+        if (top && common) info = { top: realOrResolved(top), common: realOrResolved(common) };
+      } catch {
+        info = null;
+      }
+      gitInfoCache.set(dir, info);
+    }
+    return gitInfoCache.get(dir);
+  };
+  // 프로젝트의 scripts/with-blocked-db.mjs 이거나, 같은 저장소의 다른 worktree(.claude/worktrees/* 등) 루트의 그 파일인지.
+  const isBlockedDbScript = (abs) => {
+    const real = realOrResolved(abs);
+    if (real === blockedDbScript) return true;
+    if (!real.endsWith(`/${BLOCKED_DB_SCRIPT}`)) return false;
+    const wtRoot = path.dirname(path.dirname(real));
+    if (!existsSync(path.join(wtRoot, ".git"))) return false;
+    const wt = gitInfo(wtRoot);
+    const main = gitInfo(root);
+    return Boolean(wt && main && wt.top === wtRoot && wt.common === main.common);
+  };
 
   const block = (what, msg) => blocks.push(`- \`${what}\`: ${msg}`);
   const ask = (msg) => asks.push(msg);
@@ -470,15 +533,18 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
   const known = (name) => {
     if (ctx.vars.has(name)) return ctx.vars.get(name);
     if (name === "HOME") return os.homedir();
-    if (name === "PWD") return ctx.cwd;
+    if (name === "PWD") return ctx.cwdUnknown ? undefined : ctx.cwd;
     if (name === "CLAUDE_PROJECT_DIR") return root;
     return undefined;
   };
   const subst = (s) => (s.includes("$") ? s.replace(/\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)/g, (m, a, b) => known(a ?? b) ?? m) : s);
 
   // target 이 프로젝트 루트이거나 그 상위 디렉터리인지(재귀 검색하면 .env 가 포함된다).
+  // 작업 디렉터리를 모르면 상대 경로는 모두 프로젝트 범위로 본다.
   const isProjectScope = (target) => {
-    const abs = path.resolve(ctx.cwd, expandHome(target));
+    const p = expandHome(target);
+    if (ctx.cwdUnknown && !path.isAbsolute(p)) return true;
+    const abs = path.resolve(ctx.cwd, p);
     const rel = path.relative(abs, root);
     return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
   };
@@ -576,8 +642,10 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
         envLoaded = true;
         w = rest;
       } else if ((head === "node" || head === "bun") && w[1] && /with-blocked-db\.mjs$/.test(w[1])) {
-        // 프로젝트의 scripts/with-blocked-db.mjs 로 해석될 때만 DB 차단으로 본다. 같은 이름의 다른 파일은 안쪽 명령만 그대로 검사한다.
-        blockedDb = blockedDb || realOrResolved(path.resolve(ctx.cwd, expandHome(w[1]))) === blockedDbScript;
+        // 프로젝트(또는 같은 저장소 worktree)의 scripts/with-blocked-db.mjs 로 해석될 때만 DB 차단으로 본다.
+        // 같은 이름의 다른 파일이나 작업 디렉터리를 모르는 상태의 상대 경로는 안쪽 명령만 그대로 검사한다.
+        const script = expandHome(w[1]);
+        blockedDb = blockedDb || (!(ctx.cwdUnknown && !path.isAbsolute(script)) && isBlockedDbScript(path.resolve(ctx.cwd, script)));
         w = w.slice(2);
         if (w[0] === "--preview") w = w.slice(1);
       } else if ((head === "node" || head === "bun") && w[1] && binFromPath(w[1])) {
@@ -592,6 +660,8 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
       return;
     }
     const cmd = base(w[0]).replace(/^(.+)@[^/]*$/, "$1");
+    // 최상위 `cd … &&` 말고는 작업 디렉터리 변경을 따라가지 않는다(서브셸, bash -c, eval, builtin cd, pushd/popd).
+    if (CD_COMMANDS.has(cmd) && !state.topCd) ctx.cwdUnknown = true;
     const inner = { assigned, blockedDb, envLoaded };
     const c = {
       cmd,
@@ -627,20 +697,27 @@ export const analyze = (command, { projectDir = process.env.CLAUDE_PROJECT_DIR ?
     if (READERS.has(cmd)) return reader(c);
   };
 
-  // `cd <dir>` 가 && ; 개행으로 다음 명령에 이어지면 그 뒤 세그먼트의 상대 경로를 dir 기준으로 푼다.
-  // 서브셸 안, 파이프, || 뒤는 바깥 cwd 를 바꾸지 않는다. 변수나 cd - 처럼 알 수 없으면 프로젝트 루트로 되돌린다(기존 판정).
-  const nextCwd = (seg) => {
-    if (seg.grouped || seg.pipedFrom || !["&&", ";", "\n", undefined].includes(seg.op)) return ctx.cwd;
+  // 최상위의 `cd <dir>` 가 && ; 개행으로 다음 명령에 이어지면 그 뒤 세그먼트의 상대 경로를 dir 기준으로 푼다.
+  // 결과: cd 대상(인자 없으면 "~") 또는 따라가는 cd 가 아니면 null. 그 밖의 cd 는 runSegment 가 cwdUnknown 으로 표시한다.
+  const trackedCd = (seg) => {
+    if (seg.grouped || seg.pipedFrom || !["&&", ";", "\n", undefined].includes(seg.op)) return null;
     const w = seg.words.map((x) => subst(x.value));
-    if (w[0] !== "cd") return ctx.cwd;
-    const dir = w.slice(1).find((a) => !/^-[LPe@]+$/.test(a));
-    if (!dir || dir === "-" || dir.includes("$")) return root;
-    return path.resolve(ctx.cwd, expandHome(dir));
+    if (w[0] !== "cd") return null;
+    return w.slice(1).find((a) => !/^-[LPe@]+$/.test(a)) ?? "~";
+  };
+  const applyCd = (dir) => {
+    const p = expandHome(dir);
+    if (dir === "-" || p.includes("$")) ctx.cwdUnknown = true;
+    else if (path.isAbsolute(p)) {
+      ctx.cwd = p;
+      ctx.cwdUnknown = false;
+    } else if (!ctx.cwdUnknown) ctx.cwd = path.resolve(ctx.cwd, p);
   };
 
   for (const seg of lex(command)) {
-    runSegment(seg.words, seg.redirs, seg.heredocs, { assigned: new Set(), blockedDb: false, envLoaded: false }, 0, seg.pipedFrom);
-    ctx.cwd = nextCwd(seg);
+    const cd = trackedCd(seg);
+    runSegment(seg.words, seg.redirs, seg.heredocs, { assigned: new Set(), blockedDb: false, envLoaded: false, topCd: cd !== null }, 0, seg.pipedFrom);
+    if (cd !== null) applyCd(cd);
   }
   return { blocks: [...new Set(blocks)], asks: [...new Set(asks)] };
 };
