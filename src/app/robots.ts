@@ -1,5 +1,5 @@
-import type { MetadataRoute } from "next";
-import config from "@/lib/config";
+import { MetadataRoute } from "next";
+import { site } from "@/lib/config";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: `${config.url}sitemap.xml`,
+    sitemap: `${site.url}sitemap.xml`,
+    host: new URL(site.url).origin,
   };
 }

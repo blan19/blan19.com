@@ -1,5 +1,5 @@
 // 테마 API. 브라우저 전용 함수 모음이다("use client" 아님). 서버에서 import 해도 호출하지 않으면 안전하다.
-// 첫 페인트 전 data-theme 설정은 src/app/layout.tsx 의 인라인 스크립트(THEME_INIT)가 한다. 저장 키를 바꾸면 그쪽도 바꾼다.
+// 첫 페인트 전 data-theme 설정은 src/app/layout.tsx 의 인라인 스크립트(THEME_INIT)가 한다(THEME_STORAGE_KEY 를 그대로 넣는다).
 
 export type ThemePref = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
