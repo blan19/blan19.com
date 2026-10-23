@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import Icon from "@/components/ui/icon";
+import { captionHost, isUrlCaption } from "@/lib/markdown/image-meta";
 
 interface PostImageProps {
   src: string;
@@ -14,16 +15,8 @@ interface PostImageProps {
   caption?: string;
 }
 
-const hostname = (url: string) => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-};
-
 const Caption = ({ caption }: { caption: string }) => {
-  if (/^https?:\/\//i.test(caption)) {
+  if (isUrlCaption(caption)) {
     return (
       <figcaption>
         <a
@@ -32,7 +25,7 @@ const Caption = ({ caption }: { caption: string }) => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          출처: {hostname(caption)}
+          출처: {captionHost(caption)}
         </a>
       </figcaption>
     );

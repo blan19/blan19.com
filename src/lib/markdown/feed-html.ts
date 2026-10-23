@@ -9,6 +9,7 @@ import {
   decodeImageFigure,
 } from "@/lib/markdown/figures";
 import { el, hasClass, isElement } from "@/lib/markdown/hast-utils";
+import { captionHost, isUrlCaption } from "@/lib/markdown/image-meta";
 import { CALLOUT_LABELS } from "@/lib/markdown/types";
 
 // RSS/Atom 항목 본문(content)용 HTML. renderMarkdown 의 HAST(모듈 캐시에 있는 공유 트리)는 고치지 않고 새 트리를 만든다.
@@ -81,14 +82,10 @@ const codeSource = (pre: Element, diff: boolean) => {
 };
 
 // ui/post-image 와 같이 URL 캡션은 "출처: 호스트" 링크로 쓴다.
-const imageCaption = (caption: string): Element => {
-  if (!/^https?:\/\//i.test(caption)) return el("figcaption", {}, [text(caption)]);
-  let host = caption;
-  try {
-    host = new URL(caption).hostname.replace(/^www\./, "");
-  } catch {}
-  return el("figcaption", {}, [el("a", { href: caption }, [text(`출처: ${host}`)])]);
-};
+const imageCaption = (caption: string): Element =>
+  isUrlCaption(caption)
+    ? el("figcaption", {}, [el("a", { href: caption }, [text(`출처: ${captionHost(caption)}`)])])
+    : el("figcaption", {}, [text(caption)]);
 
 const figure = (node: Element, base: string): ElementContent[] | undefined => {
   const code = decodeCodeFigure(node);
@@ -99,6 +96,8 @@ const figure = (node: Element, base: string): ElementContent[] | undefined => {
   }
   const image = decodeImageFigure(node);
   if (image) {
+    // rehype-safe-urls 가 비운 src(javascript: 등)면 글 주소로 절대화되지 않게 figure 째 뺀다(keepProps 와 같은 규칙).
+    if (image.src === "") return [];
     const img = el("img", {
       src: absolute(image.src, base),
       alt: image.alt,
@@ -149,6 +148,9 @@ const transform = (node: ElementContent, base: string): ElementContent[] => {
 const transformAll = (nodes: ElementContent[], base: string) =>
   nodes.flatMap((node) => transform(node, base));
 
+// XML 1.0 에서 쓸 수 없는 제어 문자(탭, 줄바꿈, CR 제외)와 U+FFFE/U+FFFF. 하나라도 있으면 피드 전체가 ill-formed 가 된다.
+const XML_INVALID = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+
 // postUrl: 글의 절대 URL(상대 URL 과 #링크의 기준).
 export const toFeedHtml = (hast: Root, postUrl: string): string => {
   const children = hast.children.filter(
@@ -156,8 +158,7 @@ export const toFeedHtml = (hast: Root, postUrl: string): string => {
   );
   const root: Root = { type: "root", children: transformAll(children, postUrl) };
   // feed 라이브러리(xml-js)는 CDATA 안의 "]]>" 를 첫 번째만 나눈다. HTML 에서 ">" 와 "&gt;" 는 같으므로 미리 바꾼다.
-  return toHtml(root, { characterReferences: { useNamedReferences: true } }).replaceAll(
-    "]]>",
-    "]]&gt;",
-  );
+  return toHtml(root, { characterReferences: { useNamedReferences: true } })
+    .replaceAll("]]>", "]]&gt;")
+    .replace(XML_INVALID, "");
 };

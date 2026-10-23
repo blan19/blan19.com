@@ -22,3 +22,15 @@ export function parseImageMeta(meta: string): ImageMeta {
     caption: meta.match(/{caption: (.*?)}/)?.[1],
   };
 }
+
+// `{caption: https://…}` 는 출처 링크로 쓴다(ui/post-image, 피드 feed-html.ts 공용).
+export const isUrlCaption = (caption: string) => /^https?:\/\//i.test(caption);
+
+// "출처: <호스트>" 의 호스트(www. 제외). URL 이 아니면 그대로.
+export const captionHost = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
