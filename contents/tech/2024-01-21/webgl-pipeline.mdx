@@ -2,7 +2,7 @@
 publishedAt: "2024-01-21"
 title: "WebGL 파이프라인"
 tags: ["webgl"]
-description: "WebGL의 역사와 렌더링 파이프라인이 어떻게 돌아가는지 알아보자"
+description: "WebGL의 역사와 Vertex Processing, Rasterization, Fragment Processing 등 렌더링 파이프라인 단계를 알아보자"
 reference:
   [
     "https://woo-dev.tistory.com",
@@ -11,6 +11,8 @@ reference:
     "https://dev.opera.com/articles/introduction-to-webgl-part-1/",
   ]
 ---
+
+WebGL은 OpenGL ES 2.0 기반으로 브라우저 canvas에 3D 그래픽을 렌더링하는 네이티브 API입니다. 이 글에서는 WebGL의 역사를 짚고, Vertex Processing부터 Rasterization, Fragment Processing, Frame Buffer까지 렌더링 파이프라인 단계를 정리합니다.
 
 ### WebGL에 대한 간단 개요
 
