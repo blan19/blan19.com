@@ -36,7 +36,8 @@ interface FilterProps {
 }
 
 // searchParams 는 요청 때만 알 수 있어 이 둘만 <Suspense> 안에서 그린다(Cache Components).
-// 빌드 때 만드는 정적 셸에는 fallback 인 전체 목록(조회수 없음)이 들어간다.
+// 빌드 때 만드는 정적 셸에는 fallback 인 전체 목록(조회수 없음, aria-busy)과 선택 표시 없는 태그 줄이 들어간다.
+// 태그 링크로 이동할 때도 이 셸이 먼저 보이고 거른 목록이 뒤따른다.
 const Filter = async ({ searchParams, posts, tags }: FilterProps) => (
   <TagFilter
     tags={tags}
@@ -50,7 +51,11 @@ const FilteredList = async ({ searchParams, posts, tags }: FilterProps) => {
   const visible = selected
     ? posts.filter((post) => post.metadata.tags.includes(selected))
     : posts;
-  return <PostList posts={visible} variant="archive" />;
+  return (
+    <div className="tech-list">
+      <PostList posts={visible} variant="archive" />
+    </div>
+  );
 };
 
 const Tech = ({ searchParams }: { searchParams: SearchParams }) => {
@@ -65,20 +70,24 @@ const Tech = ({ searchParams }: { searchParams: SearchParams }) => {
           <h1 className="page-h1">글</h1>
           <p className="page-lede">일하며 부딪힌 문제와 알게 된 것을 정리합니다.</p>
           {posts.length > 0 && (
-            <Suspense fallback={<TagFilter tags={tags} total={posts.length} />}>
+            <Suspense
+              fallback={<TagFilter tags={tags} total={posts.length} pending />}
+            >
               <Filter {...filter} />
             </Suspense>
           )}
         </div>
       </header>
       {posts.length > 0 ? (
-        <div className="tech-list">
-          <Suspense
-            fallback={<PostList posts={posts} variant="archive" views={false} />}
-          >
-            <FilteredList {...filter} />
-          </Suspense>
-        </div>
+        <Suspense
+          fallback={
+            <div className="tech-list" aria-busy="true">
+              <PostList posts={posts} variant="archive" views={false} />
+            </div>
+          }
+        >
+          <FilteredList {...filter} />
+        </Suspense>
       ) : (
         <div className="rail-grid">
           <p className="rail-main empty-note">아직 글이 없습니다.</p>
