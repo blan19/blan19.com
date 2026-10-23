@@ -69,14 +69,14 @@ const frameSrc = (session: string) => {
 // resize 메시지로 맞추고, 테마는 set-theme 메시지로 따라간다. 리스너는 effect 정리 때 모두 해제한다.
 // src 는 댓글 영역이 가까워질 때 정한다(글 간 이동 직후에는 document.title 등이 아직 이전 글일 수 있다).
 const Comment = () => {
-  const boxRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const box = boxRef.current;
+    const section = sectionRef.current;
     const frame = frameRef.current;
-    if (!box || !frame) return;
+    if (!section || !frame) return;
     const session = takeSession();
 
     const load = () => {
@@ -92,7 +92,7 @@ const Comment = () => {
         },
         { rootMargin: "0px 0px 800px 0px" },
       );
-      io.observe(box);
+      io.observe(section);
     } else {
       load();
     }
@@ -101,7 +101,7 @@ const Comment = () => {
       if (event.origin !== ORIGIN || event.source !== frame.contentWindow) return;
       const data = event.data as { type?: string; height?: number } | null;
       if (data?.type !== "resize" || !data.height) return;
-      box.style.height = `${data.height}px`;
+      frame.style.height = `${data.height}px`;
       setLoaded(true);
     };
     window.addEventListener("message", onMessage);
@@ -121,7 +121,11 @@ const Comment = () => {
   }, []);
 
   return (
-    <section className="end-sec comments" aria-labelledby="cm-label">
+    <section
+      className="end-sec comments"
+      aria-labelledby="cm-label"
+      ref={sectionRef}
+    >
       <h2 className="end-label" id="cm-label">
         댓글
       </h2>
@@ -133,30 +137,23 @@ const Comment = () => {
         </div>
       )}
       <div className="utt-host">
-        {/* client.js 가 head 에 넣던 스타일(.utterances, .utterances-frame)을 그대로 옮겼다 */}
-        <div
-          className="utterances"
-          ref={boxRef}
-          style={{ position: "relative", boxSizing: "border-box", width: "100%" }}
-        >
-          <iframe
-            className="utterances-frame"
-            ref={frameRef}
-            title="댓글"
-            scrolling="no"
-            style={{
-              colorScheme: "light",
-              position: "absolute",
-              left: 0,
-              right: 0,
-              width: 1,
-              minWidth: "100%",
-              maxWidth: "100%",
-              height: "100%",
-              border: 0,
-            }}
-          />
-        </div>
+        {/* 높이는 첫 resize 메시지 전까지 0. width 1px + min-width 100% 는 client.js 의 iOS Safari 대응을 따랐다.
+            style 값은 Tailwind 가 유틸리티로 읽는 낱말(위치, 테두리 이름)을 피해 썼다. */}
+        <iframe
+          className="utterances-frame"
+          ref={frameRef}
+          title="댓글"
+          scrolling="no"
+          style={{
+            display: "block",
+            width: 1,
+            minWidth: "100%",
+            maxWidth: "100%",
+            height: 0,
+            borderStyle: "none",
+            colorScheme: "light",
+          }}
+        />
       </div>
     </section>
   );
