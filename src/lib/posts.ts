@@ -73,7 +73,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
 
-// scripts/validate-content.mjs 의 최소 부분. 어기면 파일 경로를 담아 던진다(빌드가 실패한다).
+// 콘텐츠 검사기(scripts/content/frontmatter.mjs)의 최소 부분. 어기면 파일 경로를 담아 던진다(빌드가 실패한다).
 const parseMetadata = (file: string, data: Record<string, unknown>): PostMetadata => {
   const fail = (message: string): never => {
     throw new Error(`${file}: frontmatter ${message}`);
@@ -198,7 +198,7 @@ export const getPost = (kind: PostKind, slug: string): Post | undefined =>
   loadIndex(kind).bySlug.get(slug);
 
 // 주어진 종류에서 가장 최근 publishedAt("YYYY-MM-DD"). 글이 없으면 undefined.
-// 현재 시각 대신 쓰는 결정적인 "마지막 갱신일"이다(sitemap lastModified, 푸터 연도).
+// 현재 시각 대신 쓰는 결정적인 "마지막 갱신일"이다(sitemap lastModified).
 export const getLatestPublishedAt = (...kinds: PostKind[]): string | undefined =>
   kinds
     .map((kind) => getPostsNewestFirst(kind)[0]?.metadata.publishedAt)

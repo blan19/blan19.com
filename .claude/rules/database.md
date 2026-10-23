@@ -3,7 +3,7 @@ paths:
   - "prisma/**"
   - "prisma.config.ts"
   - "src/lib/prisma.ts"
-  - "src/lib/db/**"
+  - "src/lib/views.ts"
 ---
 
 # DB / Prisma 7 규칙
@@ -17,28 +17,20 @@ paths:
 - import 경로는 `@/generated/prisma/client` 다. `@prisma/client` 에서 import 하지 않는다.
 - 모델은 `View { id, slug @unique, count, createAt, updatedAt }` 하나다. 필드 이름은 `createAt` 이다(오타지만 운영 컬럼명이므로 바꾸지 않는다).
 
-## 함수와 쓰기 경로
+## 조회수 모듈 (`src/lib/views.ts`)
 
-| 함수 | 파일 | 동작 | 캐시 |
+View 테이블 읽기와 쓰기는 이 파일만 한다. `server-only` 모듈이고 `"use server"` 가 아니라 Server Action 으로 노출되지 않는다. 세 함수 모두 먼저 `await connection()` 을 불러(호출부가 빠뜨려도) prerender 를 거기서 멈추므로 `next build` 중에는 쿼리하지 않는다. `POSTGRES_URL` 이 비어 있으면(`hasDatabase()` 가 false, `with-blocked-db.mjs --preview`) 읽기와 쓰기 모두 DB 를 건드리지 않는다. 연결은 `POSTGRES_PRISMA_URL` 로 한다.
+
+| 함수 | 동작 | 캐시 | 부르는 곳 |
 |---|---|---|---|
-| `increment(slug)` | `src/lib/db/action.ts` | **쓰기**: upsert, count+1 | `unstable_noStore` |
-| `getViewCount(slug)` | `src/lib/db/queries.ts` | findUnique. `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
-| `getAllViewCounts()` | 같은 파일 | findMany(slug, count). `POSTGRES_URL` 이 비어 있으면 null | `unstable_noStore` |
-| `getBestBlogPosts()` | 같은 파일 | count desc, 3개 | `unstable_cache`, 키 `blan19-best-posts`, 3600초, 태그 없음 |
+| `recordView(slug)` | **쓰기**: `getPost("tech", slug)` 가 있는 글만 upsert(create `count: 1` / update `increment: 1`, `select: count`) 후 올린 값을 돌려준다(왕복 1회). DB 없음이나 없는 글이면 null | React `cache`(요청당 1번) | `ui/view-count` 의 `ArticleViews`(글 머리, 이번 방문 포함 값 표시) |
+| `getViewMap()` | findMany(slug, count) → `Map`. 실패는 여기서 요청당 한 번 `[views]` 로그 후 다시 던진다. DB 없음이면 null | React `cache`(요청당 쿼리 1번) | `ui/view-count` 의 `RowViews`(홈, /tech 목록 행, 로그 없이 null) |
+| `getMostRead(n)` | `getTopViews(n)`(count desc) 결과를 글과 조인. DB 에만 남은 slug 는 빠진다. DB 없음이면 `[]` | `getTopViews` 가 `'use cache: remote'` + `cacheLife("hours")` + `cacheTag("views")`(slug, count 만 캐시) | `ui/most-read` 의 `MostRead`(홈 "많이 읽힌 글") |
 
-사용처:
-
-| 함수 | 부르는 곳 |
-|---|---|
-| `getViewCount`, `increment` | `ui/view-count` 의 `ArticleViews`(글 머리 조회수) |
-| `getAllViewCounts` | `src/lib/views.ts` 의 `getViewMap`(React `cache`, 요청당 쿼리 1번) → `ui/view-count` 의 `RowViews`(홈, /tech 목록 행) |
-| `getBestBlogPosts` | `ui/most-read`(홈 "많이 읽힌 글") |
-
-- DB 쓰기는 `/tech/[slug]` 렌더 중 `ArticleViews` 의 `cache(increment)` 호출 하나뿐이다(await 없음). 실제 DB 로 띄운 서버에 이 경로를 요청하면 운영 조회수가 오른다.
-- 오류 격리: DB 를 읽는 컴포넌트는 `<Suspense>` 안에서만 쓰고, `await connection()` 을 try 밖에서 부른 뒤 쿼리만 try/catch 한다. catch 첫 줄에서 `unstable_rethrow(error)`(Next 내부 신호는 다시 던짐) 후 `console.error` 하고 `null` 을 렌더한다. 그래서 DB 가 실패해도 조회수 칸이나 "많이 읽힌 글" 섹션만 사라지고 페이지는 그대로다. 새 DB 표시 컴포넌트도 이 패턴을 따른다.
-- 두 파일은 `"use server"` 라 모든 export 가 Server Function 이다. 내부용 헬퍼를 여기에 export 하지 않는다.
-- 캐시 키를 바꾸면 기존 캐시와 분리된다. 태그 기반 무효화(`revalidateTag`)는 현재 없다.
-- 알려진 이슈(요청 없이 고치지 말 것): `POSTGRES_URL` 검사는 `getViewCount`·`getAllViewCounts` 에만 있고(연결에는 `POSTGRES_PRISMA_URL` 사용), `getBestBlogPosts` 는 검사 없이 쿼리한다(실패는 `MostRead` 의 try/catch 가 삼킨다). `increment` 는 await 없이 호출된다.
+- DB 쓰기는 `/tech/[slug]` 요청 때 `ArticleViews` 가 `recordView` 를 await 하는 것 하나뿐이다(서버리스에서 응답 뒤 유실되지 않게). 실제 DB 로 띄운 서버에 이 경로를 요청하면 운영 조회수가 오른다.
+- `getTopViews` 의 원격 캐시는 Vercel 이 핸들러를 제공해 인스턴스끼리 나눠 쓴다(로컬 `next start` 는 메모리). 배포 사이에는 유지되지 않아 배포마다 첫 요청이 새로 조회한다. `revalidateTag("views")` 로 비울 수 있지만 지금 부르는 곳은 없다. 캐시 경계를 넘은 오류는 production 에서 메시지가 가려지므로 `getTopViews` 안에서 원래 오류를 `[most-read]` 로 로그하고 다시 던진다(`MostRead` 는 로그하지 않는다. 오류는 캐시되지 않는다).
+- 오류 격리: DB 를 읽는 컴포넌트는 `<Suspense>` 안에서만 쓰고, `await connection()` 을 try 밖에서 부른 뒤 쿼리만 try/catch 한다. catch 첫 줄에서 `unstable_rethrow(error)`(Next 16.4 의 prerender 중단, hanging-promise 신호를 다시 던짐) 후 `null` 을 렌더한다. 그래서 DB 가 실패해도 조회수 칸이나 "많이 읽힌 글" 섹션만 사라지고 페이지는 그대로다. 새 DB 표시 컴포넌트도 이 패턴을 따른다.
+- 운영 데이터 메모: 이전 구현은 첫 방문 행을 `count` 기본값 0 으로 만들었다. 그래서 그때 생긴 행은 실제 방문 수보다 1 적다(보정하지 않았다).
 
 ## 스키마 변경 절차
 

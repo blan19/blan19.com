@@ -7,7 +7,7 @@ argument-hint: "[tech|log] [제목 또는 주제] [slug(선택)]"
 
 # /new-post
 
-입력: `$ARGUMENTS` (형식: `<tech|log> <제목/주제> [slug]`). 규칙의 기준은 `.claude/rules/content.md` 와 `scripts/validate-content.mjs` 다. 먼저 `content.md` 를 읽는다.
+입력: `$ARGUMENTS` (형식: `<tech|log> <제목/주제> [slug]`). 규칙의 기준은 `.claude/rules/content.md` 와 검사기 `scripts/validate-content.mjs`(규칙은 `scripts/content/*.mjs`)다. 먼저 `content.md` 를 읽는다.
 
 ## 1. 필수 정보 확인
 
@@ -55,7 +55,7 @@ find contents -name '<slug>.mdx'         # 결과가 있으면 slug 중복 → �
 npm run content:check contents/<cat>/<date>/<slug>.mdx   # error 0개가 될 때까지 고친다
 ```
 
-warn 은 의도한 것인지 확인하고 보고에 남긴다. 남은 `TODO:`(코드 블록 밖)는 검사기가 행 번호와 함께 warn 으로 보고한다(CI 에서는 error). 커밋 전에 해소해야 한다고 알린다.
+warn 은 의도한 것인지 확인하고 보고에 남긴다. 남은 `TODO:`(코드 블록 밖)는 검사기가 행 번호와 함께 보고한다(편집 중 검사는 warn, `npm run verify`(`--strict`)와 CI 는 error). 커밋 전에 해소해야 한다고 알린다.
 
 ## 6. 미리보기 (선택, 사용자가 원할 때)
 

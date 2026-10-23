@@ -13,23 +13,22 @@ argument-hint: "[dev|preview|prod] [경로, 예: /tech/<slug>]"
 
 | 모드 | 용도 | 시작 명령 |
 |---|---|---|
-| `preview` (권장) | 글 화면(`/tech/<slug>`) 확인. 조회수 칸은 비어 보임 | 아래 "글 미리보기" 명령 |
-| `dev` | 코드 수정 중 HMR, DB 를 쓰지 않는 페이지(`/log`, RSS, sitemap, `/og`) 확인 | `node scripts/with-blocked-db.mjs next dev -p 3100` |
+| `preview` (권장) | 글 화면(`/tech/<slug>`) 확인. 조회수 칸과 "많이 읽힌 글"은 빠짐 | 아래 "글 미리보기" 명령 |
+| `dev` | 코드 수정 중 HMR, DB 를 쓰지 않는 페이지(`/log`, RSS, sitemap, `/opengraph-image`) 확인 | `node scripts/with-blocked-db.mjs next dev -p 3100` |
 | `prod` | 프로덕션 빌드 동작 자동 점검 | `npm run verify` (DB 차단 빌드 + smoke, 서버를 알아서 띄우고 종료함) |
 
-`dev` 는 `POSTGRES_URL` 까지 차단 주소로 덮는다(`npm run dev:safe` 와 같은 env). 그래서 조회수(글 머리, 목록 행)와 홈 "많이 읽힌 글"이 표시되지 않는다(쿼리가 실패하면 컴포넌트가 오류를 삼키고 그 칸만 비운다). 터미널의 `[views] 조회수를 불러오지 못했습니다 … P1001`, `[most-read] …` 로그와 함께 DB 가 막혀서 생기는 정상 현상이고 코드 버그가 아니다. 페이지 전체가 `error.tsx`("문제가 생겼습니다")로 바뀌면 그건 버그다.
+`dev` 는 `POSTGRES_URL` 까지 차단 주소로 덮는다(`npm run dev:safe` 와 같은 env). 그래서 조회수(글 머리, 목록 행)와 홈 "많이 읽힌 글"이 표시되지 않는다(쿼리가 실패하면 컴포넌트가 오류를 삼키고 그 칸만 비운다). 터미널의 `[views] 조회수를 기록하지 못했습니다 … P1001`, `[views] 조회수를 불러오지 못했습니다 …`, `[most-read] …` 로그와 함께 DB 가 막혀서 생기는 정상 현상이고 코드 버그가 아니다. 페이지 전체가 `error.tsx`("문제가 생겼습니다")로 바뀌면 그건 버그다.
 
 ### 글 미리보기 (`preview`)
 
-`--preview` 는 `POSTGRES_URL` 만 빈 값으로 두고 나머지 URL 은 차단 주소로 덮는다. `getViewCount`, `getAllViewCounts` 가 DB 에 접속하지 않고 null 을 반환한다(글 머리 조회수는 `0회`, 목록 행 조회수 칸은 빈다).
+`--preview` 는 `POSTGRES_URL` 만 빈 값으로 두고 나머지 URL 은 차단 주소로 덮는다. `src/lib/views.ts` 의 `hasDatabase()` 가 false 라 세 함수(`recordView`, `getViewMap`, `getMostRead`)가 DB 에 접속하지 않는다. 글 머리 조회수 칸, 목록 행 조회수 칸, 홈 "많이 읽힌 글" 섹션이 모두 빠지고 DB 로그는 없다.
 
 ```bash
 node scripts/with-blocked-db.mjs --preview next dev -p 3100
 ```
 
 - `/`, `/tech`, `/tech/<slug>`, `/log` 는 정상으로 보인다.
-- 홈은 파일시스템으로 그려진다. "많이 읽힌 글"(`getBestBlogPosts`)만 `POSTGRES_URL` 검사 없이 쿼리하므로 `.next/cache` 에 이전 실행의 캐시가 남아 있을 때만 보이고, 없으면 섹션이 빠진다(정상, 로그에 `[most-read] … P1001`).
-- 터미널의 `⨯ unhandledRejection … P1001 … DatabaseNotReachable`(increment)은 예상된 로그다.
+- 홈은 파일시스템으로 그려지고 "많이 읽힌 글" 섹션만 빠진다(정상).
 - 프로덕션 빌드로 보려면 `node scripts/with-blocked-db.mjs next build` 뒤에 `node scripts/with-blocked-db.mjs --preview next start -p 3100` 을 실행한다(`npm run build` 는 DB 차단 없이 `.env` 를 읽으므로 쓰지 않는다).
 
 ## 절차

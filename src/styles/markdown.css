@@ -1,5 +1,5 @@
-/* markdown.css — 글 페이지(Track 2 소유): 글 레이아웃, 글 머리, 본문, 코드 블록, 콜아웃, 다이어그램, 이미지,
-   목차, 글 끝(참고 자료, 이전/다음 글, 댓글). 기준은 design/grey-g3-spec.md §5.3 과 G3 목업.
+/* markdown.css — 글 페이지: 글 레이아웃, 글 머리, 본문, 코드 블록, 콜아웃, 다이어그램, 이미지,
+   목차, 글 끝(참고 자료, 이전/다음 글, 댓글). 디자인 설명은 docs/design.md.
    모든 규칙은 아래 루트 클래스로 시작한다:
    .post-grid .post-head .post-main .post-body .post-end .end-sec .end-label .refs .pn-wrap .pn .comments
    .code-block .callout .diagram .img-fig .zoom-dlg .toc-details .toc-rail .toc-pill .toc-sheet

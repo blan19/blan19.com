@@ -1,7 +1,7 @@
 /* globals.css — 토큰, Tailwind 매핑, 요소 기본값, 공용 클래스, 사이트 크롬.
    markdown.css(글 렌더러, 글 머리와 글 끝)와 pages.css(홈, 목록, 기록, 404, 히어로 오브젝트)가 나머지를 맡는다.
    이 파일만 공용 클래스를 최상위로 정의한다.
-   명세: G3 "Minimal Index"(design/grey-g3-spec.md, 저장소에서 빠진 로컬 문서. 없으면 이 파일의 토큰이 기준). */
+   명세: G3 "Minimal Index". 설명은 docs/design.md, 값의 원본은 이 파일의 토큰이다. */
 @import "tailwindcss" source("../");
 @import "./markdown.css";
 @import "./pages.css";

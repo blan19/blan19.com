@@ -26,7 +26,7 @@ interface IconProps {
 }
 
 // 24px viewBox, stroke 만 쓰는 아이콘(굵기와 끝 모양은 globals.css 의 .icon).
-// 경로는 MARGIN 시안(design/proposals/b-margin.html, 저장소에서 빠진 로컬 문서)의 <symbol> 에서 옮겼다.
+// 경로는 이전 MARGIN 시안의 <symbol> 에서 옮겼다(시안 파일은 저장소에 없다).
 const paths: Record<IconName, ReactNode> = {
   note: (
     <>
