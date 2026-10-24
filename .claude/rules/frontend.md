@@ -83,7 +83,10 @@ paths:
 - 서버 전용 모듈(`src/lib/posts.ts`, `views.ts`, `markdown/index.ts`, `markdown/shiki.ts`)은 첫 줄 `import "server-only";` 다.
 - Next 16: 페이지와 `generateMetadata` 의 `params`/`searchParams` 는 `Promise` 타입이고 `await` 한다. route handler 에도 같은 규칙이 적용된다. `error.tsx` 는 `retry` prop 을 받는다.
 - 이미지는 `next/image` 를 쓴다. 원격 호스트는 `next.config.js` 의 `images.remotePatterns` 에 있어야 한다. 호스트를 추가하면 검사기도 자동으로 따라간다(설정을 require 함).
-- 메타데이터는 `export const metadata` / `generateMetadata` / `export const viewport` 를 쓴다(RSS `<link>` 는 `metadata.alternates.types`). `next/head` 는 App Router 에서 동작하지 않는다.
+- 메타데이터는 `export const metadata` / `generateMetadata` / `export const viewport` 를 쓴다. `next/head` 는 App Router 에서 동작하지 않는다.
+- canonical: 메타데이터는 세그먼트끼리 얕게 병합되어 페이지의 `alternates` 가 layout 의 RSS `<link>`(`alternates.types`)를 통째로 덮는다. 그래서 `alternates` 는 직접 쓰지 않고 `src/lib/seo.ts` 의 `alternates(path)`(canonical + RSS 타입)를 쓴다. layout 은 `alternates()`(canonical 없음)라 canonical 은 `/`, `/tech`, `/log`, `/tech/[slug]` 페이지에만 있고 404 에는 없다. `/tech?tag=…` 의 canonical 은 `/tech` 다. 공개 페이지를 추가하면 `alternates("/<path>")` 를 넣는다. 상대 경로 `./` 는 쓰지 않는다(문서에 없는 해석).
+- JSON-LD: `ui/json-ld`(서버, `<` 를 `\u003c` 로 이스케이프)가 `seo.ts` 의 `siteJsonLd()`(홈, `WebSite` + `Person`)와 `postJsonLd(post)`(글, `BlogPosting`)를 출력한다. 각 페이지 `site-wrap` 의 마지막 자식이다. 저자는 `@id` `${config.url}#person` 으로 이어진다. 수정일 필드가 없어 `dateModified` 는 넣지 않는다. JSON-LD 의 `image` 는 OG URL 의 title 을 인코딩한다(메타데이터 쪽은 알려진 이슈대로 인코딩하지 않는다).
+- 사이트 이름과 설명은 `config.site`(layout 기본 title/description, JSON-LD)다. RSS 두 라우트와 `og/route.tsx` 의 `DEFAULT_TITLE` 에는 같은 문자열이 따로 적혀 있다.
 - 사이트 URL 은 `src/lib/config.ts` 의 `url`(`https://www.blan19.xyz/`, 끝 `/` 포함) 하나다. layout(metadataBase), robots, sitemap, `tech/[slug]`, RSS 가 모두 이 값을 쓰니 경로는 `${config.url}tech/...` 처럼 앞에 `/` 없이 붙인다. 2026-10 에 `blan19.com` 에서 옮겼고 옛 도메인은 리다이렉트할 수 없다. 같은 때 GitHub 저장소도 `blan19/blan19.xyz` 로 이름을 바꿨다. utterances(`src/components/ui/comment`)와 글의 GitHub 첨부 이미지 URL 은 새 이름을 쓴다. 옛 이름(`blan19/blan19.com`)도 GitHub 리다이렉트로 동작하지만 새로 쓰지 않는다.
 - OG 이미지(`src/app/og/route.tsx`)는 번들한 `Pretendard-Bold.woff`(satori 는 woff2 를 못 읽는다) 하나로 그린다(네트워크 요청 없음). 회색 아이덴티티(`#F8F9FA` 배경, `#212529` 글자)이고 도장·오브젝트는 없다. 파비콘은 `src/app/icon.svg`(이전 히어로의 정적 점묘 매듭, 노트북 히어로와 무관, 자체 `prefers-color-scheme` 스타일)와 `favicon.ico` 다.
 - UI 문구는 한국어로 쓴다(코드 라벨, 날짜 같은 기술 표기는 예외).
