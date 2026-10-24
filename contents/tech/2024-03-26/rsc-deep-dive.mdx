@@ -2,7 +2,7 @@
 publishedAt: "2024-03-26"
 title: "React Server Components(RSC) 차근차근 이해하기"
 tags: ["react.js", "rsc"]
-description: "리액트 서버 컴포넌트를 차근차근 이해해보자"
+description: "CSR, SSR의 한계에서 출발해 RSC의 등장 배경, use client로 나뉘는 서버/클라이언트 트리, 장단점, SSR과의 관계를 알아보자"
 reference:
   [
     "https://servercomponents.dev",
@@ -15,6 +15,8 @@ reference:
     "https://github.com/reactwg/server-components/discussions/5",
   ]
 ---
+
+React Server Components(RSC)는 서버에서 하던 데이터 접근과 UI 렌더링을 컴포넌트 단위로 할 수 있게 하는 서버 컴포넌트입니다. 이 글에서는 CSR과 SSR의 한계, “use client”로 나뉘는 서버/클라이언트 트리, RSC의 장단점을 정리합니다. RSC는 SSR을 대체하지 않고 보완합니다.
 
 ### React Server Components(RSC)의 등장 배경
 
@@ -34,7 +36,7 @@ RSC를 들여다보기에 앞서 왜 RSC가 등장하게 되었는지 알아볼 
 
 일반적인 리액트 앱에서 Tanstack Query나 SWR으로 데이터 페칭을 거쳐 컨텐츠를 가져오는 프로세스의 렌더링 과정은 다음과 같이 시각화할 수 있습니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/085d4e25-9509-4f35-bc75-69e4e8250de1)
+![CSR 타임라인: JS 다운로드와 셸 렌더 뒤 데이터베이스 쿼리를 거쳐 콘텐츠를 렌더하고 LCP에 도달 {priority} {627x367}](/image/rsc-deep-dive/01-csr.png)
 
 CSR은 브라우저가 HTML을 받으면서 시작됩니다. 다들 익숙하실 거에요 `<div id="root">` 와 같은 비어있는 HTML을요. 이 HTML 파일에는 하나 이상의 `<script>` 태그가 있습니다. 자바스크립트 번들이 다운로드되며 파싱이 끝난다면 리액트 앱은 이제 동적인 컨텐츠를 보여줄 것 입니다.
 
@@ -48,11 +50,11 @@ Next.js나 Remix와 같은 메타 프레임워크들은 이런 CSR에서 발생�
 
 SSR에서 일반적인 렌더링 프로세스는 다음과 같을 것 입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/68b63954-654b-481e-ada6-582e50a9f2cb)
+![SSR 타임라인: 서버의 셸 렌더로 FCP, JS 다운로드와 하이드레이션 뒤 TTI, 이후 데이터를 받아 LCP {636x376}](/image/rsc-deep-dive/02-ssr-client-fetch.png)
 
 또는 서버 사이드에서 데이터베이스 쿼리를 진행해 컨텐츠로 완전히 채워 렌더를 할수도 있을 것 입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/2a823114-088e-4e13-b88c-fc647d06c9ba)
+![서버에서 DB 쿼리와 앱 렌더를 마쳐 FCP와 LCP가 같고, JS 다운로드와 하이드레이션 뒤 TTI인 SSR 타임라인 {1596x942}](/image/rsc-deep-dive/03-ssr-server-fetch.png)
 
 이제 서버에서 비어있는 HTML 대신 내용이 채워진 HTML을 보내 사용자들은 빈 화면을 보지 않게 되었습니다.
 
@@ -86,11 +88,11 @@ RSC가 추가됨으로 React 환경은 크게 바뀌었을까요?
 
 Dan Abramov가 쓴 글인 [Why do Client Components get SSR'd to HTML?](https://github.com/reactwg/server-components/discussions/4)을 확인해본다면 크게 바뀐 점은 없어보입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/ee46e6c6-d329-4d7d-a65b-2c71353b89ee)
+![서버 트리가 파일시스템, DB, 내부 서비스에 접근해 React 트리에 props를 넘기는 구조도 {2516x1510}](/image/rsc-deep-dive/04-server-tree.png)
 
 RSC는 클라이언트 React 트리를 변경하지 않고 이전에 미리 서버 트리를 구성합니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/52108407-587f-4b5d-a2eb-f2c2b2dd81c6)
+![기존 React 트리를 Client 트리로 바꾼 구조도: 서버 트리가 props를 넘기고 Client 트리가 HTML과 JS를 만듦 {2602x1330}](/image/rsc-deep-dive/05-client-tree.png)
 
 기존의 React 트리를 Client 트리로 바꾸기만 하면 RSC가 추가된 React의 환경이 됩니다.
 
@@ -102,7 +104,7 @@ RSC는 클라이언트 React 트리를 변경하지 않고 이전에 미리 서�
 
 “use client”라는 키워드를 최상단에 선언한다면 이 컴포넌트를 기준으로 클라이언트 트리로 취급됩니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/09fed757-5e7b-4506-bd4c-c1b3d1ef1dfe)
+![Server와 Client가 섞인 컴포넌트 트리와 use client 경계로 나뉜 서버, 클라이언트 영역 {1600x960}](/image/rsc-deep-dive/06-component-tree.png)
 
 “use client”가 선언된 컴포넌트와 import 된 컴포넌트를 모두 클라이언트 컴포넌트로 취급합니다.
 
@@ -115,7 +117,7 @@ const OtherCComponent = () => {
 
 // src/components/client-components
 
-("use client");
+"use client";
 
 import OtherClientComponent from "@/components/other-component";
 
@@ -145,7 +147,7 @@ const ServerComponent = async () => {
 
 // src/components/client-components
 
-("use client");
+"use client";
 
 import ServerComponent from "@/components/server-component";
 
@@ -163,7 +165,7 @@ const ClientComponent = () => {
 
 OtherComponent를 ClientComponent에서 불러와 사용할 수 있었던 서버/클라이언트 컴포넌트와 다른 공유 컴포넌트이기 때문입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/363ab161-346a-4e40-a334-491a1ea0992e)
+![Server, Client, Shared 컴포넌트별 use client, 서버/클라이언트 API, 훅, 데이터 페칭 가능 여부 비교표 {878x666}](/image/rsc-deep-dive/07-component-types.png)
 
 도표로 보면 공유 컴포넌트를 사용하기 위해선 꽤나 제한적으로 보이지만 이미 우리는 공유 컴포넌트를 많이 사용하고 있습니다.
 브라우저 API와 리액트 훅을 사용하지 않고 stateless한 컴포넌트이기만 하면 되기 때문이죠!
@@ -236,11 +238,11 @@ Composition 패턴을 사용해 클라이언트 컴포넌트의 children으로 �
 
 SSR을 사용한 렌더링
 
-![Learn {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/0920b577-13ce-4add-970b-7ac5e7d461e9)
+![SSR 렌더링 타임라인: 서버 DB 쿼리와 앱 렌더 뒤 FCP·LCP, JS 다운로드와 하이드레이션 뒤 TTI {1596x942}](/image/rsc-deep-dive/03-ssr-server-fetch.png)
 
 RSC를 사용한 렌더링
 
-![RSC {priority} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/b21ce7f7-717c-4926-91f7-47a354bcd238)
+![RSC 렌더링 타임라인: SSR 그림보다 짧은 JS 다운로드와 하이드레이션으로 TTI가 앞당겨짐 {1574x902}](/image/rsc-deep-dive/08-rsc-render.png)
 
 하지만 RSC는 SSR을 대체할 수 없습니다.
 

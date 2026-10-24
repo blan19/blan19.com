@@ -1,8 +1,9 @@
 ---
 publishedAt: "2024-05-15"
+updatedAt: "2026-10-24"
 title: "React 19 beta에 포함된 새로운 feature, hook들과 개선사항들을 알아보자"
 tags: ["react.js"]
-description: "React 19 beta에는 무슨 feature가 추가되었고 개선되었을까?"
+description: "React 19 beta의 Action, useActionState·useOptimistic·use 등 새 훅과 ref·Context 개선을 코드로 알아보자"
 reference:
   [
     "https://react.dev/blog/2024/04/25/react-19",
@@ -11,6 +12,12 @@ reference:
     "https://yceffort.kr/2023/06/react-use-hook",
   ]
 ---
+
+> [!NOTE]
+> **2024년 5월 React 19 beta 기준 글입니다**
+> 이 글은 2024년 5월 시점의 React 19 beta를 기준으로 썼습니다. React 19는 2024년 12월 5일 정식 버전이 나왔으므로 아래의 `react@beta` 설치와 타입 override 안내는 지금은 맞지 않습니다. 정식 버전 정보는 공식 글 [React v19](https://react.dev/blog/2024/12/05/react-19)와 [React 19 Upgrade Guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)를 참고해 주세요.
+
+React 19 beta는 Action과 새 훅, ref·Context 개선을 담은 버전입니다. 이 글에서는 Action과 useActionState, useFormStatus, useOptimistic, use 훅, props ref, Context Provider를 코드와 함께 정리합니다. RSC는 다루지 않습니다.
 
 React 19 beta가 릴리즈되었습니다.
 

@@ -35,6 +35,7 @@ find contents -name '<slug>.mdx'         # 결과가 있으면 slug 중복 → �
   - `tags`: 기존 태그를 우선 쓴다. 기존 태그 목록과 log 태그 기준은 `content.md` 에 있다.
   - `description`: 한 문장. 다른 글과 겹치지 않게 쓴다.
   - `reference`: 실제로 참고한 URL 만 넣는다. 없으면 `[]`.
+  - `updatedAt`: 선택 필드다. 새 글에는 넣지 않는다(기준은 `content.md`).
 - 저장하면 PostToolUse 훅이 검사기를 자동 실행한다. 보고된 error 는 바로 고친다.
 
 ## 4. 본문 초안 (기존 글 문체)

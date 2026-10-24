@@ -13,6 +13,8 @@ export interface PostMetadata {
   tags: string[];
   description: string;
   reference: string[];
+  // 선택. 내용이 실질적으로 바뀐 경우에만 쓰는 "YYYY-MM-DD"(검사기가 형식과 날짜 범위를 본다)
+  updatedAt?: string;
 }
 
 export interface Post {
@@ -91,6 +93,10 @@ export const getBlogPosts = (dir: PostKind): Post[] => {
     };
   });
 };
+
+// 마지막 수정일: updatedAt 이 없으면 publishedAt. JSON-LD dateModified 와 sitemap lastmod 에 쓴다.
+export const getModifiedAt = ({ metadata }: Post): string =>
+  metadata.updatedAt ?? metadata.publishedAt;
 
 export const getPostsNewestFirst = (kind: PostKind): Post[] =>
   [...getBlogPosts(kind)].reverse();

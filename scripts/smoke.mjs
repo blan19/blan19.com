@@ -44,29 +44,65 @@ const XML = /xml/;
 const SITE = "https://www.blan19.xyz";
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // body: 응답 본문에 있어야 하는 패턴. 페이지가 alternates 를 덮어쓰면 RSS 링크가 빠지므로 함께 본다.
+// notBody: 있으면 안 되는 패턴. assert: 본문을 받아 문제를 문자열로 돌려주는 함수(통과면 null).
 const head = (path) => [
   new RegExp(`<link rel="canonical" href="${escapeRe(SITE + path)}"/>`),
   /<link rel="alternate" type="application\/rss\+xml"/,
 ];
+// openGraph 는 얕게 병합되므로 페이지마다 공통 필드(사이트 이름, locale, 이미지 크기)가 다시 들어갔는지 본다.
+const og = (path) => [
+  /<meta property="og:site_name" content="blan19 기술 블로그"\/>/,
+  /<meta property="og:locale" content="ko_KR"\/>/,
+  new RegExp(`<meta property="og:url" content="${escapeRe(SITE + path)}/?"/>`),
+  /<meta property="og:image" content="https:\/\/www\.blan19\.xyz\/og\?title=[^"&]+"\/>/,
+  /<meta property="og:image:width" content="1200"\/>/,
+  /<meta name="twitter:card" content="summary_large_image"\/>/,
+];
+const title = (text) => new RegExp(`<title>${escapeRe(text)}</title>`);
+// 글 JSON-LD 는 @graph 하나에 BlogPosting, BreadcrumbList, WebSite, Person 이 있어야 한다.
+const postGraph = (body) => {
+  const match = body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  if (!match) return "JSON-LD 없음";
+  let data;
+  try {
+    data = JSON.parse(match[1]);
+  } catch (e) {
+    return `JSON-LD 파싱 실패: ${e.message}`;
+  }
+  const types = (data["@graph"] ?? []).map((node) => node["@type"]);
+  const missing = ["BlogPosting", "BreadcrumbList", "WebSite", "Person"].filter((t) => !types.includes(t));
+  if (missing.length) return `JSON-LD @graph 에 없음: ${missing.join(", ")}`;
+  const post = data["@graph"].find((node) => node["@type"] === "BlogPosting");
+  return post.dateModified ? null : "BlogPosting 에 dateModified 없음";
+};
 const checks = [
-  { path: "/", type: HTML, body: [...head(""), /"@type":"WebSite"/] },
-  { path: "/tech", type: HTML, body: head("/tech") },
+  { path: "/", type: HTML, body: [...head(""), ...og(""), title("blan19 기술 블로그"), /"@type":"WebSite"/] },
+  { path: "/tech", type: HTML, body: [...head("/tech"), ...og("/tech"), title("글 목록 | blan19")] },
   { path: "/tech?tag=react.js", type: HTML, body: head("/tech") },
   { path: "/tech?tag=__none__", type: HTML },
-  { path: "/log", type: HTML, body: head("/log") },
+  { path: "/log", type: HTML, body: [...head("/log"), ...og("/log"), title("기록 | blan19")] },
   ...techSlugs().map((slug) => ({
     path: `/tech/${encodeURIComponent(slug)}`,
     type: HTML,
-    body: [...head(`/tech/${slug}`), /"@type":"BlogPosting"/],
+    body: [...head(`/tech/${slug}`), ...og(`/tech/${slug}`), /<meta property="og:type" content="article"\/>/],
+    assert: postGraph,
   })),
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
-  { path: "/sitemap.xml", type: XML },
-  { path: "/robots.txt", type: /text\/plain/ },
+  { path: "/sitemap.xml", type: XML, notBody: [/<loc>[^<]*\/llms\.txt<\/loc>/] },
+  { path: "/robots.txt", type: /text\/plain/, body: [/Allow: \//], notBody: [/^Host:/m] },
+  { path: "/llms.txt", type: /text\/plain/, body: [/^# blan19 기술 블로그\n/, new RegExp(`\\]\\(${escapeRe(SITE)}/tech/`)] },
   { path: "/og", type: /image\/png/ },
   { path: "/og?title=smoke", type: /image\/png/ },
   { path: "/icon.svg", type: /image\/svg\+xml/ },
-  { path: "/__smoke-not-found__", status: 404, type: HTML },
+  // Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
+  {
+    path: "/__smoke-not-found__",
+    status: 404,
+    type: HTML,
+    body: [title("페이지를 찾을 수 없습니다 | blan19"), /<meta name="robots" content="noindex"\/>/],
+    notBody: [/name="robots"[\s\S]*name="robots"/],
+  },
 ];
 
 let server = null;
@@ -165,9 +201,13 @@ const main = async () => {
       status = res.status;
       type = (res.headers.get("content-type") ?? "").split(";")[0];
       const missing = (check.body ?? []).filter((re) => !re.test(body));
-      ok = status === expectStatus && check.type.test(type) && missing.length === 0;
+      const unexpected = (check.notBody ?? []).filter((re) => re.test(body));
+      const problem = check.assert?.(body) ?? null;
+      ok = status === expectStatus && check.type.test(type) && missing.length === 0 && unexpected.length === 0 && !problem;
       if (status !== expectStatus || !check.type.test(type)) note = `기대: ${expectStatus} ${check.type.source}`;
       else if (missing.length) note = `본문에 없음: ${missing.map((re) => re.source).join(", ")}`;
+      else if (unexpected.length) note = `본문에 있으면 안 됨: ${unexpected.map((re) => re.source).join(", ")}`;
+      else if (problem) note = problem;
     } catch (e) {
       note = e.name === "AbortError" ? "시간 초과" : e.message;
     }

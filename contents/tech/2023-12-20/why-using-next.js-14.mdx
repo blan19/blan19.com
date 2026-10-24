@@ -2,9 +2,15 @@
 publishedAt: "2023-12-20"
 title: "나는 왜 Next.js@14를 사용했을까?"
 tags: ["next.js"]
-description: "Next.js@14버전의 주요 업데이트가 무엇인지 알아보자"
-reference: ["https://nextjs.org/docs", "https://nextjs.org/learn"]
+updatedAt: "2026-10-24"
+description: "Next.js 14로 블로그를 옮긴 이유를 Next.js Learn, Server actions, Partial Prerendering 사용 예시로 알아보자"
+reference: ["https://nextjs.org/docs", "https://nextjs.org/learn", "https://nextjs.org/blog/next-14"]
 ---
+
+> [!NOTE]
+> 이 글은 2023년 12월, Next.js 14 기준으로 작성했고 이후 버전에서 바뀐 점이 있습니다. Next.js 16에서는 이 글의 `experimental.ppr` 플래그가 제거되었고, Partial Prerendering은 [`cacheComponents`](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents) 설정으로 사용합니다([Next.js 16 업그레이드 가이드](https://nextjs.org/docs/app/guides/upgrading/version-16)). Server actions는 현재 문서에서 Server Functions를 form 제출과 데이터 변경에 쓰는 경우로 설명합니다([Mutating Data](https://nextjs.org/docs/app/getting-started/mutating-data)).
+
+제가 블로그를 Next.js 14로 옮긴 이유는 Next.js Learn, Server actions, Partial Prerendering입니다. Server actions로 API route 없이 조회수를 기록했고, Partial Prerendering으로 정적 페이지의 조회수만 Streaming으로 그렸습니다.
 
 ### 배경
 
@@ -34,7 +40,7 @@ next.js@12를 그대로 유지하면서 page router와 app router를 모두 사�
 13버전에 큰 변화가 있어 자칫 잘못하면 배우는 시간에만 큰 비용이 소모될 수도 있었습니다.
 그러던 차에 next.js 팀에서 학습을 위한 프리코스를 제공하는 것을 확인했고, 프리코스를 차례차례 학습하며 부족한 부분은 공식문서로 채우면 큰 시간 소모 없이 금방 학습할 수 있다고 판단하였습니다.
 
-![Learn {priority} {caption: Learn Quiz} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/4a0f91cd-98ab-4470-8a2b-06dffe57795d)
+![Next.js Learn 퀴즈 화면: SQL 데이터 페칭 문항에 정답을 고른 모습 {priority} {caption: Learn Quiz} {917x639}](/image/why-using-next.js-14/01-learn-quiz.png)
 
 자세한 예시코드와 중간마다 퀴즈도 포함되어있어 대략 2 ~ 3시간 만에 새롭게 바뀐 next.js에 적응할 수 있었습니다.
 
@@ -169,22 +175,22 @@ export { increment };
 next.js@14을 학습하면서 가장 흥미롭게 보았던 부분입니다.
 실제로 제 블로그에 적용까지 해보았는데, next.js 팀에서 웹 어플리케이션의 기본 렌더링이 될 잠재력이 있다고 기대하는지 알 수 있었습니다.
 
-`Partial Static Prerendering`은 말 그대로 정적 렌더링과 동적 렌더링의 결합입니다.
+`Partial Prerendering`은 말 그대로 정적 렌더링과 동적 렌더링의 결합입니다.
 가끔 next.js를 사용하면서 이런 생각이 들 때가 있었을 수도 있습니다.
 
 ＂SSG 와 SSR 둘 다 사용할 수는 없나?＂
 
-이에 대한 갈증을 부분적으로 해결해 주었던 것은 기존의 ISR이였지만, ISR의 부족한 부분을 채워 등장한 것이 Partial Static Prerendering 입니다.
+이에 대한 갈증을 부분적으로 해결해 주었던 것은 기존의 ISR이였지만, ISR의 부족한 부분을 채워 등장한 것이 Partial Prerendering 입니다.
 
 - Build 타임에 페이지의 정적인 부분들은 Prerendering 됩니다. (기존 SSG 처럼 정적인 부분은 캐시 되어 다음 요청 시에 재사용됩니다.)
 - 초기 페이지 로드 후 동적인 부분은 Streaming을 사용하여 hydration이 됩니다.
 
-Partial Static Prerendering을 통해 페이지에서 정적인 부분을 빠르게 렌더링을 하고 동적인 부분을 Streaming을 통해 병렬적으로 가져와 사용자 경험을 높일 수 있습니다.
+Partial Prerendering을 통해 페이지에서 정적인 부분을 빠르게 렌더링을 하고 동적인 부분을 Streaming을 통해 병렬적으로 가져와 사용자 경험을 높일 수 있습니다.
 
-> Partial Static Prerendering은 아직 next.js에서 실험적인 기능입니다.  
+> Partial Prerendering은 아직 next.js에서 실험적인 기능입니다.  
 > 앞으로 next.js의 마이너 릴리즈 버전에서 더 많은 업데이트가 이루어질 수 있습니다.
 
-Partial Static Prerendering을 사용하는 법을 알아보겠습니다.
+Partial Prerendering을 사용하는 법을 알아보겠습니다.
 아직은 실험적인 기능이기 때문에 먼저 next.js의 canary 버전을 설치해야 합니다.
 
 ```bash
@@ -206,16 +212,16 @@ const nextConfig = {
 module.exports = nextConfig;
 ```
 
-이제 Partial Static Prerendering이 사용 가능해졌습니다!
+이제 Partial Prerendering이 사용 가능해졌습니다!
 
 > 아직 cliend-side navigation에는 아직 적용이 안됩니다. (next.js 팀에서 노력하고 있다고하니 조금만 기다려주세요!)  
 > 또한 node.js [node.js 런타임](https://nextjs.org/docs/app/building-your-application/rendering/edge-and-nodejs-runtimes)으로 설계되어 있습니다
 
 제 블로그의 경우에는 메인 홈에서 블로그 게시글에 대한 조회수를 보여주면서 이 부분은 동적 렌더링이 필요했습니다.
 
-![View {caption: 블로그 조회수 뷰} {768x432}](https://github.com/blan19/blan19.xyz/assets/66871265/c802645e-27a5-40aa-9e89-a0813f55a48a)
+![이전 블로그 홈: 최근 글과 조회수 상위 글 카드에 날짜와 조회수 표시 {caption: 블로그 조회수 뷰} {1297x537}](/image/why-using-next.js-14/02-view-count.png)
 
-Partial Static Prerendering을 사용해서 조회수를 보여주는 블로그 게시글은 Streaming을 사용하여 병렬적으로 동적 렌더링을 해주었습니다
+Partial Prerendering을 사용해서 조회수를 보여주는 블로그 게시글은 Streaming을 사용하여 병렬적으로 동적 렌더링을 해주었습니다
 
 ```tsx
 const View = async ({ slug }: { slug: string }) => {
@@ -282,7 +288,7 @@ export default function Home() {
 
 블로그 게시글 부분을 제외한 나머지는 정적으로 렌더링 되어 빠른 페이지 렌더링 경험은 그대로 유지하고 동적으로 데이터도 보여줄 수 있어서 매우 만족스러웠습니다.
 
-Partial Static Prerendering을 사용하는데 새로운 API의 사용이 필요가 없어 학습하고 사용하는데 큰 어려움도 없습니다.
+Partial Prerendering을 사용하는데 새로운 API의 사용이 필요가 없어 학습하고 사용하는데 큰 어려움도 없습니다.
 
 ### 마치면서
 

@@ -2,9 +2,21 @@
 publishedAt: "2024-03-03"
 title: "3D 인터랙티브 멀티플레이어 웹 with Three.js and R3F"
 tags: ["three.js", "r3f"]
-description: "Three.js와 R3F를 사용하여 실시간 채팅이 가능한 3D 인터랙티브 멀티플레이어 웹 구현하기"
-reference: []
+description: "R3F로 만드는 3D 멀티플레이어 웹: Socket.io 서버, Readyplayerme 아바타, Rapier 충돌, 이동 동기화, 실시간 채팅 구현을 알아보자"
+reference:
+  [
+    "https://threejs.org/docs/",
+    "https://r3f.docs.pmnd.rs/getting-started/introduction",
+    "https://drei.docs.pmnd.rs/controls/keyboard-controls",
+    "https://drei.docs.pmnd.rs/misc/html",
+    "https://github.com/pmndrs/react-three-rapier",
+    "https://socket.io/docs/v4/",
+    "https://fastify.dev/docs/latest/",
+    "https://github.com/ducktors/fastify-socket.io",
+  ]
 ---
+
+이 글은 Three.js와 R3F로 아바타 선택, 실시간 채팅, 아바타 움직임 동기화가 되는 3D 멀티플레이어 웹을 구현한 기록입니다. 서버는 Fastify와 Socket.io로 만들고, 클라이언트는 Rapier로 충돌을 처리합니다. 리렌더링으로 애니메이션이 끊기지 않도록 키 입력 상태는 Ref로 관리했습니다.
 
 평소 자주 보던 개발 유튜브인 GIS Developer님의 영상을 보던 중 [다음](https://www.youtube.com/watch?v=_GB-rN_bjO0&t=72s)과 같은 영상을 보게 되었습니다.
 
@@ -32,7 +44,7 @@ reference: []
 
 사용자의 Authorization이 필요 없는 앱이기 때문에, 복잡하게 DB를 사용하지 않고 서버의 in-memory 객체를 사용하여 소켓에 커넥트된 플에이어를 저장할 것 입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/e1fafde1-a580-4381-8414-73539ecbb2d0)
+![Learn {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/e1fafde1-a580-4381-8414-73539ecbb2d0)
 
 #### 소켓 서버 이벤트
 
@@ -111,11 +123,11 @@ server.listen({ port: PORT }, (error, address) => {
 
 Readyplayerme는 플레이어rk 수천 개의 사용자 정의 옵션 중에서 선택하여 자신의 정체성을 가장 잘 나타내는 아바타를 만들 수 있습니다. 선택한 아바타는 즉시 애니메이션을 적용할 수 있는 3D 모델로 제공됩니다.
 
-![Learn {priority} {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/26d17593-28c2-4b6a-adf9-50b2f1b14d5d)
+![Learn {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/26d17593-28c2-4b6a-adf9-50b2f1b14d5d)
 
 사진을 첨부해 유사한 아바타를 만들수도 있고 여러 에셋들을 선택해 원하는 독창적인 캐릭터를 커스텀할 수 있습니다.
 
-![Learn {priority} {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/d350955e-2b43-4199-8143-ee077f5fe358)
+![Learn {caption: https://docs.readyplayer.me/ready-player-me/what-is-ready-player-me} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/d350955e-2b43-4199-8143-ee077f5fe358)
 
 Readyplayerme는 React를 위한 SDK를 지원하고 있어 쉽게 React 앱으로 확장할 수 있습니다.
 
@@ -267,7 +279,7 @@ useGLTF.preload("/animations/M_Standing_Idle_001.glb");
 
 아바타의 RigidBody에는 `lockRotations` 옵션을 true로 설정해주었는데, 아바타가 움직일 때 발생한 힘에 의해 원하지 않는 rotation 변경이 일어날 수 있기 때문입니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/ac54f62d-fc18-42dc-8cec-4a0368c1242d)
+![Learn {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/ac54f62d-fc18-42dc-8cec-4a0368c1242d)
 
 이렇게 플레이어에 의해 생성된 아바타와 물리엔진이 적용된 World의 City 오브젝트가 정상적으로 충돌 감지가 되어 정상적으로 도시 위에 아바타가 서있을 수 있습니다.
 
@@ -489,7 +501,7 @@ const Avatar = memo(function AvatarImpl({
 
 > State의 변화에 따른 Re-render가 일어난다면 애니메이션 재생이 초기화되기 때문에 자연스러운 애니메이션 흐름에 방해가 됩니다. 이를 위해 Ref로 pressed에 대한 변화를 관리하였습니다
 
-![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/44bcfcd2-3568-407e-8793-8d38249e0061)
+![Learn {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/44bcfcd2-3568-407e-8793-8d38249e0061)
 
 #### 실시간 채팅
 
@@ -640,7 +652,7 @@ Chat 컴포넌트는 drei의 `Html` 컴포넌트를 사용하였는데, canvas �
 
 또한 부모의 포지션에 따라 로컬 좌표계를 설정할 수 있어 쉽게 포지션을 설정할 수 있습니다.
 
-![Learn {priority} {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/2efee7dd-e875-4834-a2ac-00add80a0f00)
+![Learn {768x432}](https://github.com/blan19/3D_Interactive_Meta/assets/66871265/2efee7dd-e875-4834-a2ac-00add80a0f00)
 
 ### 마무리하며
 
