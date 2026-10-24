@@ -109,7 +109,7 @@
 
 ### 3.11 외부 의존을 최소로 한다
 
-- 결정: OG 이미지 폰트는 저장소에 번들한다(`src/fonts/Pretendard-Bold.woff`). 본문 폰트 Pretendard 도 로컬 파일이고, IBM Plex Mono 는 `next/font/google` 이 빌드 때 받아 자체 호스팅한다. 댓글은 utterances(GitHub issues) iframe 을 직접 띄운다. 분석은 GA 이고 `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` 가 비면 스크립트를 넣지 않는다.
+- 결정: OG 이미지 폰트는 저장소에 번들한다(`src/fonts/Pretendard-Bold.woff`). 본문 폰트 Pretendard 도 로컬 파일(공식 subset_glyphs 기준 서브셋 `PretendardVariable.subset.woff2`, 약 650KB. 목록 밖 한글은 시스템 폰트로 그려진다)이고, IBM Plex Mono 는 `next/font/google` 이 빌드 때 받아 자체 호스팅한다. 댓글은 utterances(GitHub issues) iframe 을 직접 띄운다. 분석은 GA 이고 `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` 가 비면 스크립트를 넣지 않는다.
 - 이유: 런타임에 제3자 요청이 적을수록 빠르고 장애 지점이 적다. 댓글 저장소를 직접 운영하지 않는다.
 - 버린 대안: Giscus, 자체 댓글 DB, OG 폰트 네트워크 로드, 런타임 Google Fonts.
 - 결과·제약: 빌드는 Google Fonts 에 접속해야 해서 오프라인 빌드가 안 된다. utterances 는 `utterances.html` 의 비공개 쿼리 계약에 기대므로 utterances 쪽이 바뀌면 깨질 수 있다. 외부 출처 목록은 architecture.md.
@@ -135,7 +135,7 @@
 
 - 결정:
   - Server Action 이 없다. 조회수 읽기와 쓰기는 `server-only` 모듈 `src/lib/views.ts` 하나이고, 쓰기는 존재하는 tech slug 에만 한다.
-  - 응답 헤더: `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, 그리고 사이트를 깨지 않는 지시어만 강제하는 CSP(`frame-ancestors 'none'`, `base-uri`, `form-action`, `object-src`). 전체 CSP 는 Report-Only 로만 보낸다.
+  - 응답 헤더: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`(frame-ancestors 를 모르는 옛 브라우저용), `Permissions-Policy`, 그리고 사이트를 깨지 않는 지시어만 강제하는 CSP(`frame-ancestors 'none'`, `base-uri`, `form-action`, `object-src`). 전체 CSP 는 Report-Only 로만 보낸다.
   - 원격 이미지는 `github.com/blan19/**` 와 `github.com/user-attachments/**`(쿼리 없음)만 허용한다.
   - 본문 raw HTML 미렌더, URL 프로토콜 허용 목록, mermaid strict.
 - 이유: 공격 면을 정적 사이트 수준으로 줄인다. 이전의 `"use server"` 파일은 클라이언트에서 import 하면 조회수 증가가 공개 POST 엔드포인트가 될 수 있었다.
@@ -156,7 +156,7 @@
 
 ### 3.16 검증 전략: 앱 테스트 대신 단계 검사
 
-- 결정: `npm run verify` 하나가 검증 기준이다: prisma generate → tsc → eslint → content:check --strict → test:hooks → test:content → DB 차단 next build → smoke(tech 글 7개 기준 24개 경로의 상태 코드와 content-type, 404 본문, DB 와 무관한 서버 오류 로그). CI 도 이것 하나를 돌린다.
+- 결정: `npm run verify` 하나가 검증 기준이다: prisma generate → tsc → eslint → content:check --strict → test:hooks → test:content → DB 차단 next build → smoke(tech 글 7개 기준 25개 경로의 상태 코드와 content-type, 페이지 메타와 JSON-LD, 404 본문, DB 와 무관한 서버 오류 로그). CI 도 이것 하나를 돌린다.
 - 이유: 앱 로직이 얇고(파일 읽기, 렌더, 조회수 한 테이블) 깨지는 곳은 대부분 타입, 글 형식, 빌드, 라우트 응답이다. 1인 유지보수에서 컴포넌트 테스트는 비용이 크다.
 - 버린 대안: 컴포넌트 단위 테스트, 시각 회귀 테스트, E2E.
 - 결과·제약: 화면 모양, 클라이언트 상호작용(목차 스파이, 댓글 로그인, 히어로 캔버스), DB 가 살아 있을 때의 경로는 자동으로 검사하지 않는다. 화면은 `/run-app` 으로 사람이 본다. smoke 는 차단 DB 에서만 돈다.
@@ -211,4 +211,5 @@
 | 2026-10 | 의존성 최신화(#50), Claude Code 하네스와 `vercel-build` 분리(#51), 도메인 `www.blan19.xyz` 이전과 Node 24 고정(#54), 디렉터리 재편(#57) |
 | 2026-10 | MARGIN 리디자인과 렌더러 교체(react-markdown/Prism → unified + 서버 Shiki)(#58) |
 | 2026-10 | G3 회색조 "Minimal Index"(#59), UI 문구 정리(#60, #61), 히어로를 점묘 노트북으로(#61) |
-| 2026-10 | `refactor/architecture` 브랜치(아직 main 에 없음): Cache Components 와 원격 캐시, 빌드 때 OG 이미지, 보안 헤더와 이미지 호스트 축소, 조회수 모듈 `views.ts` 통합(Server Action 제거), 피드에 전체 본문 HTML, 검사기·guard 훅 모듈 분리, 이 docs/ 문서 |
+| 2026-10 | canonical, 저자 메타, JSON-LD(#62). SEO 감사 반영: OG 공통값, JSON-LD `@graph`, `updatedAt`, 관련 글, `/llms.txt`, Pretendard 서브셋, 로컬 글 이미지, 누르는 영역 44px(#63) |
+| 2026-10 | `refactor/architecture` 브랜치(아직 main 에 없음, #62·#63 위로 rebase): Cache Components 와 원격 캐시, 빌드 때 OG 이미지, 보안 헤더와 이미지 호스트 축소, 조회수 모듈 `views.ts` 통합(Server Action 제거), 피드에 전체 본문 HTML, 검사기·guard 훅 모듈 분리, 이 docs/ 문서 |

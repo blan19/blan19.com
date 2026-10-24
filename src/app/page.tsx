@@ -8,6 +8,8 @@ import HeroObject from "@/components/ui/hero-object";
 import PostList from "@/components/ui/post-list";
 import MostRead, { MostReadPending } from "@/components/ui/most-read";
 import { alternates, openGraph } from "@/lib/metadata";
+import { siteJsonLd } from "@/lib/json-ld";
+import JsonLd from "@/components/ui/json-ld";
 
 // 제목, 설명은 layout 기본값(사이트)을 그대로 쓴다. og:url 때문에 openGraph 만 둔다.
 export const metadata: Metadata = {
@@ -16,16 +18,6 @@ export const metadata: Metadata = {
 };
 
 const RECENT_COUNT = 5;
-
-// title, description 은 layout 기본값(config.site)이다.
-export const metadata: Metadata = {
-  alternates: alternates("/"),
-  openGraph: openGraph({
-    title: config.site.name,
-    description: config.site.description,
-    path: "/",
-  }),
-};
 
 export default function Home() {
   const tech = getPostsNewestFirst("tech");

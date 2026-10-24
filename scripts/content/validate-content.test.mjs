@@ -39,7 +39,7 @@ describe("ctx", () => {
     assert.ok(ctx.remotePatterns.length > 0);
   });
   test("고정 id 는 src/lib/page-ids.ts 에서 읽는다", () => {
-    assert.deepEqual(FIXED_PAGE_IDS, ["main", "post-head", "post-body", "footnote-label", "ref-label", "cm-label"]);
+    assert.deepEqual(FIXED_PAGE_IDS, ["main", "post-head", "post-body", "footnote-label", "ref-label", "rel-label", "cm-label"]);
   });
 });
 
@@ -60,9 +60,14 @@ describe("checkFrontmatter", () => {
     ["reference 문자열", { ...VALID, reference: "https://x.dev" }, null, [["error", "URL 문자열 배열"]]],
     ["reference http 아님", { ...VALID, reference: ["ftp://x.dev"] }, null, [["error", "http(s) URL 이 아님"]]],
     ["reference 중복", { ...VALID, reference: ["https://x.dev", "https://x.dev"] }, null, [["warn", "중복 URL"]]],
+    ["updatedAt 올바름", { ...VALID, updatedAt: "2024-03-01" }, null, []],
+    ["updatedAt Date", { ...VALID, updatedAt: new Date("2024-03-01") }, null, [["error", "updatedAt 이 따옴표 없이"]]],
+    ["updatedAt 없는 날짜", { ...VALID, updatedAt: "2024-02-30" }, null, [["error", "updatedAt \"2024-02-30\""]]],
+    ["updatedAt 이 publishedAt 보다 이름", { ...VALID, updatedAt: "2023-12-31" }, null, [["error", "보다 이름"]]],
+    ["updatedAt 이 오늘 이후", { ...VALID, updatedAt: "2024-06-02" }, null, [["error", "오늘(2024-06-01"]]],
   ];
   for (const [name, data, folderDate, expected] of cases) {
-    test(name, () => assertProblems(checkFrontmatter(data, folderDate), expected));
+    test(name, () => assertProblems(checkFrontmatter(data, folderDate, "2024-06-01"), expected));
   }
 });
 

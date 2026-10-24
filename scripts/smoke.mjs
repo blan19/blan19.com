@@ -40,12 +40,20 @@ const techSlugs = () => {
     .map((f) => f.replace(/\.mdx$/, ""));
 };
 
-// 404 HTML 은 레이아웃(lang)과 not-found.tsx 제목을 서버에서 그려야 한다(오류 셸 <html id="__next_error__"> 이면 실패).
-const NOT_FOUND_PAGE = [/<html lang="ko"/, /<h1 class="page-h1">페이지를 찾을 수 없습니다<\/h1>/];
 const HTML = /text\/html/;
 const XML = /xml/;
 const SITE = "https://www.blan19.xyz";
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const title = (text) => new RegExp(`<title>${escapeRe(text)}</title>`);
+// 404 HTML 은 레이아웃(lang)과 not-found.tsx 제목을 서버에서 그려야 한다(오류 셸 <html id="__next_error__"> 이면 실패).
+// robots 메타는 Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
+const NOT_FOUND_PAGE = [
+  /<html lang="ko"/,
+  /<h1 class="page-h1">페이지를 찾을 수 없습니다<\/h1>/,
+  title("페이지를 찾을 수 없습니다 | blan19"),
+  /<meta name="robots" content="noindex"\/>/,
+];
+const NOT_FOUND_NOT = [/name="robots"[\s\S]*name="robots"/];
 // body: 응답 본문에 있어야 하는 패턴. 페이지가 alternates 를 덮어쓰면 RSS 링크가 빠지므로 함께 본다.
 // notBody: 있으면 안 되는 패턴. assert: 본문을 받아 문제를 문자열로 돌려주는 함수(통과면 null).
 const head = (path) => [
@@ -57,11 +65,10 @@ const og = (path) => [
   /<meta property="og:site_name" content="blan19 기술 블로그"\/>/,
   /<meta property="og:locale" content="ko_KR"\/>/,
   new RegExp(`<meta property="og:url" content="${escapeRe(SITE + path)}/?"/>`),
-  /<meta property="og:image" content="https:\/\/www\.blan19\.xyz\/og\?title=[^"&]+"\/>/,
+  new RegExp(`<meta property="og:image" content="${escapeRe(SITE + path)}/opengraph-image(\\?[^"]*)?"/>`),
   /<meta property="og:image:width" content="1200"\/>/,
   /<meta name="twitter:card" content="summary_large_image"\/>/,
 ];
-const title = (text) => new RegExp(`<title>${escapeRe(text)}</title>`);
 // 글 JSON-LD 는 @graph 하나에 BlogPosting, BreadcrumbList, WebSite, Person 이 있어야 한다.
 const postGraph = (body) => {
   const match = body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -83,21 +90,27 @@ const checks = [
   { path: "/tech", type: HTML, body: [...head("/tech"), ...og("/tech"), title("글 목록 | blan19")] },
   { path: "/tech?tag=react.js", type: HTML, body: head("/tech") },
   { path: "/tech?tag=__none__", type: HTML },
-  { path: "/log", type: HTML },
-  ...techSlugs().map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}`, type: HTML })),
+  { path: "/log", type: HTML, body: [...head("/log"), ...og("/log"), title("기록 | blan19")] },
+  ...techSlugs().map((slug) => ({
+    path: `/tech/${encodeURIComponent(slug)}`,
+    type: HTML,
+    body: [...head(`/tech/${slug}`), ...og(`/tech/${slug}`), /<meta property="og:type" content="article"\/>/],
+    assert: postGraph,
+  })),
   // 목록에 없는 글은 src/proxy.ts 가 루트 404 로 돌린다(partialPrefetching 을 켜면 200 + noindex 로 바뀌었다).
-  { path: "/tech/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE },
+  { path: "/tech/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE, notBody: NOT_FOUND_NOT },
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
-  { path: "/sitemap.xml", type: XML },
-  { path: "/robots.txt", type: /text\/plain/ },
+  { path: "/sitemap.xml", type: XML, notBody: [/<loc>[^<]*\/llms\.txt<\/loc>/] },
+  { path: "/robots.txt", type: /text\/plain/, body: [/Allow: \//], notBody: [/^Host:/m] },
+  { path: "/llms.txt", type: /text\/plain/, body: [/^# blan19 기술 블로그\n/, new RegExp(`\\]\\(${escapeRe(SITE)}/tech/`)] },
   { path: "/opengraph-image", type: /image\/png/ },
   { path: "/tech/opengraph-image", type: /image\/png/ },
   { path: "/log/opengraph-image", type: /image\/png/ },
   ...techSlugs().slice(0, 1).map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}/opengraph-image`, type: /image\/png/ })),
   { path: "/tech/__smoke-not-found__/opengraph-image", status: 404, type: /./ },
   { path: "/icon.svg", type: /image\/svg\+xml/ },
-  { path: "/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE },
+  { path: "/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE, notBody: NOT_FOUND_NOT },
 ];
 
 let server = null;
@@ -138,7 +151,8 @@ const fetchWithTimeout = async (url, ms) => {
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     const res = await fetch(url, { redirect: "manual", signal: controller.signal });
-    return { status: res.status, headers: res.headers, body: await res.text() };
+    const body = new TextDecoder().decode(await res.arrayBuffer());
+    return { res, body };
   } finally {
     clearTimeout(timer);
   }
@@ -161,7 +175,6 @@ const waitForReady = async (base) => {
 };
 
 // 서버 로그의 ⨯ 오류 중 차단 주소 접속 실패만 정상으로 보고, 그 외 오류는 실패로 본다.
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const BLOCKED_HOST_RE = new RegExp(escapeRe(BLOCKED_DB_HOST) + "\\b");
 const analyzeLog = (log) => {
   const blocks = log.split(/\n(?=\s*⨯)/).filter((b) => b.trimStart().startsWith("⨯"));
@@ -201,9 +214,14 @@ const main = async () => {
       const { res, body } = await fetchWithTimeout(base + check.path, REQUEST_TIMEOUT_MS);
       status = res.status;
       type = (res.headers.get("content-type") ?? "").split(";")[0];
-      const missing = (check.body ?? []).filter((re) => !re.test(res.body));
-      ok = status === expectStatus && check.type.test(type) && missing.length === 0;
-      if (!ok) note = `기대: ${expectStatus} ${check.type.source}${missing.map((re) => ` 본문 ${re.source}`).join("")}`;
+      const missing = (check.body ?? []).filter((re) => !re.test(body));
+      const unexpected = (check.notBody ?? []).filter((re) => re.test(body));
+      const problem = check.assert?.(body) ?? null;
+      ok = status === expectStatus && check.type.test(type) && missing.length === 0 && unexpected.length === 0 && !problem;
+      if (status !== expectStatus || !check.type.test(type)) note = `기대: ${expectStatus} ${check.type.source}`;
+      else if (missing.length) note = `본문에 없음: ${missing.map((re) => re.source).join(", ")}`;
+      else if (unexpected.length) note = `본문에 있으면 안 됨: ${unexpected.map((re) => re.source).join(", ")}`;
+      else if (problem) note = problem;
     } catch (e) {
       note = e.name === "AbortError" ? "시간 초과" : e.message;
     }

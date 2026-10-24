@@ -33,7 +33,7 @@ argument-hint: "[full|quick|content]"
 - **smoke**: `FAIL` 행의 path, 상태, 기대값을 본다.
   - "DB 와 무관한 서버 오류 N건"이 나오면 실패다. 전체 서버 로그는 출력의 `[smoke] 서버 로그:` 줄에 나온 `.next/smoke-server.log` 에 있다.
   - `127.0.0.1:1` / `P1001` 로그는 DB 차단이 정상 동작한다는 뜻이다. "DB 접속 실패 로그 1건"(홈 "많이 읽힌 글"의 원격 캐시 함수 실패가 남기는 Next `⨯` 블록)이 정상이다. 조회수 칸의 실패는 `console.error`(`[views] …`)로만 남아 세지 않는다.
-  - 한계: smoke 는 `scripts/smoke.mjs` 의 `checks` 에 있는 경로(tech 글 7개 기준 24개: 페이지, 모든 tech 글, 404 2개, 피드, sitemap, robots, opengraph-image 5개, 아이콘)만 요청하고, HTTP 상태와 content-type, 404 두 HTML 의 본문(`lang="ko"` 와 not-found 제목), 서버 로그의 DB 와 무관한 `⨯` 오류만 본다. 새 라우트는 `checks` 에 넣어야 검사된다. DB 를 쓰는 페이지(`/`, `/tech`, `/tech/<slug>`)는 차단 env 에서 DB 섹션이 빠져도 200 이다. UI 를 바꿨다면 `/run-app` 으로 화면을 직접 확인한다.
+  - 한계: smoke 는 `scripts/smoke.mjs` 의 `checks` 에 있는 경로(tech 글 7개 기준 25개: 페이지, 모든 tech 글, 404 2개, 피드, sitemap, robots, llms.txt, opengraph-image 5개, 아이콘)만 요청하고, HTTP 상태와 content-type, 본문 패턴(페이지의 canonical·OG·title·JSON-LD, 404 두 HTML 의 `lang="ko"`·not-found 제목·robots 메타), 서버 로그의 DB 와 무관한 `⨯` 오류만 본다. 새 라우트는 `checks` 에 넣어야 검사된다. DB 를 쓰는 페이지(`/`, `/tech`, `/tech/<slug>`)는 차단 env 에서 DB 섹션이 빠져도 200 이다. UI 를 바꿨다면 `/run-app` 으로 화면을 직접 확인한다.
 
 같은 실패를 두 번 고쳐도 계속되면 멈추고 원인 가설과 함께 사용자에게 보고한다. 검사를 끄거나 건너뛰어(eslint-disable, `@ts-ignore`, 검사기 수정) 통과시키지 않는다.
 

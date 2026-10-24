@@ -14,7 +14,7 @@ paths:
 - 이미 공개된 글의 파일명(slug)이나 폴더를 바꾸거나 글을 지우지 않는다. 조회수와 댓글(utterances, pathname 기준)이 끊긴다(CLAUDE.md 알려진 이슈). 꼭 필요하면 사용자에게 먼저 확인한다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 이름순이다(`posts.ts` 가 정렬). 새 글은 폴더 날짜와 `publishedAt` 을 같게 둔다. 다르면 검사기는 error 가 아니라 warn 을 낸다. 기존 글 하나(`2023-12-11/javascript-memory-management`, publishedAt 12-12)가 이미 다르고, 공개된 글의 폴더는 옮기지 않기 때문이다.
 
-## frontmatter (YAML, 5개 필드 모두 필수)
+## frontmatter (5개 필드 필수 + `updatedAt` 선택)
 
 ```yaml
 ---
@@ -31,6 +31,8 @@ updatedAt: "2026-10-24"          # 선택. 반드시 따옴표. 내용이 실질
 - `reference` 는 본문 끝 "참고 자료" 목록(호스트와 경로)으로 자동 렌더된다. 본문에 따로 쓰지 않는다.
 - description 은 메타 description, OG/트위터 메타, RSS 항목 요약(description)에 쓰인다. RSS 항목 본문(content)은 렌더한 글 전체다. OG 이미지에는 title 만 들어간다.
 - frontmatter 는 YAML 만 쓴다. `---js` 같은 JS frontmatter 는 검사기 error 이고 로더도 throw 한다(gray-matter 가 eval 하므로 막았다).
+- description 은 OG/트위터 메타와 RSS 에 쓰인다.
+- `updatedAt`(선택)은 본문 내용이 실질적으로 바뀌었을 때만(내용 보강·정정, 섹션 추가) 그날 날짜로 넣거나 고친다. 오탈자나 서식만 고친 경우에는 넣지 않는다. 글 머리 메타 줄의 "수정 YYYY.MM.DD", JSON-LD `dateModified`, og `article:modified_time`, sitemap 의 글 `lastmod`(그리고 `/tech` 의 lastmod, `/` 는 tech 와 log 중 최신 날짜)에 쓰이고, 없으면 `publishedAt` 이 수정일을 대신한다. 검사기가 형식("YYYY-MM-DD" 따옴표 문자열), `publishedAt` 이상, 오늘(한국 시간) 이하를 error 로 본다. 목록 순서와 폴더는 바꾸지 않는다.
 
 ## tech 본문 (unified: remark-parse + remark-gfm → rehype. JSX/MDX 컴포넌트와 raw HTML 은 렌더되지 않고 글자 그대로 보인다)
 
@@ -70,7 +72,7 @@ updatedAt: "2026-10-24"          # 선택. 반드시 따옴표. 내용이 실질
 - alt 메타: `{priority}`(첫 화면 이미지. 글의 첫 번째 이미지에 붙었을 때만 적용되고 다른 이미지의 `{priority}` 는 무시된다), `{caption: 텍스트}`(콜론 뒤 공백 하나, 텍스트에 `{` `}` 불가), `{<숫자>x<숫자>}`(가로x세로, 공백 없이 소문자 `x`, 0 불가. 예: `{768x432}`. 없으면 768x432). alt 설명 텍스트는 필수다.
 - 렌더러는 alt 에서 `{…}` 토큰을 모두 지운 나머지를 alt 로 쓰고, 크기는 첫 `{<숫자>x<숫자>}` 토큰만 읽는다. 형식이 다른 토큰(`{768X432}`, `{768 x 432}`)은 무시되고 크기는 기본값이 된다(검사기가 warn).
 - 원격 이미지는 `next.config.js` 의 `images.remotePatterns` 에 맞는 URL 만 허용된다: `https://github.com/blan19/**`(이 계정 저장소의 이슈/PR 첨부, `.../<repo>/assets/...`)와 `https://github.com/user-attachments/**`, 둘 다 쿼리 문자열 없이. 다른 사람 저장소의 첨부와 `user-images.githubusercontent.com` 직접 URL 은 허용되지 않는다(검사기 error). 이미지 최적화기는 GitHub 의 리다이렉트(`*.githubusercontent.com`)를 따라가지만, 대상이 인증이 필요한 첨부(비공개 저장소)거나 지워졌으면 실패하니 미리보기로 이미지가 뜨는지 확인한다.
-- 로컬 이미지는 `public/` 기준 절대경로(`/image/...`)다. 지금은 `public/` 이 없으니 처음 쓸 때 `public/image/` 를 만든다.
+- 로컬 이미지는 `public/` 기준 절대경로(`/image/<slug>/<파일>`)다. 파일은 `public/image/<slug>/` 에 두고 이름은 `01-설명.png` 처럼 순번을 붙인다.
 - 그 외 호스트가 필요하면 `next.config.js` 변경이 먼저다(사용자 확인 후).
 
 ## log 본문

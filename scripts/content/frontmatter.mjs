@@ -2,7 +2,7 @@
 import matter from "gray-matter";
 import { error, warn } from "./problem.mjs";
 
-export const KNOWN_KEYS = ["publishedAt", "title", "tags", "description", "reference"];
+export const KNOWN_KEYS = ["publishedAt", "title", "tags", "description", "reference", "updatedAt"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const isRealDate = (s) => {
@@ -41,9 +41,13 @@ export const parseFrontmatter = (raw) => {
   return { data: parsed.data ?? {}, content: parsed.content, bodyStartLine, problems };
 };
 
+// updatedAt 의 "미래" 판정 기준. 글 날짜는 한국 시간 달력 날짜라 CI(UTC)에서도 같은 날로 본다.
+export const todayInSeoul = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+
 const isNonEmptyString = (v) => typeof v === "string" && v.trim() !== "";
 
-export const checkFrontmatter = (data, folderDate) => {
+export const checkFrontmatter = (data, folderDate, today = todayInSeoul()) => {
   const out = [];
   for (const key of Object.keys(data)) {
     if (!KNOWN_KEYS.includes(key)) out.push(warn(`알 수 없는 frontmatter 필드 "${key}" (사용 필드: ${KNOWN_KEYS.join(", ")})`));
@@ -61,6 +65,21 @@ export const checkFrontmatter = (data, folderDate) => {
     out.push(error(`publishedAt "${publishedAt}" 이 올바른 "YYYY-MM-DD" 날짜가 아님`));
   } else if (folderDate && publishedAt !== folderDate) {
     out.push(warn(`publishedAt(${publishedAt}) 과 폴더 날짜(${folderDate}) 가 다름. 목록 순서는 폴더 이름(readdirSync 순서)을 따름`));
+  }
+
+  // 선택 필드(없으면 publishedAt 을 수정일로 쓴다). 내용이 실질적으로 바뀐 경우에만 쓴다.
+  // JSON-LD dateModified, og modifiedTime, sitemap lastmod, 글 머리 "수정" 날짜에 쓰인다.
+  const { updatedAt } = data;
+  if (updatedAt === undefined) {
+    // 선택 필드
+  } else if (updatedAt instanceof Date) {
+    out.push(error('updatedAt 이 따옴표 없이 쓰여 Date 로 파싱됨 → 화면 렌더 시 크래시. "YYYY-MM-DD" 처럼 따옴표로 감싸세요'));
+  } else if (typeof updatedAt !== "string" || !isRealDate(updatedAt)) {
+    out.push(error(`updatedAt "${updatedAt}" 이 올바른 "YYYY-MM-DD" 날짜가 아님`));
+  } else if (typeof publishedAt === "string" && isRealDate(publishedAt) && updatedAt < publishedAt) {
+    out.push(error(`updatedAt(${updatedAt}) 이 publishedAt(${publishedAt}) 보다 이름`));
+  } else if (updatedAt > today) {
+    out.push(error(`updatedAt(${updatedAt}) 이 오늘(${today}, 한국 시간) 이후의 날짜임`));
   }
 
   const { tags } = data;

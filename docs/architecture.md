@@ -13,13 +13,14 @@
 | `/tech/[slug]` | `src/app/tech/[slug]/page.tsx` | ◐ (모든 글 prerender) | 글 머리 조회수(`ArticleViews`, +1 기록). 목록에 없는 slug 는 `src/proxy.ts` 가 루트 404 로 rewrite(빌드 때 인라인된 slug 목록 기준) |
 | `/log` | `src/app/log/page.tsx` | ○ | 없음(마크다운 렌더 없이 원문 문단) |
 | `/rss.xml`, `/rss-atom.xml` | `src/app/{rss.xml,rss-atom.xml}/route.ts` | ○ | 없음(`src/lib/feed.ts` 의 `buildFeed`) |
-| `/sitemap.xml`, `/robots.txt` | `src/app/sitemap.ts`, `robots.ts` | ○ | 없음 |
+| `/llms.txt` | `src/app/llms.txt/route.ts` | ○ | 없음(tech 글 최신순 링크 목록, sitemap 에는 넣지 않음) |
+| `/sitemap.xml`, `/robots.txt` | `src/app/sitemap.ts`, `robots.ts` | ○ | 없음(lastmod 는 글 수정일) |
 | `/opengraph-image`, `/tech/opengraph-image`, `/log/opengraph-image` | `src/app/opengraph-image.tsx`(뒤의 둘은 re-export) | ○ | 없음 |
 | `/tech/[slug]/opengraph-image` | `src/app/tech/[slug]/opengraph-image.tsx` | ● | 없음. 없는 slug 는 404 |
 | `/icon.svg`, `/favicon.ico` | `src/app/icon.svg`, `favicon.ico` | ○ | 없음 |
 | 404, 오류 | `src/app/not-found.tsx`, `error.tsx`(client) | ○ | 없음 |
 
-공통 셸은 `src/app/layout.tsx`(메타데이터 기본값, 테마 초기화 인라인 스크립트, 선택적 GA, 헤더, 푸터)다. smoke(`scripts/smoke.mjs`)가 `checks` 의 경로(고정 17개 + tech 글마다 1개, tech 글 7개 기준 24개)를 요청해 상태 코드와 content-type 을 보고, 404 HTML 두 개는 본문(`lang="ko"`, not-found 제목)까지 본다. 위 표와 정확히 같지는 않다: `/favicon.ico` 는 요청하지 않고, 표에 없는 `/tech?tag=react.js`, `/tech?tag=__none__`, 없는 경로 404 세 개(`/tech/__smoke-not-found__`, 그 `opengraph-image`, `/__smoke-not-found__`)를 요청한다.
+공통 셸은 `src/app/layout.tsx`(메타데이터 기본값, 테마 초기화 인라인 스크립트, 선택적 GA, 헤더, 푸터)다. smoke(`scripts/smoke.mjs`)가 `checks` 의 경로(고정 18개 + tech 글마다 1개, tech 글 7개 기준 25개)를 요청해 상태 코드와 content-type 을 보고, 페이지는 본문의 메타(canonical, RSS 링크, OG, `<title>`, 글 JSON-LD)까지, 404 HTML 두 개는 `lang="ko"`, not-found 제목, robots 메타 하나까지 본다(세부는 tooling.md). 위 표와 정확히 같지는 않다: `/favicon.ico` 는 요청하지 않고, 표에 없는 `/tech?tag=react.js`, `/tech?tag=__none__`, 없는 경로 404 세 개(`/tech/__smoke-not-found__`, 그 `opengraph-image`, `/__smoke-not-found__`)를 요청한다.
 
 ## 2. 모듈 지도
 
@@ -29,12 +30,13 @@
 
 | 모듈 | 하는 일 | 경계 |
 |---|---|---|
-| `posts.ts` | `contents/` 를 읽어 종류별 인덱스(`list`, `newestFirst`, `bySlug`)를 만든다. frontmatter 런타임 검증, `---js` 거부, slug 중복이면 throw. `getBlogPosts`, `getPostsNewestFirst`, `getPost`, `getAdjacentPosts`, `getLatestPublishedAt`, `groupByYear`, `getTagCounts`, `getLogParagraphs` | server-only |
+| `posts.ts` | `contents/` 를 읽어 종류별 인덱스(`list`, `newestFirst`, `bySlug`)를 만든다. frontmatter 런타임 검증, `---js` 거부, slug 중복이면 throw. `getBlogPosts`, `getPostsNewestFirst`, `getPost`, `getAdjacentPosts`, `getModifiedAt`(`updatedAt` ?? `publishedAt`), `getLatestModifiedAt`, `groupByYear`, `getTagCounts`, `getLogParagraphs` | server-only |
 | `views.ts` | 조회수 읽기와 쓰기 전부: `recordView`, `getViewMap`, `getMostRead`(내부 `getTopViews`) | server-only, Server Action 아님 |
 | `prisma.ts` | Prisma 클라이언트(`@prisma/adapter-pg`, TLS). development 에서만 global 캐시 | server-only |
 | `feed.ts` | `buildFeed()`: RSS/Atom 공용 `Feed` 객체 | server-only |
 | `og-image.tsx` | `renderOgImage(title, label?)`: 1200×630 카드. 폰트를 모듈 스코프에서 읽음 | server-only |
 | `metadata.ts` | `alternates()`, `openGraph()` 헬퍼, `OG_SIZE`, `OG_CONTENT_TYPE` | 공용(서버에서만 씀) |
+| `json-ld.ts` | `siteJsonLd()`(홈: WebSite + Person), `postJsonLd(post)`(글: BlogPosting, WebPage, BreadcrumbList, WebSite, Person 한 `@graph`). `ui/json-ld` 가 출력 | 서버에서만 씀(posts.ts 를 import) |
 | `config.ts` | 사이트 정체성과 외부 서비스 설정(`site`, `author`, `comments`, `analytics`) | 공용, 비밀 값 없음 |
 | `page-ids.ts` | 글 페이지 고정 DOM id(`PAGE_IDS`) | 공용, import 없음(검사기가 읽음) |
 | `format.ts` | 날짜와 조회수 표기 | 공용 |
@@ -48,6 +50,7 @@
 - `layouts/header`, `layouts/footer`: 크롬. 푸터 연도는 `process.env.BUILD_YEAR`(빌드한 해).
 - `ui/<kebab>/index.tsx`: 기본은 Server Component 다.
 - 클라이언트 섬(`"use client"`): `ui/nav-links`, `ui/theme-toggle`, `ui/copy-button`, `ui/code-fold`, `ui/mermaid`, `ui/post-image`, `ui/toc-spy`, `ui/comment`, `ui/hero-canvas`, 그리고 `src/app/error.tsx`.
+- 글 끝 `ui/related-posts`: 태그가 겹치는 tech 글 최대 3개(파일시스템만, DB 없음). `ui/json-ld`: JSON-LD `<script type="application/ld+json">`(`<` 이스케이프).
 - DB 를 읽는 서버 컴포넌트: `ui/view-count`(`ArticleViews`, `RowViews`, `ViewsPending`), `ui/most-read`(`MostRead`, `MostReadPending`). 모두 `<Suspense>` 안에서만 쓴다.
 
 ### scripts 와 .claude
@@ -72,7 +75,7 @@ flowchart LR
   I --> S["/tech/[slug]<br/>generateStaticParams"]
   I --> L["/log 원문 문단"]
   I --> R["feed.ts → /rss.xml, /rss-atom.xml"]
-  I --> M["sitemap.ts"]
+  I --> M["sitemap.ts, llms.txt"]
   I --> O["tech/[slug]/opengraph-image"]
   I --> V["views.ts<br/>recordView: 있는 slug 만<br/>getMostRead: 글과 조인"]
 ```
@@ -163,6 +166,7 @@ flowchart TD
 |---|---|
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `X-Frame-Options` | `DENY`(CSP `frame-ancestors` 를 모르는 옛 브라우저용) |
 | `Permissions-Policy` | camera, microphone, geolocation, browsing-topics 끔 |
 | `Content-Security-Policy`(강제) | `frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'` |
 | `Content-Security-Policy-Report-Only` | `default-src 'self'`, script `'self' 'unsafe-inline'` + GA, connect GA, img `'self' data: blob:` + GitHub + GA, style `'self' 'unsafe-inline'`, font `'self'`, frame `utteranc.es`, worker `'self' blob:`. 보고 엔드포인트 없음 |

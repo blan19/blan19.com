@@ -47,6 +47,8 @@ const TocSpy = ({ items }: TocSpyProps) => {
     let lastActive = -2;
     let lastShow: boolean | undefined;
     let resized = true;
+    let lastY = window.scrollY;
+    let scrollingDown = false;
 
     const update = () => {
       frame = 0;
@@ -89,7 +91,8 @@ const TocSpy = ({ items }: TocSpyProps) => {
       if (pill) {
         const rect = body.getBoundingClientRect();
         const pastHead = head ? head.getBoundingClientRect().bottom < 0 : true;
-        show = pastHead && rect.bottom > viewport * 0.6;
+        const focused = pill === document.activeElement;
+        show = pastHead && rect.bottom > viewport * 0.6 && (!scrollingDown || focused);
       }
 
       // 쓰기

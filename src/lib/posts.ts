@@ -14,6 +14,8 @@ export interface PostMetadata {
   readonly tags: readonly string[];
   readonly description: string;
   readonly reference: readonly string[];
+  // 선택. 내용이 실질적으로 바뀐 경우에만 쓰는 "YYYY-MM-DD"(검사기가 형식과 날짜 범위를 본다)
+  readonly updatedAt?: string;
 }
 
 export interface Post {
@@ -78,7 +80,7 @@ const parseMetadata = (file: string, data: Record<string, unknown>): PostMetadat
   const fail = (message: string): never => {
     throw new Error(`${file}: frontmatter ${message}`);
   };
-  const { title, description, publishedAt, tags = [], reference = [] } = data;
+  const { title, description, publishedAt, updatedAt, tags = [], reference = [] } = data;
 
   if (typeof title !== "string" || !title.trim()) fail("title 이 비어 있습니다");
   if (typeof description !== "string") fail("description 이 없습니다");
@@ -87,6 +89,12 @@ const parseMetadata = (file: string, data: Record<string, unknown>): PostMetadat
   }
   if (typeof publishedAt !== "string" || !DATE.test(publishedAt)) {
     fail(`publishedAt "${String(publishedAt)}" 이 YYYY-MM-DD 가 아닙니다`);
+  }
+  if (updatedAt instanceof Date) {
+    fail('updatedAt 을 따옴표로 감싸야 합니다(예: "2024-05-15")');
+  }
+  if (updatedAt !== undefined && (typeof updatedAt !== "string" || !DATE.test(updatedAt))) {
+    fail(`updatedAt "${String(updatedAt)}" 이 YYYY-MM-DD 가 아닙니다`);
   }
   if (!isStringArray(tags)) fail("tags 는 문자열 배열이어야 합니다");
   if (!isStringArray(reference)) fail("reference 는 문자열 배열이어야 합니다");
@@ -97,6 +105,7 @@ const parseMetadata = (file: string, data: Record<string, unknown>): PostMetadat
     publishedAt: publishedAt as string,
     tags: Object.freeze([...(tags as string[])]),
     reference: Object.freeze([...(reference as string[])]),
+    ...(updatedAt !== undefined && { updatedAt: updatedAt as string }),
   });
 };
 
@@ -197,12 +206,15 @@ export const getPostsNewestFirst = (kind: PostKind): readonly Post[] =>
 export const getPost = (kind: PostKind, slug: string): Post | undefined =>
   loadIndex(kind).bySlug.get(slug);
 
-// 주어진 종류에서 가장 최근 publishedAt("YYYY-MM-DD"). 글이 없으면 undefined.
+// 마지막 수정일("YYYY-MM-DD"): updatedAt 이 없으면 publishedAt. JSON-LD dateModified, sitemap lastmod 에 쓴다.
+export const getModifiedAt = ({ metadata }: Post): string =>
+  metadata.updatedAt ?? metadata.publishedAt;
+
+// 주어진 종류의 글 가운데 가장 늦은 수정일. 글이 없으면 undefined.
 // 현재 시각 대신 쓰는 결정적인 "마지막 갱신일"이다(sitemap lastModified).
-export const getLatestPublishedAt = (...kinds: PostKind[]): string | undefined =>
+export const getLatestModifiedAt = (...kinds: PostKind[]): string | undefined =>
   kinds
-    .map((kind) => getPostsNewestFirst(kind)[0]?.metadata.publishedAt)
-    .filter((date): date is string => Boolean(date))
+    .flatMap((kind) => getBlogPosts(kind).map(getModifiedAt))
     .sort()
     .at(-1);
 

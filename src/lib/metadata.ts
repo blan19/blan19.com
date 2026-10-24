@@ -24,7 +24,7 @@ export const alternates = (path?: string): Metadata["alternates"] => ({
 // images 키가 있으면(undefined 라도) Next 가 그 세그먼트의 파일 이미지를 쓰지 않으므로 키 자체를 넣지 않는다.
 export const openGraph = (path: string, title: string, description: string) => ({
   type: "website" as const,
-  siteName: site.name,
+  siteName: site.title,
   locale: "ko_KR",
   url: path,
   title,

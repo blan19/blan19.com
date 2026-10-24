@@ -6,7 +6,7 @@ import Footer from "@/components/layouts/footer";
 import { plexMono, pretendard } from "@/app/fonts";
 import { analytics, site } from "@/lib/config";
 import { PAGE_IDS } from "@/lib/page-ids";
-import { alternates, openGraph } from "@/lib/metadata";
+import { alternates } from "@/lib/metadata";
 import { THEME_COLORS, THEME_STORAGE_KEY } from "@/lib/theme";
 
 // 첫 페인트 전에 저장된 테마(data-theme)와 JS 사용 여부(data-js)를 <html> 에 붙인다.
@@ -19,9 +19,6 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', ${JSON.stringify(gaId)});`;
 
-// GA 측정 ID(빌드 때 인라인되는 NEXT_PUBLIC_ 값). 없으면(예: 로컬) gtag 를 넣지 않는다.
-const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
-
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
@@ -29,10 +26,8 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description: site.description,
-  robots: {
-    index: true,
-    follow: true,
-  },
+  // robots 는 두지 않는다(기본값이 index, follow). 404 는 Next 가 noindex 를 넣는데, 여기서 robots 를 정하면
+  // 404 HTML 에 robots 메타가 두 개(서로 다른 값) 나온다.
   verification: {
     other: {
       "naver-site-verification": "802885b1ae64198e719ba1a0a3f60119c65302e1",
@@ -44,7 +39,7 @@ export const metadata: Metadata = {
   // og:image 는 app/opengraph-image.tsx, twitter 의 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
   openGraph: {
     type: "website",
-    siteName: site.name,
+    siteName: site.title,
     locale: "ko_KR",
     title: site.title,
     description: site.description,
@@ -86,15 +81,19 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        {/* lazyOnload: window load 뒤에 불러와 첫 화면을 막지 않는다. */}
+        {analytics.gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(analytics.gaId)}`}
+              strategy="lazyOnload"
+            />
+            <Script id="gtag" strategy="lazyOnload">
+              {GA_INIT(analytics.gaId)}
+            </Script>
+          </>
+        )}
       </body>
-      {analytics.gaId && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(analytics.gaId)}`}
-          />
-          <Script id="gtag">{GA_INIT(analytics.gaId)}</Script>
-        </>
-      )}
     </html>
   );
 }

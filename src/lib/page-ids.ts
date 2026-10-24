@@ -9,7 +9,8 @@ export const PAGE_IDS = {
   postBody: "post-body",
   // remark-rehype(mdast-util-to-hast)가 각주 제목에 고정으로 다는 id(옵션으로 바꿀 수 없다). 검사용으로만 둔다.
   footnoteLabel: "footnote-label",
-  // ui/post-references, ui/comment 의 글 끝 섹션 제목
+  // ui/post-references, ui/related-posts, ui/comment 의 글 끝 섹션 제목
   refLabel: "ref-label",
+  relatedLabel: "rel-label",
   commentLabel: "cm-label",
 } as const;

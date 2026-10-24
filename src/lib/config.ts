@@ -4,8 +4,9 @@
 export const site = {
   name: "blan19",
   title: "blan19 기술 블로그",
+  // 메타 전용(meta description 기본값, 피드, llms.txt, JSON-LD WebSite). 화면에는 나오지 않는다.
   description:
-    "소프트웨어 엔지니어 blan19의 블로그입니다. 일하며 배운 것과 짧은 기록을 씁니다.",
+    "blan19의 기술 블로그입니다. React와 RSC, Next.js, JavaScript 메모리, WebGL과 Three.js, 팀 문화에 대해 씁니다.",
   // 끝 "/" 포함. 경로는 `${site.url}tech/...` 처럼 앞에 "/" 없이 붙인다.
   url: "https://www.blan19.xyz/",
   // 본문 링크를 사이트 안 이동으로 볼 origin(끝 "/" 없음)

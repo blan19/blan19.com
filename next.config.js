@@ -34,6 +34,8 @@ const REPORT_ONLY_CSP = [
 const SECURITY_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // 아래 CSP frame-ancestors 를 모르는 옛 브라우저용
+  { key: "X-Frame-Options", value: "DENY" },
   // interest-cohort(FLoC)는 폐기되어 Chrome 이 알 수 없는 기능이라고 경고하므로 후속인 browsing-topics 를 쓴다.
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
   {

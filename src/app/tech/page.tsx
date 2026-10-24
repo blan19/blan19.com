@@ -7,9 +7,10 @@ import PostList from "@/components/ui/post-list";
 import TagFilter from "@/components/ui/tag-filter";
 
 const TITLE = "글 목록";
-const DESCRIPTION = "일하며 부딪힌 문제와 알게 된 것을 정리한 글을 모았습니다.";
+// 메타 전용(화면의 page-lede 와 따로 둔다). 실제 글 주제만 적는다.
+const DESCRIPTION =
+  "React 19와 RSC, Next.js 14, JavaScript 메모리 관리, WebGL, Three.js와 R3F, 팀 문화를 다룬 글 목록입니다.";
 
-// 태그로 거른 /tech?tag=… 도 canonical 은 /tech 하나다.
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,

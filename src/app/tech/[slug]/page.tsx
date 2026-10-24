@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { author } from "@/lib/config";
 import { alternates, openGraph } from "@/lib/metadata";
 import { getAdjacentPosts, getBlogPosts, getPost } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
-import { alternates, openGraph, postJsonLd } from "@/lib/seo";
+import { postJsonLd } from "@/lib/json-ld";
 import PostHeader from "@/components/ui/post-header";
 import TocRail, { TocDetails } from "@/components/ui/toc";
 import TocSpy from "@/components/ui/toc-spy";
@@ -33,24 +34,23 @@ export async function generateMetadata({
     return;
   }
 
-  const {
-    title,
-    description,
-    tags: keywords,
-    publishedAt: publishedTime,
-  } = post.metadata;
+  const { title, description, tags, publishedAt, updatedAt } = post.metadata;
   const path = `/tech/${post.slug}`;
   // og:image 는 같은 폴더의 opengraph-image.tsx 가 채운다(파일 규칙이 우선).
   // twitter 는 layout 의 card 를 물려받고 제목, 설명, 이미지는 Next 가 openGraph 에서 채운다.
   return {
     title,
     description,
-    keywords: [...keywords],
+    keywords: [...tags],
+    authors: [{ name: author.name, url: author.link }],
     alternates: alternates(path),
     openGraph: {
       ...openGraph(path, title, description),
       type: "article",
-      publishedTime,
+      publishedTime: publishedAt,
+      ...(updatedAt && { modifiedTime: updatedAt }),
+      authors: [author.link],
+      tags: [...tags],
     },
   };
 }

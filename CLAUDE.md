@@ -50,17 +50,17 @@ CI(`.github/workflows/ci.yml`)는 PR 과 main push 에서 DB 차단 env 로 `npm
 
 ```
 contents/{tech|log}/YYYY-MM-DD/<slug>.mdx   글 (폴더당 .mdx 1개, 파일명 = slug = URL = 조회수 키)
-src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /rss.xml /rss-atom.xml /sitemap.xml /robots.txt, error.tsx, not-found.tsx
+src/app/            라우트와 메타데이터 파일: / /tech /tech/[slug] /log /rss.xml /rss-atom.xml /llms.txt /sitemap.xml /robots.txt, error.tsx, not-found.tsx
                     opengraph-image.tsx(사이트 카드. tech/, log/ 의 것은 re-export), tech/[slug]/opengraph-image.tsx(글 카드)
                     fonts.ts(next/font 2종: Pretendard, IBM Plex Mono), icon.svg(파비콘, 이전 히어로였던 정적 점묘 매듭. 지금 히어로(노트북)와 무관)
 src/proxy.ts        목록에 없는 /tech/<slug> 를 루트 404 로 rewrite(slug 목록은 next.config.js 가 빌드 때 env.TECH_SLUGS 로 인라인, dev 는 통과)
 src/components/     layouts/{header,footer}, ui/<kebab-name>/index.tsx
 src/lib/            posts.ts(contents/ fs 로더, frontmatter 검증), markdown/(글 렌더 파이프라인과 피드 HTML), feed.ts(buildFeed, RSS/Atom),
                     views.ts(조회수: recordView, getViewMap, getMostRead), prisma.ts(클라이언트), config.ts(site, author, comments, analytics),
-                    metadata.ts(alternates/openGraph 헬퍼, OG_SIZE), og-image.tsx(OG 카드 렌더), page-ids.ts(글 페이지 고정 DOM id),
+                    metadata.ts(alternates/openGraph 헬퍼, OG_SIZE), json-ld.ts(홈, 글 JSON-LD), og-image.tsx(OG 카드 렌더), page-ids.ts(글 페이지 고정 DOM id),
                     theme.ts(테마 API, 브라우저 전용), laptop.ts(홈/404 점묘 노트북 기하, 서버·클라이언트 공용),
                     laptop-canvas.ts(홈 히어로 캔버스 엔진, 브라우저 전용), format.ts(날짜, 조회수 표기)
-src/fonts/          PretendardVariable.woff2 + 라이선스(OFL), Pretendard-Bold.woff(OG 폰트, og-image.tsx 가 읽음)
+src/fonts/          PretendardVariable.subset.woff2(서브셋, 코드포인트 목록 PretendardVariable.subset.unicodes.txt) + 라이선스(OFL), Pretendard-Bold.woff(OG 폰트, og-image.tsx 가 읽음)
 src/styles/         globals.css(토큰, Tailwind 4 매핑, 공용 클래스, 크롬), markdown.css(글 본문), pages.css(페이지). 뒤의 둘은 globals.css 가 import
 src/generated/      Prisma 생성 코드 (gitignore)
 prisma/             schema.prisma (모델 View 하나)
@@ -69,20 +69,20 @@ docs/               intent.md, architecture.md, design.md
 .claude/            settings.json, hooks/(guard-bash/, post-edit-check, session-start), rules/, skills/
 ```
 
-`public/` 은 지금 없다. 로컬 글 이미지를 처음 넣을 때 `public/image/` 를 만든다.
+`public/image/<slug>/` 는 로컬 글 이미지다(글에서는 `/image/<slug>/<파일>` 로 쓴다).
 
 ## 아키텍처 요점
 
 세부는 `docs/architecture.md`.
 
-- 글 → `src/lib/posts.ts` 가 종류별로 한 번 읽어 인덱스를 만든다(production 은 프로세스당 1번, dev 는 요청당). gray-matter(YAML 만, `---js` 는 throw) 뒤 `parseMetadata` 로 frontmatter 를 검증하고, 구조 오류와 같은 종류 안의 slug 겹침은 파일 경로를 담아 throw 한다(빌드나 첫 요청이 실패한다). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, sitemap, 글 OG 이미지가 이 결과(`getBlogPosts`, `getPostsNewestFirst`, `getPost`)를 쓴다. `/log` 는 마크다운 렌더 없이 원문 문단을 출력하고 상세 페이지가 없다.
+- 글 → `src/lib/posts.ts` 가 종류별로 한 번 읽어 인덱스를 만든다(production 은 프로세스당 1번, dev 는 요청당). gray-matter(YAML 만, `---js` 는 throw) 뒤 `parseMetadata` 로 frontmatter 를 검증하고, 구조 오류와 같은 종류 안의 slug 겹침은 파일 경로를 담아 throw 한다(빌드나 첫 요청이 실패한다). `/`, `/tech`, `/tech/[slug]`, `/log`, RSS, `/llms.txt`, sitemap, 글 OG 이미지가 이 결과(`getBlogPosts`, `getPostsNewestFirst`, `getPost`)를 쓴다. 수정일은 frontmatter `updatedAt`(선택) ?? `publishedAt`(`getModifiedAt`)이다. `/log` 는 마크다운 렌더 없이 원문 문단을 출력하고 상세 페이지가 없다.
 - 목록 순서는 `publishedAt` 이 아니라 날짜 폴더 이름순이다(`posts.ts` 가 명시적으로 정렬, `getPostsNewestFirst` 는 그 역순).
 - 글 본문 → `renderMarkdown(slug, content)`(`src/lib/markdown/index.ts`)가 HAST 를 한 번 만들어 LRU 모듈 캐시(키 `slug:sha1(본문)`, 50개)에 두고, 목차를 같은 트리에서 뽑는다. `ui/post-body` 가 `hast-util-to-jsx-runtime` 으로 렌더한다. 피드 항목 본문은 같은 HAST 를 `src/lib/markdown/feed-html.ts` 가 리더용 HTML 로 바꾼 것이다(`buildFeed`). 세부는 frontend.md.
-- OG 이미지는 `app/opengraph-image.tsx`(사이트, `/tech`·`/log` 는 re-export)와 `app/tech/[slug]/opengraph-image.tsx`(글마다, generateStaticParams)가 빌드 때 PNG 로 만든다. canonical, openGraph 는 `src/lib/metadata.ts` 헬퍼로 페이지마다 둔다.
+- OG 이미지는 `app/opengraph-image.tsx`(사이트, `/tech`·`/log` 는 re-export)와 `app/tech/[slug]/opengraph-image.tsx`(글마다, generateStaticParams)가 빌드 때 PNG 로 만든다. canonical, openGraph 는 `src/lib/metadata.ts` 헬퍼로 페이지마다 둔다. 홈과 글은 `ui/json-ld` 로 JSON-LD(`src/lib/json-ld.ts`)를 넣는다.
 - 홈의 최근 글과 /tech 목록은 파일시스템만으로 그린다. DB 는 조회수(글 머리 `ArticleViews`, 목록 행 `RowViews`)와 홈 "많이 읽힌 글"(`MostRead` → `getTopViews`: `'use cache: remote'` + `cacheLife('hours')` + `cacheTag('views')`, Vercel 원격 캐시(로컬은 메모리), 배포마다 새로 채움)에만 쓴다.
 - DB 는 `View(slug, count)` 하나. `/tech/[slug]` 요청마다 `ArticleViews` 가 `recordView` 의 upsert 를 await 하고 올린 값(이번 방문 포함)을 표시한다. 있는 tech 글만 센다.
 - DB 실패는 컴포넌트가 삼킨다: `ui/view-count`, `ui/most-read` 는 쿼리만 try/catch 하고 실패하면 `null` 을 렌더해 그 칸이나 섹션만 사라진다. `app/error.tsx` 로 번지지 않는다.
-- 렌더 방식: `/`, `/tech`, `/tech/[slug]` 는 Partial Prerender(정적 셸 + Suspense 구멍. `/tech` 는 searchParams 를 구멍 안에서만 읽고, `/tech/[slug]` 는 generateStaticParams 로 모든 글을 prerender 하며 목록에 없는 slug 는 `src/proxy.ts` 가 루트 404 로 돌린다). 나머지(`/log`, 피드, sitemap, robots, opengraph-image)는 static.
+- 렌더 방식: `/`, `/tech`, `/tech/[slug]` 는 Partial Prerender(정적 셸 + Suspense 구멍. `/tech` 는 searchParams 를 구멍 안에서만 읽고, `/tech/[slug]` 는 generateStaticParams 로 모든 글을 prerender 하며 목록에 없는 slug 는 `src/proxy.ts` 가 루트 404 로 돌린다). 나머지(`/log`, 피드, `/llms.txt`, sitemap, robots, opengraph-image)는 static.
 - Cache Components 의 Activity 로 떠난 페이지(최대 3개)가 `display:none` 으로 DOM 에 남는다. id 가 겹칠 수 있으니 클라이언트 DOM 조회는 자기 `.site-wrap` 안으로 한정한다(TocSpy 가 그렇게 한다).
 - 홈 소개 옆과 404 의 점묘 노트북(`ui/hero-object`, 404 는 흩어진 분해도)은 서버가 SVG 로 그리고, 홈만 클라이언트 섬 `ui/hero-canvas`(엔진 `src/lib/laptop-canvas.ts`)가 캔버스로 천천히 흔들고 재생 막대를 움직인다. 세부와 규칙은 frontend.md.
 - 푸터 연도는 `next.config.js` 의 `env.BUILD_YEAR`(빌드한 해, KST, 빌드 때 인라인)다. 보안 헤더와 Report-Only CSP 도 `next.config.js` 의 `headers()` 에 있다.
@@ -97,7 +97,7 @@ docs/               intent.md, architecture.md, design.md
 - 라우트를 추가하거나 지울 때:
   1. `src/app/<route>/page.tsx`(또는 `route.ts`)를 만든다. Next 16 의 `params`/`searchParams` 는 Promise 다.
   2. `scripts/smoke.mjs` 의 `checks` 에 경로와 기대 content-type(이미지 라우트는 `image/png`)을 넣는다. 넣지 않으면 verify 가 그 라우트를 요청하지 않는다.
-  3. 공개 페이지면 `src/app/sitemap.ts` 의 `routes` 에 넣는다.
+  3. 공개 페이지면 `src/app/sitemap.ts` 의 `routes` 에 넣고, metadata 에 `alternates("/<path>")`, `openGraph("/<path>", 제목, 설명)`(`src/lib/metadata.ts`)을 넣고 그 세그먼트에 opengraph-image 를 둔다(루트 것을 re-export). smoke 항목에는 `body: [...head("/<path>"), ...og("/<path>")]` 를 붙인다.
   4. Cache Components 규칙: `<Suspense>` 밖에서 캐시되지 않은 데이터나 런타임 값(cookies, searchParams, `connection()` 뒤 코드)에 접근하면 빌드 오류다. DB 를 읽으면 `<Suspense>` 로 감싸고 쿼리 전에 `await connection()`(`next/server`)을 부른다. `connection()` 은 try 밖에서 부르고, 쿼리만 try/catch 해 catch 첫 줄에서 `unstable_rethrow(error)`(`next/navigation`) 후 `null` 을 렌더한다(`ui/view-count`, `ui/most-read` 패턴). `'use cache'` 스코프 안에서는 `connection()` 을 부를 수 없으니 그 바깥에서 부른다.
      - `export const dynamic|revalidate|dynamicParams|runtime` 를 쓰지 않는다(Cache Components 에서 빌드 실패).
      - prerender 경로에서 `new Date()`, `Date.now()`, `Math.random()` 을 쓰지 않는다.

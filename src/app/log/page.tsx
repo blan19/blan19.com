@@ -4,7 +4,9 @@ import { formatDotDate } from "@/lib/format";
 import { alternates, openGraph } from "@/lib/metadata";
 
 const TITLE = "기록";
-const DESCRIPTION = "짧은 생각과 일상을 적습니다.";
+// 메타 전용(화면의 page-lede 와 따로 둔다).
+const DESCRIPTION =
+  "소프트웨어 엔지니어 blan19의 짧은 기록입니다. 데이터를 트래킹하며 습관을 들이는 이야기처럼 짧은 생각과 일상을 평문으로 적습니다.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -23,7 +25,7 @@ const Log = () => {
       <header className="rail-grid page-head">
         <div className="rail-main">
           <h1 className="page-h1">기록</h1>
-          <p className="page-lede">{DESCRIPTION}</p>
+          <p className="page-lede">짧은 생각과 일상을 적습니다.</p>
         </div>
       </header>
 
