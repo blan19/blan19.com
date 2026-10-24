@@ -21,6 +21,8 @@ import type { RenderedPost, TocItem } from "@/lib/markdown/types";
 declare module "vfile" {
   interface DataMap {
     toc: TocItem[];
+    // 코드 블록을 Shiki 없이 평문으로 그렸다(rehype-code-blocks). 이 결과는 캐시하지 않는다.
+    highlightDegraded: boolean;
   }
 }
 
@@ -51,17 +53,19 @@ const processor = unified()
 const CACHE_LIMIT = 50;
 const cache = new Map<string, Promise<RenderedPost>>();
 
-const render = async (markdown: string): Promise<RenderedPost> => {
+const render = async (
+  markdown: string,
+): Promise<{ post: RenderedPost; cacheable: boolean }> => {
   const file = new VFile(markdown);
   const hast = await processor.run(processor.parse(file), file);
   return {
-    hast,
-    toc: file.data.toc ?? [],
+    post: { hast, toc: file.data.toc ?? [] },
+    cacheable: !file.data.highlightDegraded,
   };
 };
 
-// 글 본문을 HAST 로 한 번 만들어 모듈 캐시에 둔다. TOC 도 같은 트리에서 나온다.
-// 키는 slug 와 본문 해시라 글이 바뀌면 새로 만든다.
+// 글 본문을 HAST 로 한 번 만들어 모듈 캐시(LRU)에 둔다. TOC 도 같은 트리에서 나온다.
+// 키는 slug 와 본문 해시라 글이 바뀌면 새로 만든다. 실패했거나 평문으로 대체된 결과는 지운다.
 export async function renderMarkdown(
   key: string,
   markdown: string,
@@ -69,16 +73,24 @@ export async function renderMarkdown(
   const hash = createHash("sha1").update(markdown).digest("hex");
   const cacheKey = `${key}:${hash}`;
   const cached = cache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    cache.delete(cacheKey);
+    cache.set(cacheKey, cached);
+    return cached;
+  }
 
-  const promise = render(markdown);
+  const evict = () => {
+    if (cache.get(cacheKey) === promise) cache.delete(cacheKey);
+  };
+  const promise = render(markdown).then(({ post, cacheable }) => {
+    if (!cacheable) evict();
+    return post;
+  });
   cache.set(cacheKey, promise);
   if (cache.size > CACHE_LIMIT) {
     const oldest = cache.keys().next().value;
     if (oldest !== undefined) cache.delete(oldest);
   }
-  promise.catch(() => {
-    if (cache.get(cacheKey) === promise) cache.delete(cacheKey);
-  });
+  promise.catch(evict);
   return promise;
 }

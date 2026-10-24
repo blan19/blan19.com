@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 // 프로덕션 빌드(.next)를 운영 DB 차단 환경에서 `next start` 로 띄우고 주요 라우트를 요청한다.
 // 사용법: node scripts/smoke.mjs   (먼저 npm run verify 또는 node scripts/with-blocked-db.mjs next build 로 빌드)
-// DB 를 쓰는 부분은 127.0.0.1:1 에서 즉시 실패하는 것이 정상이며 HTTP 상태는 200 이어야 한다.
+// DB 를 쓰는 부분은 차단 주소(scripts/lib/blocked-db.mjs)에서 즉시 실패하는 것이 정상이며 HTTP 상태는 200 이어야 한다.
+// 서버 로그는 성공, 실패와 무관하게 .next/smoke-server.log 에 남긴다(worktree 마다 따로, 빌드마다 덮어씀).
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
-import os from "node:os";
 import path from "node:path";
-import { ROOT, BLOCKED_DB_URL, blockedEnv, resolveBin } from "./with-blocked-db.mjs";
+import { BLOCKED_DB_HOST, BLOCKED_DB_URL, blockedEnv } from "./lib/blocked-db.mjs";
+import { ROOT, resolveBin } from "./lib/paths.mjs";
 
 const READY_TIMEOUT_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 const KILL_GRACE_MS = 5_000;
-const LOG_FILE = path.join(os.tmpdir(), "blan19-smoke-server.log");
+const LOG_FILE = path.join(ROOT, ".next", "smoke-server.log");
 
 if (!fs.existsSync(path.join(ROOT, ".next", "BUILD_ID"))) {
   console.error("[smoke] .next 프로덕션 빌드가 없습니다. 먼저 `npm run verify` 또는 `node scripts/with-blocked-db.mjs next build` (DB 차단 빌드) 를 실행하세요.");
@@ -43,6 +44,16 @@ const HTML = /text\/html/;
 const XML = /xml/;
 const SITE = "https://www.blan19.xyz";
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const title = (text) => new RegExp(`<title>${escapeRe(text)}</title>`);
+// 404 HTML 은 레이아웃(lang)과 not-found.tsx 제목을 서버에서 그려야 한다(오류 셸 <html id="__next_error__"> 이면 실패).
+// robots 메타는 Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
+const NOT_FOUND_PAGE = [
+  /<html lang="ko"/,
+  /<h1 class="page-h1">페이지를 찾을 수 없습니다<\/h1>/,
+  title("페이지를 찾을 수 없습니다 | blan19"),
+  /<meta name="robots" content="noindex"\/>/,
+];
+const NOT_FOUND_NOT = [/name="robots"[\s\S]*name="robots"/];
 // body: 응답 본문에 있어야 하는 패턴. 페이지가 alternates 를 덮어쓰면 RSS 링크가 빠지므로 함께 본다.
 // notBody: 있으면 안 되는 패턴. assert: 본문을 받아 문제를 문자열로 돌려주는 함수(통과면 null).
 const head = (path) => [
@@ -54,11 +65,10 @@ const og = (path) => [
   /<meta property="og:site_name" content="blan19 기술 블로그"\/>/,
   /<meta property="og:locale" content="ko_KR"\/>/,
   new RegExp(`<meta property="og:url" content="${escapeRe(SITE + path)}/?"/>`),
-  /<meta property="og:image" content="https:\/\/www\.blan19\.xyz\/og\?title=[^"&]+"\/>/,
+  new RegExp(`<meta property="og:image" content="${escapeRe(SITE + path)}/opengraph-image(\\?[^"]*)?"/>`),
   /<meta property="og:image:width" content="1200"\/>/,
   /<meta name="twitter:card" content="summary_large_image"\/>/,
 ];
-const title = (text) => new RegExp(`<title>${escapeRe(text)}</title>`);
 // 글 JSON-LD 는 @graph 하나에 BlogPosting, BreadcrumbList, WebSite, Person 이 있어야 한다.
 const postGraph = (body) => {
   const match = body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -87,29 +97,30 @@ const checks = [
     body: [...head(`/tech/${slug}`), ...og(`/tech/${slug}`), /<meta property="og:type" content="article"\/>/],
     assert: postGraph,
   })),
+  // 목록에 없는 글은 src/proxy.ts 가 루트 404 로 돌린다(partialPrefetching 을 켜면 200 + noindex 로 바뀌었다).
+  { path: "/tech/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE, notBody: NOT_FOUND_NOT },
   { path: "/rss.xml", type: XML },
   { path: "/rss-atom.xml", type: XML },
   { path: "/sitemap.xml", type: XML, notBody: [/<loc>[^<]*\/llms\.txt<\/loc>/] },
   { path: "/robots.txt", type: /text\/plain/, body: [/Allow: \//], notBody: [/^Host:/m] },
   { path: "/llms.txt", type: /text\/plain/, body: [/^# blan19 기술 블로그\n/, new RegExp(`\\]\\(${escapeRe(SITE)}/tech/`)] },
-  { path: "/og", type: /image\/png/ },
-  { path: "/og?title=smoke", type: /image\/png/ },
+  { path: "/opengraph-image", type: /image\/png/ },
+  { path: "/tech/opengraph-image", type: /image\/png/ },
+  { path: "/log/opengraph-image", type: /image\/png/ },
+  ...techSlugs().slice(0, 1).map((slug) => ({ path: `/tech/${encodeURIComponent(slug)}/opengraph-image`, type: /image\/png/ })),
+  { path: "/tech/__smoke-not-found__/opengraph-image", status: 404, type: /./ },
   { path: "/icon.svg", type: /image\/svg\+xml/ },
-  // Next 가 넣는 noindex 하나만 있어야 한다(layout 이 robots 를 정하면 index, follow 가 하나 더 붙는다).
-  {
-    path: "/__smoke-not-found__",
-    status: 404,
-    type: HTML,
-    body: [title("페이지를 찾을 수 없습니다 | blan19"), /<meta name="robots" content="noindex"\/>/],
-    notBody: [/name="robots"[\s\S]*name="robots"/],
-  },
+  { path: "/__smoke-not-found__", status: 404, type: HTML, body: NOT_FOUND_PAGE, notBody: NOT_FOUND_NOT },
 ];
 
 let server = null;
 let serverLog = "";
+let spawnError = null;
+
+const hasExited = () => server.exitCode !== null || server.signalCode !== null;
 
 const stopServer = async () => {
-  if (!server || server.exitCode !== null || server.signalCode !== null) return;
+  if (!server || hasExited() || spawnError) return;
   const exited = new Promise((resolve) => server.once("exit", resolve));
   // detached 로 띄웠으므로 프로세스 그룹 전체(wrapper + next)를 종료한다.
   try {
@@ -150,7 +161,8 @@ const fetchWithTimeout = async (url, ms) => {
 const waitForReady = async (base) => {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (server.exitCode !== null) throw new Error(`서버가 시작 중 종료됨 (exit ${server.exitCode})`);
+    if (spawnError) throw new Error(`서버 실행 실패 (${spawnError.message})`);
+    if (hasExited()) throw new Error(`서버가 시작 중 종료됨 (${server.signalCode ?? `exit ${server.exitCode}`})`);
     try {
       const { res } = await fetchWithTimeout(`${base}/robots.txt`, 2_000);
       if (res.status === 200) return;
@@ -162,10 +174,11 @@ const waitForReady = async (base) => {
   throw new Error(`${READY_TIMEOUT_MS / 1000}초 안에 서버가 준비되지 않음`);
 };
 
-// 서버 로그의 ⨯ 오류 중 차단 주소(127.0.0.1:1) 접속 실패만 정상으로 보고, 그 외 오류는 실패로 본다.
+// 서버 로그의 ⨯ 오류 중 차단 주소 접속 실패만 정상으로 보고, 그 외 오류는 실패로 본다.
+const BLOCKED_HOST_RE = new RegExp(escapeRe(BLOCKED_DB_HOST) + "\\b");
 const analyzeLog = (log) => {
   const blocks = log.split(/\n(?=\s*⨯)/).filter((b) => b.trimStart().startsWith("⨯"));
-  const blocked = (b) => /127\.0\.0\.1:1\b/.test(b) && /P1001|DatabaseNotReachable|ECONNREFUSED|reach database/.test(b);
+  const blocked = (b) => BLOCKED_HOST_RE.test(b) && /P1001|DatabaseNotReachable|ECONNREFUSED|reach database/.test(b);
   return { dbErrors: blocks.filter(blocked).length, otherErrors: blocks.filter((b) => !blocked(b)) };
 };
 
@@ -181,6 +194,7 @@ const main = async () => {
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
+  server.on("error", (e) => (spawnError = e));
   server.stdout.on("data", (d) => (serverLog += d));
   server.stderr.on("data", (d) => (serverLog += d));
 
@@ -217,7 +231,6 @@ const main = async () => {
   // 로그가 마저 흘러나오도록 잠깐 기다린다.
   await new Promise((r) => setTimeout(r, 500));
   const { dbErrors, otherErrors } = analyzeLog(serverLog);
-  fs.writeFileSync(LOG_FILE, serverLog);
 
   const pathWidth = Math.max(...results.map((r) => r.path.length), 4);
   console.log(`결과  ${"path".padEnd(pathWidth + 1)} 상태  ${"content-type".padEnd(22)} 시간`);
@@ -229,8 +242,7 @@ const main = async () => {
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n[smoke] 요청 ${results.length}개 중 실패 ${failed.length}개`);
-  console.log(`[smoke] 차단 주소(127.0.0.1:1) DB 접속 실패 로그 ${dbErrors}건 (정상: 운영 DB 에 접속하지 않았다는 뜻)`);
-  console.log(`[smoke] 서버 로그: ${LOG_FILE}`);
+  console.log(`[smoke] 차단 주소(${BLOCKED_DB_HOST}) DB 접속 실패 로그 ${dbErrors}건 (정상: 운영 DB 에 접속하지 않았다는 뜻)`);
   if (otherErrors.length) {
     console.log(`[smoke] DB 와 무관한 서버 오류 ${otherErrors.length}건:`);
     for (const block of otherErrors.slice(0, 5)) console.log(block.split("\n").slice(0, 8).join("\n"));
@@ -246,6 +258,14 @@ try {
   if (serverLog) console.error(`--- 서버 로그 (마지막 40줄) ---\n${serverLog.split("\n").slice(-40).join("\n")}`);
 } finally {
   await stopServer();
+  if (serverLog) {
+    try {
+      fs.writeFileSync(LOG_FILE, serverLog);
+      console.log(`[smoke] 서버 로그: ${LOG_FILE}`);
+    } catch (e) {
+      console.error(`[smoke] 서버 로그 저장 실패: ${e.message}`);
+    }
+  }
 }
 console.log(success ? "[smoke] 통과" : "[smoke] 실패");
 process.exit(success ? 0 : 1);

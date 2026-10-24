@@ -1,64 +1,77 @@
 # [blan19.xyz](https://www.blan19.xyz)
 
-A Markdown Blog built with Next.js, Tailwind and Vercel. Designed, built, and maintained by [@blan19](https://github.com/blan19)
+A personal Korean tech blog. Designed, built, and maintained by [@blan19](https://github.com/blan19).
 
-### Primarily Built with:
+Posts live in `contents/` as Markdown files and are rendered with the Next.js App Router. Postgres stores only per-post view counts.
 
-[next.js](https://github.com/vercel/next.js)  
-[tailwind](https://github.com/tailwind)  
-[unified](https://github.com/unifiedjs/unified) (remark / rehype)  
-[shiki](https://github.com/shikijs/shiki)  
-[mermaid](https://github.com/mermaid-js/mermaid)  
-[prisma](https://github.com/prisma/prisma)  
-[vercel](https://github.com/vercel)
+### Stack
 
----
+- [Next.js](https://github.com/vercel/next.js) 16 (App Router, Cache Components) and React 19
+- [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) 4
+- [unified](https://github.com/unifiedjs/unified) (remark / rehype), [Shiki](https://github.com/shikijs/shiki) for code highlighting, [mermaid](https://github.com/mermaid-js/mermaid) for diagrams
+- [Prisma](https://github.com/prisma/prisma) 7 with Postgres (Neon) for view counts
+- Deployed on [Vercel](https://vercel.com) (branch push → Preview, `main` → Production)
 
-### Environment Variables
+### Requirements
 
-Create an `.env` file for local environment variables. These are the variables the code reads (on Vercel they come from the Postgres integration).
+- Node.js 24 and npm 11
 
-```
-//.env
-POSTGRES_URL=""               # when empty, view counts are not read (increments and the home "most read" list still use POSTGRES_PRISMA_URL)
-POSTGRES_PRISMA_URL=""        # runtime connection (pooled)
-POSTGRES_URL_NON_POOLING=""   # Prisma CLI (db push on Vercel)
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=""
-```
-
-> **Note:** there is no separate development database. If `.env` points at the production database, `npm run dev` / `npm start` read and write production data (every `/tech/<slug>` visit increments its view count). Use `npm run dev:safe` for local work. With the database blocked, view counts and the home "most read" list are simply left out (the rest of each page renders normally); to preview posts, run `node scripts/with-blocked-db.mjs --preview next dev` (the post view count shows as 0).
-
-### Install Dependencies
+### Quick Start
 
 ```bash
-npm install
+npm ci
+npm run dev:safe   # dev server with every database URL blocked
 ```
+
+Open http://localhost:3000. With the database blocked, view counts and the home "most read" list are left out; the rest of each page renders normally. To preview posts without any database errors in the log, run `node scripts/with-blocked-db.mjs --preview next dev` instead. Unlike `dev:safe`, it does not run `prisma generate`, so on a fresh clone run `npx prisma generate` (no database access) or `npm run dev:safe` once first.
+
+> **Warning:** there is no separate development database. If `.env` points at the production database, `npm run dev`, `npm start` and `npm run build` read it, and every `/tech/<slug>` visit on a server started that way increments the production view count. Use `npm run dev:safe` and `npm run verify` for local work. Never run `npm run vercel-build` or `prisma db push` / `migrate` locally.
 
 ### Scripts
 
 | Script | What it does |
 |---|---|
-| `npm run dev` | `prisma generate` + `next dev` using the database in `.env` |
-| `npm run dev:safe` | Dev server with all database URLs overridden to an unreachable address |
-| `npm run build` | `prisma generate` + `next build` (no schema changes, but reads the database URLs in `.env`; `npm run verify` builds with the database blocked) |
-| `npm run vercel-build` | `prisma generate` + `prisma db push` + `next build`. Vercel runs this instead of `build` (unless a Build Command override is set in the project settings); do not run it locally |
-| `npm run verify` | Full check with the database blocked: generate, typecheck, lint, content check, build, smoke |
+| `npm run dev:safe` | `prisma generate` + `next dev` with all database URLs overridden to an unreachable address |
+| `npm run verify` | Full check with the database blocked: prisma generate, typecheck, lint, content check (`--strict`), tests, build, smoke. CI runs exactly this |
+| `npm test` | Hook tests (`test:hooks`) and content validator tests (`test:content`) |
 | `npm run typecheck` | `prisma generate` + `tsc --noEmit` |
 | `npm run lint` | `eslint .` |
-| `npm run content:check` | Validate `contents/**/*.mdx` structure and frontmatter |
+| `npm run content:check` | Validate `contents/` structure, frontmatter and post bodies (`--strict` turns `TODO:` into an error) |
 | `npm run smoke` | Serve the existing `.next` build with the database blocked and request the main routes |
+| `npm run dev` / `npm start` | `prisma generate` + `next dev` / plain `next start`, using the database in `.env` (production) |
+| `npm run build` | `prisma generate` + `next build`. No schema changes, but reads `.env`; `npm run verify` builds with the database blocked |
+| `npm run vercel-build` | `prisma generate` + `prisma db push` + `next build`. Vercel runs this; do not run it locally |
 
-CI (`.github/workflows/ci.yml`) runs the same checks on pull requests and pushes to `main`.
+CI (`.github/workflows/ci.yml`) runs `npm run verify` on pull requests and pushes to `main`.
 
-Rules for AI coding agents (Claude Code) live in `CLAUDE.md` and `.claude/`.
+### Environment Variables
+
+The code reads these (on Vercel they come from the Postgres integration). Create a local `.env` only if you need them.
+
+```
+POSTGRES_URL=""                     # when empty, the app skips the database entirely (no view counts, no "most read")
+POSTGRES_PRISMA_URL=""              # runtime connection (pooled)
+POSTGRES_URL_NON_POOLING=""         # Prisma CLI (db push on Vercel)
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=""  # optional; when empty, Google Analytics is not loaded
+```
 
 ### Writing a Post
 
-Add `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx` (one `.mdx` per date folder; the file name is the URL slug) with `publishedAt` (quoted), `title`, `tags`, `description` and `reference` frontmatter, then run `npm run content:check`.
+Add `contents/<tech|log>/<YYYY-MM-DD>/<slug>.mdx`: one file per date folder. For `tech` posts the file name is the URL slug and the view-count key, so it never changes after publishing; `log` posts have no detail page or view count, and their file name is only a unique key (the `log-<slug>` element id on `/log`). The files use the `.mdx` extension but are plain Markdown (GFM), not MDX: JSX and raw HTML are shown as text. Frontmatter is YAML with `publishedAt` (quoted `"YYYY-MM-DD"`), `title`, `tags`, `description` and `reference`. Then run `npm run content:check`.
+
+`log` posts are plain paragraphs shown on `/log` without Markdown rendering.
+
+### Documentation
+
+- [`docs/intent.md`](docs/intent.md): why things are built the way they are
+- [`docs/architecture.md`](docs/architecture.md): modules, data flow and rendering
+- [`docs/design.md`](docs/design.md): design tokens, type scale, layout and components
+
+Rules for AI coding agents (Claude Code) live in `CLAUDE.md` and `.claude/`.
 
 ---
 
-## Inspiration:
+## Inspiration
 
 [amirardalan](https://github.com/amirardalan/amirardalan.com)
 

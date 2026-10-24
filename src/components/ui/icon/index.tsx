@@ -7,14 +7,11 @@ export type IconName =
   | "important"
   | "warning"
   | "caution"
-  | "copy"
   | "check"
   | "sun"
   | "moon"
   | "system"
   | "chev"
-  | "file"
-  | "term"
   | "img-off"
   | "list"
   | "x";
@@ -25,7 +22,8 @@ interface IconProps {
   title?: string;
 }
 
-// 경로 데이터는 design/proposals/b-margin.html 의 <symbol> 을 그대로 옮겼다.
+// 24px viewBox, stroke 만 쓰는 아이콘(굵기와 끝 모양은 globals.css 의 .icon).
+// 경로는 이전 MARGIN 시안의 <symbol> 에서 옮겼다(시안 파일은 저장소에 없다).
 const paths: Record<IconName, ReactNode> = {
   note: (
     <>
@@ -62,12 +60,6 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M12 16h.01" />
     </>
   ),
-  copy: (
-    <>
-      <rect x="9" y="9" width="11" height="11" rx="2" />
-      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" />
-    </>
-  ),
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   sun: (
     <>
@@ -83,18 +75,6 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   chev: <path d="m6 9 6 6 6-6" />,
-  file: (
-    <>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5" />
-    </>
-  ),
-  term: (
-    <>
-      <path d="m5 8 4 4-4 4" />
-      <path d="M12 17h7" />
-    </>
-  ),
   "img-off": (
     <>
       <path d="M3 3l18 18" />

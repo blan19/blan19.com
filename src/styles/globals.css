@@ -1,6 +1,7 @@
-/* globals.css — 토큰, Tailwind 매핑, 요소 기본값, 공용 클래스, 사이트 크롬 (Track 1 소유)
-   markdown.css(글 렌더러, 글 머리와 글 끝)와 pages.css(홈, 목록, 기록, 404, 히어로 오브젝트)는 각 트랙 소유.
-   이 파일만 공용 클래스를 최상위로 정의한다. 명세: design/grey-g3-spec.md (G3 "Minimal Index"). */
+/* globals.css — 토큰, Tailwind 매핑, 요소 기본값, 공용 클래스, 사이트 크롬.
+   markdown.css(글 렌더러, 글 머리와 글 끝)와 pages.css(홈, 목록, 기록, 404, 히어로 오브젝트)가 나머지를 맡는다.
+   이 파일만 공용 클래스를 최상위로 정의한다.
+   명세: G3 "Minimal Index". 설명은 docs/design.md, 값의 원본은 이 파일의 토큰이다. */
 @import "tailwindcss" source("../");
 @import "./markdown.css";
 @import "./pages.css";
@@ -36,8 +37,9 @@
 
 /* ───────────────────────── 토큰 (레이어 밖) ─────────────────────────
    원본 blan19 Open Color gray. 색상은 회색뿐이고 빨강은 오류에만, 문자열/숫자 신택스에만 slate 하나.
-   다크는 시스템 다크(속성 없음)와 강제 다크(data-theme="dark") 두 곳에 같은 값으로 재정의한다.
-   다른 변수를 참조하는 파생 토큰(color-mix)은 :root 에 한 번만 둔다. */
+   다크 값은 :root 안의 @variant dark 한 곳에만 둔다. 위 @custom-variant dark 가 시스템 다크(강제 라이트 아님)와
+   강제 다크(data-theme="dark") 두 규칙으로 펼친다(둘 다 :root 와 특이도가 같아 소스 순서로 라이트를 덮는다).
+   다른 변수를 참조하는 토큰(--diff-add 같은 별칭, color-mix)은 테마를 따라가므로 라이트에 한 번만 둔다. */
 :root {
   color-scheme: light;
 
@@ -85,7 +87,7 @@
   --img-filter: none;
   --shadow: 0 8px 24px rgb(0 0 0 / 0.08);
   --scrim: rgb(11 12 14 / 0.5);
-  --scrim-strong: rgb(11 12 14 / 0.82);
+  --scrim-strong: rgb(11 12 14 / 0.82); /* 두 테마 같은 값 */
   --object: var(--gray-9);
   --object-alpha: 0.78;
   --diff-add: var(--text);
@@ -132,30 +134,11 @@
   --obj-w: 324px; /* 히어로 오브젝트 상자 너비(3:2) */
   --radius: 6px;
   --radius-sm: 4px;
+  --underline-offset: 4px; /* 밑줄 링크와 목록 제목 hover 밑줄 */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-}
 
-@media (max-width: 767px) {
-  :root {
-    --fs-display: 26px;
-    --obj-w: min(100%, 312px);
-  }
-}
-
-@media (min-width: 768px) {
-  :root {
-    --gutter: 32px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  :root {
-    --obj-w: 252px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  /* 다크 (시스템 다크 + 강제 다크) */
+  @variant dark {
     color-scheme: dark;
 
     --bg: var(--gray-10);
@@ -175,11 +158,8 @@
     --img-filter: brightness(0.88);
     --shadow: 0 8px 24px rgb(0 0 0 / 0.45);
     --scrim: rgb(0 0 0 / 0.6);
-    --scrim-strong: rgb(11 12 14 / 0.82);
     --object: var(--gray-3);
     --object-alpha: 0.7;
-    --diff-add: var(--text);
-    --diff-del: var(--text-3);
     --diff-del-hl: var(--text-2); /* 다크 강조 줄 배경 위 --text-3 는 4.46:1 */
 
     --sh-keyword: #ffffff;
@@ -195,43 +175,23 @@
   }
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
+@media (max-width: 767px) {
+  :root {
+    --fs-display: 26px;
+    --obj-w: min(100%, 312px);
+  }
+}
 
-  --bg: var(--gray-10);
-  --bg-subtle: var(--gray-9);
-  --code-bg: var(--gray-9);
-  --line: var(--gray-9b);
-  --line-strong: var(--gray-8);
-  --selection: var(--gray-8);
-  --text: var(--gray-1);
-  --text-2: var(--gray-4);
-  --text-3: var(--gray-9a);
-  --text-4: var(--gray-7);
-  --ink: #ffffff;
-  --focus: var(--gray-1);
-  --danger: var(--red-5);
-  --danger-text: var(--red-4);
-  --img-filter: brightness(0.88);
-  --shadow: 0 8px 24px rgb(0 0 0 / 0.45);
-  --scrim: rgb(0 0 0 / 0.6);
-  --scrim-strong: rgb(11 12 14 / 0.82);
-  --object: var(--gray-3);
-  --object-alpha: 0.7;
-  --diff-add: var(--text);
-  --diff-del: var(--text-3);
-  --diff-del-hl: var(--text-2); /* 다크 강조 줄 배경 위 --text-3 는 4.46:1 */
+@media (min-width: 768px) {
+  :root {
+    --gutter: 32px;
+  }
+}
 
-  --sh-keyword: #ffffff;
-  --sh-fn: var(--gray-1);
-  --sh-type: var(--gray-1);
-  --sh-text: var(--gray-4);
-  --sh-prop: var(--gray-4);
-  --sh-punct: var(--gray-5);
-  --sh-comment: var(--gray-9c);
-  --sh-string: var(--slate-d);
-  --sh-number: var(--slate-d);
-  --sh-gutter: var(--gray-8a);
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --obj-w: 252px;
+  }
 }
 
 /* ───────────────────────── 요소 기본값 ───────────────────────── */
@@ -415,7 +375,7 @@
     text-decoration: underline;
     text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
-    text-underline-offset: 4px;
+    text-underline-offset: var(--underline-offset);
     background: transparent;
     transition:
       text-decoration-color 0.2s var(--ease),

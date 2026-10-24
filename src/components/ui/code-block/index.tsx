@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import CodeFold from "@/components/ui/code-fold";
 import CopyButton from "@/components/ui/copy-button";
-import Icon from "@/components/ui/icon";
-import { normalizeLanguage } from "@/lib/markdown/languages";
 
 interface CodeBlockProps {
   lang: string;
@@ -12,14 +10,12 @@ interface CodeBlockProps {
   diff: boolean;
   prompt: boolean;
   collapsible: boolean;
+  terminal: boolean;
   children: ReactNode;
 }
 
-const isTerminal = (lang: string) => {
-  const language = normalizeLanguage(lang);
-  return language.kind === "code" && language.lang === "bash";
-};
-
+// 헤더 한 줄 = figcaption(파일명/언어, figure 의 이름) + 복사 버튼. 버튼은 figure 이름에 섞이지 않게
+// figcaption 밖 형제로 둔다(배치는 markdown.css 의 grid).
 const CodeBlock = ({
   lang,
   title,
@@ -28,9 +24,9 @@ const CodeBlock = ({
   diff,
   prompt,
   collapsible,
+  terminal,
   children,
 }: CodeBlockProps) => {
-  const terminal = isTerminal(lang);
   const name = title ?? (terminal ? "터미널" : lang);
   return (
     <figure
@@ -43,31 +39,24 @@ const CodeBlock = ({
       data-collapsed={collapsible ? "" : undefined}
     >
       <figcaption className="code-head">
-        {title ? (
+        <span className="code-file">{name}</span>
+        {title && (
           <>
-            <span className="code-file">
-              <Icon name="file" />
-              <span>{title}</span>
-            </span>
+            {" "}
             <span className="code-lang">
               {lang}
               {diff ? " · diff" : ""}
             </span>
           </>
-        ) : (
-          <span className="code-file">
-            <Icon name={terminal ? "term" : "file"} />
-            <span>{name}</span>
-          </span>
         )}
-        <CopyButton label={`${name} 코드 복사`} />
       </figcaption>
+      <CopyButton label={`${name} 코드 복사`} />
       <div className="code-body">
         <div
           className="code-scroll"
           tabIndex={0}
           role="region"
-          aria-label={`${title ?? lang} 코드`}
+          aria-label={`${name} 코드`}
         >
           {children}
         </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Post } from "@/lib/posts";
-import { formatDotDate, formatMonthDay } from "@/lib/format-date";
+import { formatDotDate, formatMonthDay } from "@/lib/format";
 import { RowViews } from "@/components/ui/view-count";
 
 interface PostRowProps {

@@ -351,11 +351,14 @@ export interface LaptopFit {
   slackR: number;
 }
 
+// 투영에 필요한 맞춤 값(배율과 중심). 캔버스는 이것만 받아 상자 크기에 맞게 늘린다.
+export type LaptopScale = Pick<LaptopFit, "s" | "cx" | "cy">;
+
 // fit 좌표계로 투영한다. 결과 [px, py, a]*, a(0..1) = 기본 세기 × 깊이 × 램버트 × 면 방향.
 // progress(0..1) 는 재생 막대 위치, fade(0..1) 는 진행률이 막 1 → 0 으로 돈 뒤 지난 구간의 남은 밝기.
 export const projectLaptop = (
   pts: Float32Array,
-  fit: LaptopFit,
+  fit: LaptopScale,
   yaw: number,
   pitch: number,
   progress: number,
@@ -422,7 +425,7 @@ export const laptopPose = (mode: LaptopMode) =>
 
 // LAPTOP_VIEW_W × LAPTOP_VIEW_H 상자에 맞춘다. 홈은 흔들림 + 시차 범위 전체의 합집합 경계로 맞춰
 // 움직이는 동안 크기가 변하지 않는다. 여백은 상자 기준(좌우 2% 너비, 위 2% 높이, 아래 2), 가운데 정렬.
-export const laptopFit = (mode: LaptopMode, pts: Float32Array): LaptopFit => {
+const laptopFit = (mode: LaptopMode, pts: Float32Array): LaptopFit => {
   const w = LAPTOP_VIEW_W;
   const h = LAPTOP_VIEW_H;
   const pose = laptopPose(mode);
@@ -441,7 +444,7 @@ export const laptopFit = (mode: LaptopMode, pts: Float32Array): LaptopFit => {
   let maxx = -Infinity;
   let miny = Infinity;
   let maxy = -Infinity;
-  const unit = { s: 1, cx: 0, cy: 0, slackL: 0, slackR: 0 };
+  const unit = { s: 1, cx: 0, cy: 0 };
   let p: Float32Array | undefined;
   for (const yaw of yaws) {
     for (const pitch of pitches) {
@@ -488,6 +491,7 @@ export interface LaptopSvg {
   layers: LaptopSvgLayer[];
   slackL: number;
   slackR: number;
+  fit: LaptopScale; // 캔버스 섬이 다시 계산하지 않게 넘긴다(투영에 필요한 값만)
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -495,7 +499,7 @@ const svgCache = new Map<string, LaptopSvg>();
 
 // 서버 렌더 SVG(JS 없을 때의 최종 이미지, 캔버스가 뜨기 전 첫 화면). 같은 입력 → 같은 출력.
 // 점을 불투명도 칸별 path 하나로 묶는다(점 = 길이 0 선분 + round cap). 캔버스 t = 0 프레임과 같다.
-// slackL/R 은 맞춤의 빈 가로 폭(LaptopFit 과 같은 값, 소수 넷째 자리)이다.
+// slackL/R 은 맞춤의 빈 가로 폭(LaptopFit 과 같은 값, 소수 넷째 자리)이다. fit 은 반올림하지 않은 s, cx, cy 다.
 export const laptopSvg = (mode: LaptopMode, seed: string): LaptopSvg => {
   const key = `${mode}:${seed}`;
   const cached = svgCache.get(key);
@@ -526,6 +530,7 @@ export const laptopSvg = (mode: LaptopMode, seed: string): LaptopSvg => {
     layers,
     slackL: Math.round(fit.slackL * 1e4) / 1e4,
     slackR: Math.round(fit.slackR * 1e4) / 1e4,
+    fit: { s: fit.s, cx: fit.cx, cy: fit.cy },
   };
   svgCache.set(key, svg);
   return svg;

@@ -1,4 +1,4 @@
-import type { Element, Root } from "hast";
+import type { Root } from "hast";
 import type { Components, ExtraProps } from "hast-util-to-jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import Link from "next/link";
@@ -9,63 +9,37 @@ import Callout from "@/components/ui/callout";
 import CodeBlock from "@/components/ui/code-block";
 import Mermaid from "@/components/ui/mermaid";
 import PostImage from "@/components/ui/post-image";
-import { hasClass } from "@/lib/markdown/hast-utils";
-import type { CalloutType } from "@/lib/markdown/types";
+import { site } from "@/lib/config";
+import {
+  decodeCallout,
+  decodeCodeFigure,
+  decodeDiagramFigure,
+  decodeImageFigure,
+} from "@/lib/markdown/figures";
+import {
+  hasClass,
+  isFootnoteBackref,
+  isFootnoteRef,
+} from "@/lib/markdown/hast-utils";
+import { PAGE_IDS } from "@/lib/page-ids";
 
 interface PostBodyProps {
   hast: Root;
 }
 
-const SITE_ORIGINS = ["https://www.blan19.xyz", "https://blan19.xyz"];
-const CALLOUT_TYPES: CalloutType[] = ["note", "tip", "important", "warning", "caution"];
-
-const prop = (node: Element | undefined, name: string) => {
-  const value = node?.properties[name];
-  return value === undefined || value === null ? undefined : String(value);
-};
-
-const flag = (node: Element | undefined, name: string) =>
-  node?.properties[name] !== undefined;
-
+// 플러그인이 만든 figure 를 데이터(figures.ts)대로 컴포넌트로 바꾼다.
 const Figure = ({
   node,
   children,
   ...props
 }: ComponentProps<"figure"> & ExtraProps) => {
-  if (node && hasClass(node, "code-block")) {
-    return (
-      <CodeBlock
-        lang={prop(node, "dataLang") ?? "text"}
-        title={prop(node, "dataTitle")}
-        lines={Number(prop(node, "dataLines") ?? 0)}
-        lineNumbers={flag(node, "dataLn")}
-        diff={flag(node, "dataDiff")}
-        prompt={flag(node, "dataPrompt")}
-        collapsible={flag(node, "dataCollapsible")}
-      >
-        {children}
-      </CodeBlock>
-    );
-  }
-  if (node && hasClass(node, "img-fig")) {
-    return (
-      <PostImage
-        src={prop(node, "dataSrc") ?? ""}
-        alt={prop(node, "dataAlt") ?? ""}
-        width={Number(prop(node, "dataWidth") ?? 768)}
-        height={Number(prop(node, "dataHeight") ?? 432)}
-        priority={flag(node, "dataPriority")}
-        caption={prop(node, "dataCaption")}
-      />
-    );
-  }
-  if (node && hasClass(node, "diagram")) {
-    return (
-      <Mermaid
-        code={prop(node, "dataMermaid") ?? ""}
-        caption={prop(node, "dataCaption")}
-      />
-    );
+  if (node) {
+    const code = decodeCodeFigure(node);
+    if (code) return <CodeBlock {...code}>{children}</CodeBlock>;
+    const image = decodeImageFigure(node);
+    if (image) return <PostImage {...image} />;
+    const diagram = decodeDiagramFigure(node);
+    if (diagram) return <Mermaid {...diagram} />;
   }
   return <figure {...props}>{children}</figure>;
 };
@@ -75,16 +49,13 @@ const Aside = ({
   children,
   ...props
 }: ComponentProps<"aside"> & ExtraProps) => {
-  const type = prop(node, "dataType");
-  if (node && hasClass(node, "callout")) {
-    const calloutType = CALLOUT_TYPES.find((value) => value === type) ?? "note";
-    return <Callout type={calloutType}>{children}</Callout>;
-  }
+  const type = node && decodeCallout(node);
+  if (type) return <Callout type={type}>{children}</Callout>;
   return <aside {...props}>{children}</aside>;
 };
 
 const sitePath = (href: string) => {
-  for (const origin of SITE_ORIGINS) {
+  for (const origin of site.origins) {
     if (href === origin) return "/";
     if (href.startsWith(`${origin}/`) || href.startsWith(`${origin}?`) || href.startsWith(`${origin}#`)) {
       const path = href.slice(origin.length);
@@ -101,9 +72,8 @@ const Anchor = ({
   ...props
 }: ComponentProps<"a"> & ExtraProps) => {
   const special =
-    flag(node, "dataFootnoteRef") ||
-    flag(node, "dataFootnoteBackref") ||
-    (node !== undefined && hasClass(node, "anchor"));
+    node !== undefined &&
+    (isFootnoteRef(node) || isFootnoteBackref(node) || hasClass(node, "anchor"));
   if (special || !href) {
     return (
       <a href={href} {...props}>
@@ -159,7 +129,7 @@ const components: Partial<Components> = {
 
 const PostBody = ({ hast }: PostBodyProps) => {
   return (
-    <div className="post-body" id="post-body">
+    <div className="post-body" id={PAGE_IDS.postBody}>
       {toJsxRuntime(hast, {
         Fragment,
         jsx,

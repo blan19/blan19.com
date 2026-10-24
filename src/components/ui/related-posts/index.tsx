@@ -1,5 +1,6 @@
 import { getPostsNewestFirst } from "@/lib/posts";
 import type { Post } from "@/lib/posts";
+import { PAGE_IDS } from "@/lib/page-ids";
 import PostRow from "@/components/ui/post-row";
 
 interface RelatedPostsProps {
@@ -28,8 +29,8 @@ const RelatedPosts = ({ post }: RelatedPostsProps) => {
   if (related.length === 0) return null;
 
   return (
-    <section className="end-sec" aria-labelledby="rel-label">
-      <h2 className="end-label" id="rel-label">
+    <section className="end-sec" aria-labelledby={PAGE_IDS.relatedLabel}>
+      <h2 className="end-label" id={PAGE_IDS.relatedLabel}>
         관련 글
       </h2>
       <ol className="idx-list">

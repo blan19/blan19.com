@@ -1,7 +1,12 @@
 import type { Blockquote, Paragraph, PhrasingContent, Root } from "mdast";
 import { visit } from "unist-util-visit";
+import { encodeCallout } from "@/lib/markdown/figures";
+import { CALLOUT_TYPES, isCalloutType } from "@/lib/markdown/types";
 
-const MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(\r?\n|$)/i;
+const MARKER = new RegExp(
+  String.raw`^\[!(${CALLOUT_TYPES.join("|")})\][ \t]*(\r?\n|$)`,
+  "i",
+);
 
 const isBlank = (node: PhrasingContent) =>
   node.type === "text" && node.value.trim() === "";
@@ -49,6 +54,7 @@ const remarkAlerts = () => (tree: Root) => {
     if (!match) return;
 
     const type = match[1].toLowerCase();
+    if (!isCalloutType(type)) return;
     text.value = text.value.slice(match[0].length);
     if (text.value === "") paragraph.children.shift();
     if (paragraph.children.length === 0) node.children.shift();
@@ -58,7 +64,8 @@ const remarkAlerts = () => (tree: Root) => {
     node.data = {
       ...node.data,
       hName: "aside",
-      hProperties: { className: ["callout"], dataType: type, role: "note" },
+      // role 은 ui/callout 이 단다.
+      hProperties: encodeCallout(type),
     };
   });
 };

@@ -2,9 +2,11 @@ import "server-only";
 import {
   createHighlighterCore,
   type HighlighterCore,
+  type LanguageRegistration,
   type ThemeRegistration,
 } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import type { CodeLanguage } from "@/lib/markdown/languages";
 
 // 토큰 색은 CSS 변수(globals.css 의 --sh-*)라 라이트/다크 전환은 변수 교체만으로 된다.
 // TextMate 는 더 구체적인 스코프가 이긴다. fontStyle 은 쓰지 않는다(한글 italic 금지).
@@ -132,26 +134,32 @@ export const blanTheme: ThemeRegistration = {
   ],
 };
 
-// 언어는 문자열 리터럴 import 로 하나씩 쓴다. 템플릿 문자열로 쓰면 번들러가 shiki/langs 전체를 묶는다.
-// languages.ts 의 CODE_LANGUAGES 와 같은 목록을 유지한다.
+// 언어 모듈. 키는 languages.ts 의 CODE_LANGUAGES 와 같아야 한다(빠지거나 남으면 satisfies 로 tsc 가 잡는다).
+// 키와 import 경로의 파일명을 같게 쓴다(경로가 틀린 것은 tsc 가 못 잡는다).
+// 문자열 리터럴 import 로 하나씩 쓴다. 템플릿 문자열로 쓰면 번들러가 shiki/langs 전체를 묶는다.
+const LANG_LOADERS = {
+  bash: () => import("shiki/langs/bash.mjs"),
+  css: () => import("shiki/langs/css.mjs"),
+  dart: () => import("shiki/langs/dart.mjs"),
+  diff: () => import("shiki/langs/diff.mjs"),
+  glsl: () => import("shiki/langs/glsl.mjs"),
+  html: () => import("shiki/langs/html.mjs"),
+  javascript: () => import("shiki/langs/javascript.mjs"),
+  json: () => import("shiki/langs/json.mjs"),
+  jsx: () => import("shiki/langs/jsx.mjs"),
+  rust: () => import("shiki/langs/rust.mjs"),
+  tsx: () => import("shiki/langs/tsx.mjs"),
+  typescript: () => import("shiki/langs/typescript.mjs"),
+  yaml: () => import("shiki/langs/yaml.mjs"),
+} satisfies Record<
+  CodeLanguage,
+  () => Promise<{ default: LanguageRegistration[] }>
+>;
+
 const createHighlighter = (): Promise<HighlighterCore> =>
   createHighlighterCore({
     themes: [blanTheme],
-    langs: [
-      import("shiki/langs/bash.mjs"),
-      import("shiki/langs/css.mjs"),
-      import("shiki/langs/dart.mjs"),
-      import("shiki/langs/diff.mjs"),
-      import("shiki/langs/glsl.mjs"),
-      import("shiki/langs/html.mjs"),
-      import("shiki/langs/javascript.mjs"),
-      import("shiki/langs/json.mjs"),
-      import("shiki/langs/jsx.mjs"),
-      import("shiki/langs/rust.mjs"),
-      import("shiki/langs/tsx.mjs"),
-      import("shiki/langs/typescript.mjs"),
-      import("shiki/langs/yaml.mjs"),
-    ],
+    langs: Object.values(LANG_LOADERS).map((load) => load()),
     engine: createJavaScriptRegexEngine(),
   });
 

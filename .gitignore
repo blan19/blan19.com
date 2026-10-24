@@ -25,9 +25,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env
-.env*.local
+# local env files (.env.production 같은 이름으로 운영 값을 만들어도 커밋되지 않게 전부 무시)
+.env*
+!.env.example
 
 # vercel
 .vercel
